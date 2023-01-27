@@ -74,3 +74,11 @@ SET(nexdome_beaver_SRC
 add_executable(indi_nexdome_beaver ${nexdome_beaver_SRC})
 target_link_libraries(indi_nexdome_beaver indidriver)
 install(TARGETS indi_nexdome_beaver RUNTIME DESTINATION bin)
+
+# ############### OnCue OCS ################
+SET(oncue_SRC
+    oncue.cpp)
+
+add_executable(indi_oncue ${oncue_SRC})
+target_link_libraries(indi_oncue indidriver)
+install(TARGETS indi_oncue RUNTIME DESTINATION bin)
