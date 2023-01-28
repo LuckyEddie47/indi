@@ -19,10 +19,15 @@
 #pragma once
 
 #include "indidome.h"
+#include "connectionplugins/connectiontcp.h"
+#include "connectionplugins/connectionserial.h"
 
 #define RB_MAX_LEN 64
 #define CMD_MAX_LEN 32
 enum ResponseErrors {RES_ERR_FORMAT = -1001};
+
+#define OCS_handshake ":IP#"
+#define OCS_handshake_return "OCS"
 
 class OnCueOCS : public INDI::Dome
 {

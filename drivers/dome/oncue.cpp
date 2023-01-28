@@ -26,6 +26,7 @@
  * roof motor, and read state of switches indicating if the roof is  opened or closed.
  */
 #include "oncue.h"
+//#include "connectionplugins/connectioninterface.h"
 #include "indicom.h"
 #include "termios.h"
 
@@ -191,24 +192,43 @@ bool OnCueOCS::initProperties()
  ************************************************************************************/
 bool OnCueOCS::Handshake()
 {
-    bool status = false;
+    bool handshake_status = false;
 
-    LOGF_DEBUG("Driver id: %s", VERSION_ID);
-    if (PortFD <= 0)
-        DEBUG(INDI::Logger::DBG_WARNING,"The connection port has not been established");
+    if (PortFD > 0)
+    {
+        Connection::Interface *activeConnection = getActiveConnection();
+        if (!activeConnection->name().compare("CONNECTION_TCP"))
+        {
+            LOG_INFO("Network based connection, detection timeouts set to 2 seconds");
+            OnCueTimeoutMicroSeconds = 0;
+            OnCueTimeoutSeconds = 2;
+        }
+        else
+        {
+            LOG_INFO("Non-Network based connection, detection timeouts set to 0.1 seconds");
+            OnCueTimeoutMicroSeconds = 100000;
+            OnCueTimeoutSeconds = 0;
+        }
+
+        char handshake_response[RB_MAX_LEN] = {0};
+        handshake_status = getCommandSingleCharErrorOrLongResponse(PortFD, handshake_response, OCS_handshake);
+        if (strcmp(handshake_response, OCS_handshake_return) == 0)
+        {
+            LOG_INFO("OnCue OCS handshake established");
+            handshake_status = true;
+        }
+        else
+        {
+            LOG_ERROR("OnCue OCS handshake error, reponse was:");
+            LOG_ERROR(handshake_response);
+        }
+    }
     else
     {
-        if (!(status = initialContact()))
-        {
-            DEBUG(INDI::Logger::DBG_WARNING,"Initial controller contact failed, retrying");
-            msSleep(1000);              // In case it is a Arduino still resetting from upload
-            status = initialContact();
-        }
-        if (!status)
-            LOG_ERROR("Unable to contact the roof controller");
+        LOG_ERROR("OnCue OCS can't handshake, device not connected");
     }
-    return status;
-//    return true;
+
+    return handshake_status;
 }
 
 /**************************************************************************************
