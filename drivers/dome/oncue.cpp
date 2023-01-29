@@ -41,6 +41,16 @@ USB and network connections supported.
 #include <memory>
 #include <mutex>
 
+// Custom tabs
+#define ROOF_TAB "Roof/Shutter"
+#define DOME_TAB "Dome"
+#define WEATHER_TAB "Weather"
+#define THERMOSTAT_TAB "Thermostat"
+#define POWER_TAB "Power/GPIO"
+
+
+
+// From indi_rolloffino
 #define ROLLOFF_DURATION 15               // Seconds until Roof is fully opened or closed
 #define INACTIVE_STATUS  5                // Seconds between updating status lights
 #define ROR_D_PRESS      1000             // Milliseconds after issuing command before expecting response
@@ -69,6 +79,9 @@ USB and network connections supported.
 
 // Driver version id
 #define VERSION_ID      "20211115"
+// End from indi_rolloffino
+
+
 
 /* Add mutex to communications */
 std::mutex OnCueCommsLock;
@@ -1214,6 +1227,10 @@ void OnCueOCS::msSleep (int mSec)
     nanosleep(&req, (struct timespec *)nullptr);
 }
 
+/********************************************************************
+ * OnCue OCS command functions, copied from lx200_OnStep
+ *******************************************************************/
+
 bool OnCueOCS::sendOnCueCommandBlind(const char *cmd)
 {
     int error_type;
@@ -1306,7 +1323,6 @@ int OnCueOCS::getCommandSingleCharResponse(int fd, char *data, const char *cmd)
     return nbytes_read;
 }
 
-
 int OnCueOCS::flushIO(int fd)
 {
     tcflush(fd, TCIOFLUSH);
@@ -1379,9 +1395,7 @@ int OnCueOCS::getCommandDoubleResponse(int fd, double *value, char *data, const 
     }
 
     return nbytes_read;
-
 }
-
 
 int OnCueOCS::getCommandIntResponse(int fd, int *value, char *data, const char *cmd)
 {
@@ -1472,5 +1486,4 @@ int OnCueOCS::getCommandSingleCharErrorOrLongResponse(int fd, char *data, const 
         return error_type;
     }
     return nbytes_read;
-
 }

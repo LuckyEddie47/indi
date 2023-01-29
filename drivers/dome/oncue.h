@@ -36,7 +36,7 @@ These are stripped from returned char* by their retrieving functions
 
 // Get Product (compatibility)
 #define OCS_handshake ":IP#"
-// Returns; OCS#
+// Returns: OCS#
 
 // Get firmware version number
 #define OCS_get_firmware ":IN#"
@@ -66,7 +66,8 @@ These are stripped from returned char* by their retrieving functions
 // ":SB[n]#"
 // Returns: 1# (at the current baud rate and then changes to the new rate for further communication)
 
-// Roof commands
+// Roof/shutter commands
+// Roll off roof style observatory or shutter control for dome style observatory
 
 // Command the roof to close
 #define OCS_roof_close ":RC#"
@@ -80,21 +81,33 @@ These are stripped from returned char* by their retrieving functions
 #define OCS_roof_stop ":RH#"
 // Returns: nothing
 
-// Set the roof safety override
+// Set the roof safety override - ignore stuck limit switches and timeout
 #define OCS_roof_safety_override ":R!#"
 // Returns: 1# on success
 
-// Set the roof high power mode
+// Set the roof high power mode - forces motor pwm to 100%
 #define OCS_roof_high_power_mode ":R+#"
 // Returns: 1# on success
 
 // Get the roof status
 #define OCS_get_roof_status ":RS#"
-// Returns: status string#
+// Returns:
+// OPEN#, CLOSED#, c,Travel: n%# (for closing), o,Travel: n%# for opening
 
 // Get the roof last status error
 #define OCS_get_roof_last_error ":RSL#"
-// Returns: status_string#
+// Returns:
+// RERR_OPEN_SAFETY_INTERLOCK#
+// RERR_CLOSE_SAFETY_INTERLOCK#
+// RERR_OPEN_UNKNOWN#
+// RERR_OPEN_LIMIT_SW#
+// RERR_OPEN_MAX_TIME#
+// RERR_OPEN_MIN_TIME#
+// RERR_CLOSE_UNKNOWN#
+// RERR_CLOSE_LIMIT_SW#
+// RERR_CLOSE_MAX_TIME#
+// RERR_CLOSE_MIN_TIME#
+// RERR_LIMIT_SW# (both open and closed limit switches simultaneously)
 
 //Dome commands
 
@@ -141,16 +154,16 @@ These are stripped from returned char* by their retrieving functions
 // Command the dome to goto target
 #define OCS_dome_goto_taget ":DS#"
 // Returns:
-//   0=Goto is possible
-//   1=below the horizon limit
-//   2=above overhead limit
-//   3=controller in standby
-//   4=dome is parked
-//   5=Goto in progress
-//   6=outside limits (AXIS2_LIMIT_MAX, AXIS2_LIMIT_MIN, AXIS1_LIMIT_MIN/MAX, MERIDIAN_E/W)
-//   7=hardware fault
-//   8=already in motion
-//   9=unspecified error
+//  0# = Goto is possible
+//  1# = below the horizon limit
+//  2# = above overhead limit
+//  3# = controller in standby
+//  4# = dome is parked
+//  5# = Goto in progress
+//  6# = outside limits (AXIS2_LIMIT_MAX, AXIS2_LIMIT_MIN, AXIS1_LIMIT_MIN/MAX, MERIDIAN_E/W)
+//  7# = hardware fault
+//  8# = already in motion
+//  9# = unspecified error
 
 // Get dome status
 #define OCS_get_dome_status ":DU#"
@@ -164,16 +177,30 @@ These are stripped from returned char* by their retrieving functions
 
 // Get the stepper driver status for axis [n]
 // ":GXU[n]#"
-// Returns: Value#
+// Returns:
+//  ST# = At standstill
+//  OA# = Output A open load
+//  OB# = Output B open load
+//  GA# = Output A short to ground
+//  GB# = Output B short to ground
+//  OT# = Over temperature (>150 deg. C)
+//  PW# = Over temperature warning (>120 deg. C)
+//  GF# = Fault
 
+// Not used, superset definition?
 // Set the axis/driver configuration for axis [n]
 // ":SXA[n]#"
 
 // Revert axis/driver configuration for axis [n] to defaults
 // ":SXA[n],R#"
 
-//????
-// :SXA[n],[sssss...]#
+// Set the axis/driver configuration for axis [n]
+// :SXA[n],[s,s,s,s,s...]#
+// where s,s,s,s,s... comprises:
+// parameter [0] = steps per degree,
+// parameter [1] = reverse axis
+// parameter [2] = minimum limit
+// parameter [3] = maximum limit
 
 // Weather commands
 
