@@ -46,8 +46,9 @@ These are stripped from returned char* by their retrieving functions
 #define OCS_get_safety_status ":Gs#"
 // Returns: SAFE#, UNSAFE#
 
-// Set the watchdog reset flag
+// Set the watchdog reset flag - forces firmware reboot
 #define OCS_set_watchdog_flag ":SW#"
+// Returns: Rebooting in 8 seconds...# or CE_SLEW_IN_MOTION# for roof/dome in motion blocking error
 
 // Set the UTC Date and Time
 // ":SU[MM/DD/YYYY,HH:MM:SS]#"
@@ -69,32 +70,32 @@ These are stripped from returned char* by their retrieving functions
 // Roof/shutter commands
 // Roll off roof style observatory or shutter control for dome style observatory
 
-// Command the roof to close
+// Command the roof/shutter to close
 #define OCS_roof_close ":RC#"
 // Returns: nothing
 
-// Command the roof to open
+// Command the roof/shutter to open
 #define OCS_roof_open ":RO#"
 // Returns: nothing
 
-// Command the roof movement to stop
+// Command the roof/shutter movement to stop
 #define OCS_roof_stop ":RH#"
 // Returns: nothing
 
-// Set the roof safety override - ignore stuck limit switches and timeout
+// Set the roof/shutter safety override - ignore stuck limit switches and timeout
 #define OCS_roof_safety_override ":R!#"
 // Returns: 1# on success
 
-// Set the roof high power mode - forces motor pwm to 100%
+// Set the roof/shutter high power mode - forces motor pwm to 100%
 #define OCS_roof_high_power_mode ":R+#"
 // Returns: 1# on success
 
-// Get the roof status
+// Get the roof/shutter status
 #define OCS_get_roof_status ":RS#"
 // Returns:
 // OPEN#, CLOSED#, c,Travel: n%# (for closing), o,Travel: n%# for opening
 
-// Get the roof last status error
+// Get the roof/shutter last status error
 #define OCS_get_roof_last_error ":RSL#"
 // Returns:
 // RERR_OPEN_SAFETY_INTERLOCK#
@@ -171,9 +172,17 @@ These are stripped from returned char* by their retrieving functions
 
 // Axis commands
 
+// Axis1 is Dome Azimuth - required if dome = true
+// Axis2 is Dome Altitude - optional
+
 // Get the axis/driver configuration for axis [n]
 // ":GXA[n]#"
-// Returns: Value#
+// Returns: s,s,s,s#
+// where s,s,s,s... comprises:
+// parameter [0] = steps per degree,
+// parameter [1] = reverse axis
+// parameter [2] = minimum limit
+// parameter [3] = maximum limit
 
 // Get the stepper driver status for axis [n]
 // ":GXU[n]#"
@@ -195,8 +204,8 @@ These are stripped from returned char* by their retrieving functions
 // ":SXA[n],R#"
 
 // Set the axis/driver configuration for axis [n]
-// :SXA[n],[s,s,s,s,s...]#
-// where s,s,s,s,s... comprises:
+// :SXA[n],[s,s,s,s...]#
+// where s,s,s,s... comprises:
 // parameter [0] = steps per degree,
 // parameter [1] = reverse axis
 // parameter [2] = minimum limit
@@ -304,7 +313,7 @@ class OnCueOCS : public INDI::Dome
     const char *getDefaultName();
     bool updateProperties();
     virtual bool ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n);
-    virtual bool saveConfigItems(FILE *fp);
+//    virtual bool saveConfigItems(FILE *fp);
     virtual bool ISSnoopDevice(XMLEle *root);
     virtual bool Handshake();
 
@@ -312,15 +321,15 @@ class OnCueOCS : public INDI::Dome
     bool Connect();
     bool Disconnect();
 
-    void TimerHit();
+//    void TimerHit();
 
-    virtual IPState Move(DomeDirection dir, DomeMotionCommand operation);
-    virtual IPState Park();
-    virtual IPState UnPark();
-    virtual bool Abort();
-
-    virtual bool getFullOpenedLimitSwitch(bool*);
-    virtual bool getFullClosedLimitSwitch(bool*);
+//    virtual IPState Move(DomeDirection dir, DomeMotionCommand operation);
+//    virtual IPState Park();
+//    virtual IPState UnPark();
+//    virtual bool Abort();
+//
+//    virtual bool getFullOpenedLimitSwitch(bool*);
+//    virtual bool getFullClosedLimitSwitch(bool*);
 
     bool sendOnCueCommand(const char *cmd);
     bool sendOnCueCommandBlind(const char *cmd);
@@ -335,52 +344,52 @@ class OnCueOCS : public INDI::Dome
     long int OnCueTimeoutMicroSeconds = 100000;
 
 private:
-    void updateRoofStatus();
-    bool getRoofLockedSwitch(bool*);
-    bool getRoofAuxSwitch(bool*);
-    bool setRoofLock(bool switchOn);
-    bool setRoofAux(bool switchOn);
-    bool readRoofSwitch(const char* roofSwitchId, bool* result);
-    bool roofOpen();
-    bool roofClose();
-    bool roofAbort();
-    bool pushRoofButton(const char*, bool switchOn, bool ignoreLock);
-    bool initialContact();
-    bool evaluateResponse(char*, bool*);
-    bool writeIno(const char*);
-    bool readIno(char*);
-    void msSleep(int);
-
-    bool setupConditions();
-    float CalcTimeLeft(timeval);
-    double MotionRequest { 0 };
-    struct timeval MotionStart { 0, 0 };
-    bool contactEstablished = false;
-    bool roofOpening = false;
-    bool roofClosing = false;
-    ILight RoofStatusL[5];
-    ILightVectorProperty RoofStatusLP;
-    enum { ROOF_STATUS_OPENED, ROOF_STATUS_CLOSED, ROOF_STATUS_MOVING, ROOF_STATUS_LOCKED, ROOF_STATUS_AUXSTATE };
-
-    ISwitch LockS[2];
-    ISwitchVectorProperty LockSP;
-    enum { LOCK_ENABLE, LOCK_DISABLE };
-
-    ISwitch AuxS[2];
-    ISwitchVectorProperty AuxSP;
-    enum { AUX_ENABLE, AUX_DISABLE };
-
-    ISState fullyOpenedLimitSwitch {ISS_OFF};
-    ISState fullyClosedLimitSwitch {ISS_OFF};
-    ISState roofLockedSwitch {ISS_OFF};
-    ISState roofAuxiliarySwitch {ISS_OFF};
-    INumber RoofTimeoutN[1] {};
-    INumberVectorProperty RoofTimeoutNP;
-    enum { EXPIRED_CLEAR, EXPIRED_OPEN, EXPIRED_CLOSE };
-    unsigned int roofTimedOut;
-    bool simRoofOpen = false;
-    bool simRoofClosed = true;
-    unsigned int communicationErrors = 0;
+//    void updateRoofStatus();
+//    bool getRoofLockedSwitch(bool*);
+//    bool getRoofAuxSwitch(bool*);
+//    bool setRoofLock(bool switchOn);
+//    bool setRoofAux(bool switchOn);
+//    bool readRoofSwitch(const char* roofSwitchId, bool* result);
+//    bool roofOpen();
+//    bool roofClose();
+//    bool roofAbort();
+//    bool pushRoofButton(const char*, bool switchOn, bool ignoreLock);
+//    bool initialContact();
+//    bool evaluateResponse(char*, bool*);
+//    bool writeIno(const char*);
+//    bool readIno(char*);
+//    void msSleep(int);
+//
+//    bool setupConditions();
+//    float CalcTimeLeft(timeval);
+//    double MotionRequest { 0 };
+//    struct timeval MotionStart { 0, 0 };
+//    bool contactEstablished = false;
+//    bool roofOpening = false;
+//    bool roofClosing = false;
+//    ILight RoofStatusL[5];
+//    ILightVectorProperty RoofStatusLP;
+//    enum { ROOF_STATUS_OPENED, ROOF_STATUS_CLOSED, ROOF_STATUS_MOVING, ROOF_STATUS_LOCKED, ROOF_STATUS_AUXSTATE };
+//
+//    ISwitch LockS[2];
+//    ISwitchVectorProperty LockSP;
+//    enum { LOCK_ENABLE, LOCK_DISABLE };
+//
+//    ISwitch AuxS[2];
+//    ISwitchVectorProperty AuxSP;
+//    enum { AUX_ENABLE, AUX_DISABLE };
+//
+//    ISState fullyOpenedLimitSwitch {ISS_OFF};
+//    ISState fullyClosedLimitSwitch {ISS_OFF};
+//    ISState roofLockedSwitch {ISS_OFF};
+//    ISState roofAuxiliarySwitch {ISS_OFF};
+//    INumber RoofTimeoutN[1] {};
+//    INumberVectorProperty RoofTimeoutNP;
+//    enum { EXPIRED_CLEAR, EXPIRED_OPEN, EXPIRED_CLOSE };
+//    unsigned int roofTimedOut;
+//    bool simRoofOpen = false;
+//    bool simRoofClosed = true;
+//    unsigned int communicationErrors = 0;
 
 };
 
