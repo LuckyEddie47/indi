@@ -26,8 +26,244 @@
 #define CMD_MAX_LEN 32
 enum ResponseErrors {RES_ERR_FORMAT = -1001};
 
+/*******************************************************************************
+OnCue OCS lexicon
+Extracted from OnCue OCS 3.03i
+Note all commands sent and responses returned terminate with a # symbol
+These are stripped from returned char* by their retrieving functions
+*******************************************************************************/
+// General commands
+
+// Get Product (compatibility)
 #define OCS_handshake ":IP#"
-#define OCS_handshake_return "OCS"
+// Returns; OCS#
+
+// Get firmware version number
+#define OCS_get_firmware ":IN#"
+// Returns: firmware_string# for example 3.03i#
+
+// Get safety status
+#define OCS_get_safety_status ":Gs#"
+// Returns: SAFE#, UNSAFE#
+
+// Set the watchdog reset flag
+#define OCS_set_watchdog_flag ":SW#"
+
+// Set the UTC Date and Time
+// ":SU[MM/DD/YYYY,HH:MM:SS]#"
+// Returns: 0# on failure, 1# on success
+
+// Get the power status
+#define OCS_get_power_status ":GP#"
+// Returns: OK#, OUT#, or N/A#
+
+// Get the internal MCU temperature in deg. C
+#define OCS_get_MCU_temperature ":GX9F#"
+// Returns: +/-n.n# if supported, 0# if unsupported
+
+// Set USB Baud Rate where n is an ASCII digit (1..9) with the following interpertation
+// 0=115.2K, 1=56.7K, 2=38.4K, 3=28.8K, 4=19.2K, 5=14.4K, 6=9600, 7=4800, 8=2400, 9=1200
+// ":SB[n]#"
+// Returns: 1# (at the current baud rate and then changes to the new rate for further communication)
+
+// Roof commands
+
+// Command the roof to close
+#define OCS_roof_close ":RC#"
+// Returns: nothing
+
+// Command the roof to open
+#define OCS_roof_open ":RO#"
+// Returns: nothing
+
+// Command the roof movement to stop
+#define OCS_roof_stop ":RH#"
+// Returns: nothing
+
+// Set the roof safety override
+#define OCS_roof_safety_override ":R!#"
+// Returns: 1# on success
+
+// Set the roof high power mode
+#define OCS_roof_high_power_mode ":R+#"
+// Returns: 1# on success
+
+// Get the roof status
+#define OCS_get_roof_status ":RS#"
+// Returns: status string#
+
+// Get the roof last status error
+#define OCS_get_roof_last_error ":RSL#"
+// Returns: status_string#
+
+//Dome commands
+
+// Command the dome to goto the home position
+#define OCS_dome_home ":DC#"
+// Returns: nothing
+
+// Reset that the dome is at home
+#define OCS_reset_dome_home ":DF#"
+// Returns: nothing
+
+// Command the dome to goto the park position
+#define OCS_dome_park ":DP#"
+// Returns: 0# on failure, 1# on success
+
+// Set the dome park position
+#define OCS_set_dome_park ":DQ#"
+// Returns: 0# on failure, 1# on success
+
+// Restore the dome park position
+#define OCS_restore_dome_park ":DR#"
+// Returns: 0# on failure, 1# on success
+
+// Get the dome Azimuth (0 to 360 degrees)
+#define OCS_get_dome_azimuth ":DZ#"
+// Returns: D.D#
+
+// Set the dome Azimuth target (0 to 360 degrees)
+// ":Dz[D.D]#"
+// Returns: nothing
+
+// Get the dome Altitude (0 to 90 degrees)
+#define OCS_get_dome_altitude ":DA#"
+// Returns: D.D#
+
+// Set the dome Altitude target (0 to 90 degrees)
+// ":Da[D.D]#"
+// Returns: nothing
+
+// Set the dome to sync with target (Azimuth only)
+#define OCS_dome_sync_target ":DN#"
+// Returns: See :DS# command below
+
+// Command the dome to goto target
+#define OCS_dome_goto_taget ":DS#"
+// Returns:
+//   0=Goto is possible
+//   1=below the horizon limit
+//   2=above overhead limit
+//   3=controller in standby
+//   4=dome is parked
+//   5=Goto in progress
+//   6=outside limits (AXIS2_LIMIT_MAX, AXIS2_LIMIT_MIN, AXIS1_LIMIT_MIN/MAX, MERIDIAN_E/W)
+//   7=hardware fault
+//   8=already in motion
+//   9=unspecified error
+
+// Get dome status
+#define OCS_get_dome_status ":DU#"
+// Returns: P# if parked, H# if at Home
+
+// Axis commands
+
+// Get the axis/driver configuration for axis [n]
+// ":GXA[n]#"
+// Returns: Value#
+
+// Get the stepper driver status for axis [n]
+// ":GXU[n]#"
+// Returns: Value#
+
+// Set the axis/driver configuration for axis [n]
+// ":SXA[n]#"
+
+// Revert axis/driver configuration for axis [n] to defaults
+// ":SXA[n],R#"
+
+//????
+// :SXA[n],[sssss...]#
+
+// Weather commands
+
+// Get the outside temperature in deg. C
+#define OCS_get_outside_temperature ":G1#"
+// Returns: nnn.n#
+
+// Get the sky IR temperature in deg. C
+#define OCS_get_sky_IR_temperature ":G2#"
+// Returns: nnn.n#
+
+// Get the sky differential temperature
+#define OCS_get_sky_diff_temperature ":G3#"
+// Returns: nnn.n#
+// where <= 21 is cloudy
+
+// Get averaged sky differential temperature
+#define OCS_get_av_sky_diff_temperature ":GS#"
+// Returns: nnn.n#
+// where <= 21 is cloudy
+
+// Get the absolute barometric pressure as Float (mbar, sea-level compensated)
+#define OCS_get_pressure ":Gb#"
+// Returns: n.nnn#
+// where n ranges from about 980.0 to 1050.0
+
+// Get cloud description
+#define OCS_get_cloud_description ":GC#"
+// Returns: description_string#
+
+// Get relative humidity reading as Float (% Rh)
+#define OCS_get_humidity ":Gh#"
+// Returns: n.n#
+// where n ranges from 0.0 to 100.0
+
+// Get sky quality in mag/arc-sec^2
+#define OCS_get_sky_quality ":GQ#"
+// Returns: nnn.n#
+
+// Get rain sensor status
+#define OCS_get_rain_sensor_status ":GR#"
+// Returns: -1000# for invalid, 0# for N/A, 1# for Rain, 2# for Warn, and 3# for Dry
+
+// Get wind status
+#define OCS_get_wind_status ":GW#"
+// Returns: OK#, HIGH#, or N/A#
+
+// Thermostat commands
+
+// Get heat setpoint in deg. C
+#define OCS_get_thermostat_setpoint ":GH#"
+// Returns: n#, or 0# for invalid
+
+// Set heat setpoint in deg. C
+// ":SHnn#"
+// Example: ":SH0#" turns heat off
+// Example: ":SH21#" heat setpoint 21 deg. C
+// Returns: 1# on success
+
+// Get cool/vent setpoint in deg. C
+#define OCS_get_vent_setpoint ":GV#"
+// Returns: n#, or 0# for invalid
+
+//Set cool/vent setpoint in deg. C
+// ":SCnnn#"
+// Example: ":SC0#" turns cooling off
+// Example: ":SC30#" cool setpoint 30 deg. C
+// Returns: 1# on success
+
+// Power/GPIO commands
+
+// Get Relay n state
+// ":GRn#"
+// Returns: ON#, OFF#, n# (pwm 0-9)
+
+// Set Relay n [state] = ON, OFF, DELAY, n (pwm 0 to 10)
+// ":SRn,[state]#"
+// Returns: 1# on success
+
+// Get Analog n state
+// ":GAn#"
+// Returns: n# (0 to 1023, 0 to 5V)
+
+// Get Digital Sense n state
+// ":GSn#"
+// Returns: ON#, OFF#
+
+/*******************************************************************************
+OnCue OCS lexicon end
+*******************************************************************************/
 
 class OnCueOCS : public INDI::Dome
 {

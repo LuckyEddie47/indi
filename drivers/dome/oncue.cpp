@@ -1,7 +1,9 @@
 /*******************************************************************************
-
- Edited version of the Dome Simulator
+ Structure based on indi_rolloffino - https://github.com/wotalota/indi-rolloffino
+ Itself an edited version of the Dome Simulator
  Copyright(c) 2014 Jasem Mutlaq. All rights reserved.
+
+ Communication functions taken from lx200_OnStep
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Library General Public
@@ -18,13 +20,16 @@
  Boston, MA 02110-1301, USA.
 *******************************************************************************/
 
+/*******************************************************************************
+Driver for the OnCue Observatory Control System (OCS).
+An open source system authored by Howard Dutton (also the author of OnStep).
+Refer to https://onstep.groups.io/g/onstep-ocs/wiki
+Capabilites include: Roll off roof, dome roof, weather monitoring,
+themostat control, power monitoring & control, and GPIO.
+Hardware communication is via a simple text protocol similar to the LX200.
+USB and network connections supported.
+*******************************************************************************/
 
-/*
- * Modified version of the rolloff roof simulator.
- * Uses a simple text string protocol to send messages to an Arduino. The Arduino's USB connection is set
- * by default to 38400 baud. The Arduino code determines which pins open/close a relay to start/stop the
- * roof motor, and read state of switches indicating if the roof is  opened or closed.
- */
 #include "oncue.h"
 //#include "connectionplugins/connectioninterface.h"
 #include "indicom.h"
@@ -212,7 +217,7 @@ bool OnCueOCS::Handshake()
 
         char handshake_response[RB_MAX_LEN] = {0};
         handshake_status = getCommandSingleCharErrorOrLongResponse(PortFD, handshake_response, OCS_handshake);
-        if (strcmp(handshake_response, OCS_handshake_return) == 0)
+        if (strcmp(handshake_response, "OCS") == 0)
         {
             LOG_INFO("OnCue OCS handshake established");
             handshake_status = true;
