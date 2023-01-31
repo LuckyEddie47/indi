@@ -31,6 +31,7 @@ OnCue OCS lexicon
 Extracted from OnCue OCS 3.03i
 Note all commands sent and responses returned terminate with a # symbol
 These are stripped from returned char* by their retrieving functions
+An unterminated 0 is returned from unconfigured items
 *******************************************************************************/
 // General commands
 
@@ -60,7 +61,7 @@ These are stripped from returned char* by their retrieving functions
 
 // Get the internal MCU temperature in deg. C
 #define OCS_get_MCU_temperature ":GX9F#"
-// Returns: +/-n.n# if supported, 0# if unsupported
+// Returns: +/-n.n# if supported, 0 if unsupported
 
 // Set USB Baud Rate where n is an ASCII digit (1..9) with the following interpertation
 // 0=115.2K, 1=56.7K, 2=38.4K, 3=28.8K, 4=19.2K, 5=14.4K, 6=9600, 7=4800, 8=2400, 9=1200
@@ -93,7 +94,8 @@ These are stripped from returned char* by their retrieving functions
 // Get the roof/shutter status
 #define OCS_get_roof_status ":RS#"
 // Returns:
-// OPEN#, CLOSED#, c,Travel: n%# (for closing), o,Travel: n%# for opening
+// OPEN#, CLOSED#, c,Travel: n%# (for closing), o,Travel: n%# for opening,
+// i,No Error# for idle
 
 // Get the roof/shutter last status error
 #define OCS_get_roof_last_error ":RSL#"
@@ -109,6 +111,7 @@ These are stripped from returned char* by their retrieving functions
 // RERR_CLOSE_MAX_TIME#
 // RERR_CLOSE_MIN_TIME#
 // RERR_LIMIT_SW# (both open and closed limit switches simultaneously)
+// nothing if never errored
 
 //Dome commands
 
@@ -132,9 +135,13 @@ These are stripped from returned char* by their retrieving functions
 #define OCS_restore_dome_park ":DR#"
 // Returns: 0# on failure, 1# on success
 
+// Command the dome movement to stop
+#define OCS_dome_stop ":DH#"
+// Returns: nothing
+
 // Get the dome Azimuth (0 to 360 degrees)
 #define OCS_get_dome_azimuth ":DZ#"
-// Returns: D.D#
+// Returns: D.DDD#
 
 // Set the dome Azimuth target (0 to 360 degrees)
 // ":Dz[D.D]#"
@@ -142,7 +149,7 @@ These are stripped from returned char* by their retrieving functions
 
 // Get the dome Altitude (0 to 90 degrees)
 #define OCS_get_dome_altitude ":DA#"
-// Returns: D.D#
+// Returns: D.D#, NAN# is no second axis
 
 // Set the dome Altitude target (0 to 90 degrees)
 // ":Da[D.D]#"
@@ -321,7 +328,7 @@ class OnCueOCS : public INDI::Dome
     bool Connect();
     bool Disconnect();
 
-//    void TimerHit();
+    void TimerHit();
 
 //    virtual IPState Move(DomeDirection dir, DomeMotionCommand operation);
 //    virtual IPState Park();

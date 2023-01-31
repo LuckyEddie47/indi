@@ -163,7 +163,8 @@ bool OnCueOCS::ISSnoopDevice(XMLEle *root)
 
 OnCueOCS::OnCueOCS()
 {
-    SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK);           // Need the DOME_CAN_PARK capability for the scheduler
+    SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK | DOME_CAN_ABS_MOVE | DOME_CAN_SYNC |
+                      DOME_HAS_BACKLASH | DOME_HAS_SHUTTER);
 }
 
 /**************************************************************************************
@@ -232,13 +233,13 @@ bool OnCueOCS::Handshake()
         handshake_status = getCommandSingleCharErrorOrLongResponse(PortFD, handshake_response, OCS_handshake);
         if (strcmp(handshake_response, "OCS") == 0)
         {
-            LOG_INFO("OnCue OCS handshake established");
+            LOG_DEBUG("OnCue OCS handshake established");
             handshake_status = true;
         }
         else
         {
-            LOG_ERROR("OnCue OCS handshake error, reponse was:");
-            LOG_ERROR(handshake_response);
+            LOG_DEBUG("OnCue OCS handshake error, reponse was:");
+            LOG_DEBUG(handshake_response);
         }
     }
     else
@@ -562,6 +563,17 @@ bool OnCueOCS::ISNewSwitch(const char *dev, const char *name, ISState *states, c
 //    }
 //    IDSetLight(&RoofStatusLP, nullptr);
 //}
+
+/*******************************************************************************************
+ * Poll properties for updates
+ ******************************************************************************************/
+void OnCueOCS::TimerHit()
+{
+    if (!isConnected())
+            return;
+
+    SetTimer(getCurrentPollingPeriod());
+}
 
 /********************************************************************************************
 ** Each 1 second timer tick, if roof active
