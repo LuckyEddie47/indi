@@ -42,12 +42,9 @@ USB and network connections supported.
 #include <mutex>
 
 // Custom tabs
-#define ROOF_TAB "Roof/Shutter"
-#define DOME_TAB "Dome"
 #define WEATHER_TAB "Weather"
 #define THERMOSTAT_TAB "Thermostat"
-#define POWER_TAB "Power/GPIO"
-#define LIGHTING_TAB "Lighting"
+#define GPIO_TAB "GPIO"
 
 
 // From indi_rolloffino
@@ -182,6 +179,7 @@ bool OnCueOCS::initProperties()
 {
     INDI::Dome::initProperties();
 
+    IUFillTextVector(&ThermostatStatusTP, ThermostatStatusT, 1, getDeviceName(), "test", "Thermostat status", THERMOSTAT_TAB, IP_RO, 0, IPS_IDLE);
 //    IUFillSwitch(&LockS[LOCK_DISABLE], "LOCK_DISABLE", "Off", ISS_ON);
 //    IUFillSwitch(&LockS[LOCK_ENABLE], "LOCK_ENABLE", "On", ISS_OFF);
 //    IUFillSwitchVector(&LockSP, LockS, 2, getDeviceName(), "LOCK", "Lock", MAIN_CONTROL_TAB, IP_RW, ISR_1OFMANY, 60, IPS_IDLE);

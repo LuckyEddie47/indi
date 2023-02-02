@@ -266,6 +266,11 @@ An unterminated 0 is returned from unconfigured items
 
 // Thermostat commands
 
+// Get thermostat status
+#define OCS_get_thermostat_status ":GT#"
+// Returns: n.n,m.m#
+// where n.n is temperature in deg. C and m.m is % humidity
+
 // Get heat setpoint in deg. C
 #define OCS_get_thermostat_setpoint ":GH#"
 // Returns: n#, or 0# for invalid
@@ -398,5 +403,7 @@ private:
 //    bool simRoofClosed = true;
 //    unsigned int communicationErrors = 0;
 
+    ITextVectorProperty ThermostatStatusTP;
+    IText ThermostatStatusT[10] {};
 };
 
