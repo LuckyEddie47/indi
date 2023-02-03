@@ -30,7 +30,7 @@ Hardware communication is via a simple text protocol similar to the LX200.
 USB and network connections supported.
 *******************************************************************************/
 
-#include "oncue.h"
+#include "ocs.h"
 //#include "connectionplugins/connectioninterface.h"
 #include "indicom.h"
 #include "termios.h"
@@ -84,16 +84,16 @@ USB and network connections supported.
 std::mutex OnCueCommsLock;
 
 // We declare an auto pointer to OnCueOCSOCS.
-std::unique_ptr<OnCueOCS> onCueOCS(new OnCueOCS());
+std::unique_ptr<OCS> ocs(new OCS());
 
 void ISPoll(void *p);
 
 void ISGetProperties(const char *dev)
 {
-    onCueOCS->ISGetProperties(dev);
+    ocs->ISGetProperties(dev);
 }
 
-void OnCueOCS::ISGetProperties(const char *dev)
+void OCS::ISGetProperties(const char *dev)
 {
     INDI::Dome::ISGetProperties(dev);
 
@@ -104,21 +104,21 @@ void OnCueOCS::ISGetProperties(const char *dev)
 
 void ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
 {
-    onCueOCS->ISNewSwitch(dev, name, states, names, n);
+    ocs->ISNewSwitch(dev, name, states, names, n);
 }
 
 void ISNewText(const char *dev, const char *name, char *texts[], char *names[], int n)
 {
-    onCueOCS->ISNewText(dev, name, texts, names, n);
+    ocs->ISNewText(dev, name, texts, names, n);
 }
 
 void ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
 {
-    onCueOCS->ISNewNumber(dev, name, values, names, n);
+    ocs->ISNewNumber(dev, name, values, names, n);
 }
 
 
-bool OnCueOCS::ISNewNumber(const char *dev,const char *name,double values[],char *names[],int n)
+bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *names[],int n)
 {
     if (dev != nullptr && strcmp(dev, getDeviceName()) == 0)
     {
@@ -150,15 +150,15 @@ bool OnCueOCS::ISNewNumber(const char *dev,const char *name,double values[],char
 
 void ISSnoopDevice(XMLEle *root)
 {
-    onCueOCS->ISSnoopDevice(root);
+    ocs->ISSnoopDevice(root);
 }
 
-bool OnCueOCS::ISSnoopDevice(XMLEle *root)
+bool OCS::ISSnoopDevice(XMLEle *root)
 {
     return INDI::Dome::ISSnoopDevice(root);
 }
 
-OnCueOCS::OnCueOCS()
+OCS::OCS()
 {
     SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK | DOME_CAN_ABS_MOVE | DOME_CAN_SYNC |
                       DOME_HAS_BACKLASH | DOME_HAS_SHUTTER);
@@ -168,18 +168,19 @@ OnCueOCS::OnCueOCS()
 ** INDI is asking us for our default device name.
 ** Check that it matches Ekos selection menu and ParkData.xml names
 ***************************************************************************************/
-const char *OnCueOCS::getDefaultName()
+const char *OCS::getDefaultName()
 {
     return (const char *)"OnCue OCS";
 }
 /**************************************************************************************
 ** INDI request to init properties. Connected Define properties to Ekos
 ***************************************************************************************/
-bool OnCueOCS::initProperties()
+bool OCS::initProperties()
 {
     INDI::Dome::initProperties();
 
-    IUFillTextVector(&ThermostatStatusTP, ThermostatStatusT, 1, getDeviceName(), "test", "Thermostat status", THERMOSTAT_TAB, IP_RO, 0, IPS_IDLE);
+    IUFillTextVector(&ThermostatStatusTP, ThermostatStatusT, 1, getDeviceName(), "ThermostatStatus", "Thermostat status", MAIN_CONTROL_TAB, IP_RO, 0, IPS_IDLE);
+    IUFillSwitchVector(&Relay1SP, Relay1S, 1, getDeviceName(), "Relay1", "Relay1", GPIO_TAB, IP_RW, ISR_1OFMANY, 0, IPS_IDLE);
 //    IUFillSwitch(&LockS[LOCK_DISABLE], "LOCK_DISABLE", "Off", ISS_ON);
 //    IUFillSwitch(&LockS[LOCK_ENABLE], "LOCK_ENABLE", "On", ISS_OFF);
 //    IUFillSwitchVector(&LockSP, LockS, 2, getDeviceName(), "LOCK", "Lock", MAIN_CONTROL_TAB, IP_RW, ISR_1OFMANY, 60, IPS_IDLE);
@@ -207,7 +208,7 @@ bool OnCueOCS::initProperties()
 /************************************************************************************
  * Called from Dome, BaseDevice to establish contact with device
  ************************************************************************************/
-bool OnCueOCS::Handshake()
+bool OCS::Handshake()
 {
     bool handshake_status = false;
 
@@ -251,7 +252,7 @@ bool OnCueOCS::Handshake()
 /**************************************************************************************
 ** Client is asking us to establish connection to the device
 ***************************************************************************************/
-bool OnCueOCS::Connect()
+bool OCS::Connect()
 {
     bool status = INDI::Dome::Connect();
     return status;
@@ -260,7 +261,7 @@ bool OnCueOCS::Connect()
 /**************************************************************************************
 ** Client is asking us to terminate connection to the device
 ***************************************************************************************/
-bool OnCueOCS::Disconnect()
+bool OCS::Disconnect()
 {
     bool status = INDI::Dome::Disconnect();
     return status;
@@ -270,7 +271,7 @@ bool OnCueOCS::Disconnect()
 ** INDI request to update the properties because there is a change in CONNECTION status
 ** This function is called whenever the device is connected or disconnected.
 *********************************************************************************************/
-bool OnCueOCS::updateProperties()
+bool OCS::updateProperties()
 {
     INDI::Dome::updateProperties();
 //    if (isConnected())
@@ -405,7 +406,7 @@ bool OnCueOCS::updateProperties()
 /********************************************************************************************
 ** Client has changed the state of a switch, update
 *********************************************************************************************/
-bool OnCueOCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
+bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
 {
 //    bool switchOn = false;
 //    // Make sure the call is for our device
@@ -565,7 +566,7 @@ bool OnCueOCS::ISNewSwitch(const char *dev, const char *name, ISState *states, c
 /*******************************************************************************************
  * Poll properties for updates
  ******************************************************************************************/
-void OnCueOCS::TimerHit()
+void OCS::TimerHit()
 {
     if (!isConnected())
             return;
@@ -1241,7 +1242,7 @@ void OnCueOCS::TimerHit()
  * OnCue OCS command functions, copied from lx200_OnStep
  *******************************************************************/
 
-bool OnCueOCS::sendOnCueCommandBlind(const char *cmd)
+bool OCS::sendOnCueCommandBlind(const char *cmd)
 {
     int error_type;
     int nbytes_write = 0;
@@ -1264,7 +1265,7 @@ bool OnCueOCS::sendOnCueCommandBlind(const char *cmd)
     return 1;
 }
 
-bool OnCueOCS::sendOnCueCommand(const char *cmd)
+bool OCS::sendOnCueCommand(const char *cmd)
 {
     char response[1] = {0};
     int error_type;
@@ -1294,7 +1295,7 @@ bool OnCueOCS::sendOnCueCommand(const char *cmd)
     return (response[0] == '0'); //OnStep uses 0 for success and non zero for failure, in *most* cases;
 }
 
-int OnCueOCS::getCommandSingleCharResponse(int fd, char *data, const char *cmd)
+int OCS::getCommandSingleCharResponse(int fd, char *data, const char *cmd)
 {
     char *term;
     int error_type;
@@ -1333,7 +1334,7 @@ int OnCueOCS::getCommandSingleCharResponse(int fd, char *data, const char *cmd)
     return nbytes_read;
 }
 
-int OnCueOCS::flushIO(int fd)
+int OCS::flushIO(int fd)
 {
     tcflush(fd, TCIOFLUSH);
     int error_type = 0;
@@ -1354,7 +1355,7 @@ int OnCueOCS::flushIO(int fd)
     return 0;
 }
 
-int OnCueOCS::getCommandDoubleResponse(int fd, double *value, char *data, const char *cmd)
+int OCS::getCommandDoubleResponse(int fd, double *value, char *data, const char *cmd)
 {
     char *term;
     int error_type;
@@ -1407,7 +1408,7 @@ int OnCueOCS::getCommandDoubleResponse(int fd, double *value, char *data, const 
     return nbytes_read;
 }
 
-int OnCueOCS::getCommandIntResponse(int fd, int *value, char *data, const char *cmd)
+int OCS::getCommandIntResponse(int fd, int *value, char *data, const char *cmd)
 {
     char *term;
     int error_type;
@@ -1456,7 +1457,7 @@ int OnCueOCS::getCommandIntResponse(int fd, int *value, char *data, const char *
     return nbytes_read;
 }
 
-int OnCueOCS::getCommandSingleCharErrorOrLongResponse(int fd, char *data, const char *cmd)
+int OCS::getCommandSingleCharErrorOrLongResponse(int fd, char *data, const char *cmd)
 {
     char *term;
     int error_type;

@@ -27,8 +27,8 @@
 enum ResponseErrors {RES_ERR_FORMAT = -1001};
 
 /*******************************************************************************
-OnCue OCS lexicon
-Extracted from OnCue OCS 3.03i
+OCS lexicon
+Extracted from OCS 3.03i
 Note all commands sent and responses returned terminate with a # symbol
 These are stripped from returned char* by their retrieving functions
 An unterminated 0 is returned from unconfigured items
@@ -313,11 +313,11 @@ An unterminated 0 is returned from unconfigured items
 OnCue OCS lexicon end
 *******************************************************************************/
 
-class OnCueOCS : public INDI::Dome
+class OCS : public INDI::Dome
 {
   public:
-    OnCueOCS();
-    virtual ~OnCueOCS() override = default;
+    OCS();
+    virtual ~OCS() override = default;
 
     virtual bool initProperties();
     virtual void ISGetProperties(const char *dev) override;
@@ -403,7 +403,9 @@ private:
 //    bool simRoofClosed = true;
 //    unsigned int communicationErrors = 0;
 
-    ITextVectorProperty ThermostatStatusTP;
     IText ThermostatStatusT[10] {};
+    ITextVectorProperty ThermostatStatusTP;
+    ISwitch Relay1S[2];
+    ISwitchVectorProperty Relay1SP;
 };
 
