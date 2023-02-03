@@ -343,8 +343,8 @@ class OCS : public INDI::Dome
 //    virtual bool getFullOpenedLimitSwitch(bool*);
 //    virtual bool getFullClosedLimitSwitch(bool*);
 
-    bool sendOnCueCommand(const char *cmd);
-    bool sendOnCueCommandBlind(const char *cmd);
+    bool sendOCSCommand(const char *cmd);
+    bool sendOCSCommandBlind(const char *cmd);
     int flushIO(int fd);
     int getCommandSingleCharResponse(int fd, char *data, const char *cmd); //Reimplemented from getCommandString
     int getCommandSingleCharErrorOrLongResponse(int fd, char *data, const char *cmd); //Reimplemented from getCommandString
@@ -352,8 +352,8 @@ class OCS : public INDI::Dome
                                  const char *cmd); //Reimplemented from getCommandString Will return a double, and raw value.
     int getCommandIntResponse(int fd, int *value, char *data, const char *cmd);
 
-    long int OnCueTimeoutSeconds = 0;
-    long int OnCueTimeoutMicroSeconds = 100000;
+    long int OCSTimeoutSeconds = 0;
+    long int OCSTimeoutMicroSeconds = 100000;
 
 private:
 //    void updateRoofStatus();
@@ -405,7 +405,6 @@ private:
 
     IText ThermostatStatusT[10] {};
     ITextVectorProperty ThermostatStatusTP;
-    ISwitch Relay1S[2];
-    ISwitchVectorProperty Relay1SP;
+
 };
 

@@ -743,8 +743,8 @@
             <driver name="NexDome Beaver">indi_nexdome_beaver</driver>
             <version>1.0</version>
         </device>
-        <device label="OnCue OCS" manufacturer="Open Source">
-            <driver name="OnCue OCS">indi_oncue</driver>
+        <device label="OCS" manufacturer="Open Source">
+            <driver name="OCS">indi_ocs</driver>
             <version>1.0</version>
         </device>
     </devGroup>

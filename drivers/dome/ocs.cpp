@@ -21,7 +21,7 @@
 *******************************************************************************/
 
 /*******************************************************************************
-Driver for the OnCue Observatory Control System (OCS).
+Driver for the Observatory Control System (OCS).
 An open source system authored by Howard Dutton (also the author of OnStep).
 Refer to https://onstep.groups.io/g/onstep-ocs/wiki
 Capabilites include: Roll off roof, dome roof, weather monitoring,
@@ -44,8 +44,8 @@ USB and network connections supported.
 // Custom tabs
 #define WEATHER_TAB "Weather"
 #define THERMOSTAT_TAB "Thermostat"
-#define GPIO_TAB "GPIO"
-
+//#define GPIO_TAB "GPIO"
+const char *GPIO_TAB = "GPIO";
 
 // From indi_rolloffino
 #define ROLLOFF_DURATION 15               // Seconds until Roof is fully opened or closed
@@ -81,9 +81,9 @@ USB and network connections supported.
 
 
 /* Add mutex to communications */
-std::mutex OnCueCommsLock;
+std::mutex ocsCommsLock;
 
-// We declare an auto pointer to OnCueOCSOCS.
+// We declare an auto pointer to OCS.
 std::unique_ptr<OCS> ocs(new OCS());
 
 void ISPoll(void *p);
@@ -170,7 +170,7 @@ OCS::OCS()
 ***************************************************************************************/
 const char *OCS::getDefaultName()
 {
-    return (const char *)"OnCue OCS";
+    return (const char *)"OCS";
 }
 /**************************************************************************************
 ** INDI request to init properties. Connected Define properties to Ekos
@@ -179,8 +179,9 @@ bool OCS::initProperties()
 {
     INDI::Dome::initProperties();
 
-    IUFillTextVector(&ThermostatStatusTP, ThermostatStatusT, 1, getDeviceName(), "ThermostatStatus", "Thermostat status", MAIN_CONTROL_TAB, IP_RO, 0, IPS_IDLE);
-    IUFillSwitchVector(&Relay1SP, Relay1S, 1, getDeviceName(), "Relay1", "Relay1", GPIO_TAB, IP_RW, ISR_1OFMANY, 0, IPS_IDLE);
+//    IUFillTextVector(&ThermostatStatusTP, ThermostatStatusT, 1, getDeviceName(), "ThermostatStatus", "Thermostat status", MAIN_CONTROL_TAB, IP_RO, 0, IPS_IDLE);
+      IUFillText(&ThermostatStatusTP, ThermostatStatusT,);
+
 //    IUFillSwitch(&LockS[LOCK_DISABLE], "LOCK_DISABLE", "Off", ISS_ON);
 //    IUFillSwitch(&LockS[LOCK_ENABLE], "LOCK_ENABLE", "On", ISS_OFF);
 //    IUFillSwitchVector(&LockSP, LockS, 2, getDeviceName(), "LOCK", "Lock", MAIN_CONTROL_TAB, IP_RW, ISR_1OFMANY, 60, IPS_IDLE);
@@ -201,6 +202,7 @@ bool OCS::initProperties()
 //                       60, IPS_IDLE);
 
 //    SetParkDataType(PARK_NONE);
+    defineProperty(&ThermostatStatusTP);;
     addAuxControls();         // This is for standard controls not the local auxiliary switch
     return true;
 }
@@ -218,32 +220,32 @@ bool OCS::Handshake()
         if (!activeConnection->name().compare("CONNECTION_TCP"))
         {
             LOG_INFO("Network based connection, detection timeouts set to 2 seconds");
-            OnCueTimeoutMicroSeconds = 0;
-            OnCueTimeoutSeconds = 2;
+            OCSTimeoutMicroSeconds = 0;
+            OCSTimeoutSeconds = 2;
         }
         else
         {
             LOG_INFO("Non-Network based connection, detection timeouts set to 0.1 seconds");
-            OnCueTimeoutMicroSeconds = 100000;
-            OnCueTimeoutSeconds = 0;
+            OCSTimeoutMicroSeconds = 100000;
+            OCSTimeoutSeconds = 0;
         }
 
         char handshake_response[RB_MAX_LEN] = {0};
         handshake_status = getCommandSingleCharErrorOrLongResponse(PortFD, handshake_response, OCS_handshake);
         if (strcmp(handshake_response, "OCS") == 0)
         {
-            LOG_DEBUG("OnCue OCS handshake established");
+            LOG_DEBUG("OCS handshake established");
             handshake_status = true;
         }
         else
         {
-            LOG_DEBUG("OnCue OCS handshake error, reponse was:");
+            LOG_DEBUG("OCS handshake error, reponse was:");
             LOG_DEBUG(handshake_response);
         }
     }
     else
     {
-        LOG_ERROR("OnCue OCS can't handshake, device not connected");
+        LOG_ERROR("OCS can't handshake, device not connected");
     }
 
     return handshake_status;
@@ -295,7 +297,7 @@ bool OCS::updateProperties()
 /********************************************************************************************
 ** Establish conditions on a connect.
 *********************************************************************************************/
-//bool OnCueOCS::setupConditions()
+//bool OCS::setupConditions()
 //{
 //    updateRoofStatus();
 //
@@ -469,7 +471,7 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
     return INDI::Dome::ISNewSwitch(dev, name, states, names, n);
 }
 
-//void OnCueOCS::updateRoofStatus()
+//void OCS::updateRoofStatus()
 //{
 //    bool auxiliaryState = false;
 //    bool lockedState = false;
@@ -577,7 +579,7 @@ void OCS::TimerHit()
 /********************************************************************************************
 ** Each 1 second timer tick, if roof active
 ********************************************************************************************/
-//void OnCueOCS::TimerHit()
+//void OCS::TimerHit()
 //{
 //    double timeleft = CalcTimeLeft(MotionStart);
 //    uint32_t delay = 1000 * INACTIVE_STATUS;   // inactive timer setting to maintain roof status lights
@@ -673,7 +675,7 @@ void OCS::TimerHit()
 //    SetTimer(delay);
 //}
 
-//float OnCueOCS::CalcTimeLeft(timeval start)
+//float OCS::CalcTimeLeft(timeval start)
 //{
 //    double timesince;
 //    double timeleft;
@@ -687,7 +689,7 @@ void OCS::TimerHit()
 //    return timeleft;
 //}
 //
-//bool OnCueOCS::saveConfigItems(FILE *fp)
+//bool OCS::saveConfigItems(FILE *fp)
 //{
 //    bool status = INDI::Dome::saveConfigItems(fp);
 //    IUSaveConfigNumber(fp, &RoofTimeoutNP);
@@ -698,7 +700,7 @@ void OCS::TimerHit()
 // * Direction: DOME_CW Clockwise = Open; DOME-CCW Counter clockwise = Close
 // * Operation: MOTION_START, | MOTION_STOP
 // */
-//IPState OnCueOCS::Move(DomeDirection dir, DomeMotionCommand operation)
+//IPState OCS::Move(DomeDirection dir, DomeMotionCommand operation)
 //{
 //    updateRoofStatus();
 //    if (operation == MOTION_START)
@@ -792,7 +794,7 @@ void OCS::TimerHit()
 // * Close Roof
 // *
 // */
-//IPState OnCueOCS::Park()
+//IPState OCS::Park()
 //{
 //    IPState rc = INDI::Dome::Move(DOME_CCW, MOTION_START);
 //
@@ -809,7 +811,7 @@ void OCS::TimerHit()
 // * Open Roof
 // *
 // */
-//IPState OnCueOCS::UnPark()
+//IPState OCS::UnPark()
 //{
 //    IPState rc = INDI::Dome::Move(DOME_CW, MOTION_START);
 //    if (rc == IPS_BUSY)
@@ -824,7 +826,7 @@ void OCS::TimerHit()
 ///*
 // * Abort motion
 // */
-//bool OnCueOCS::Abort()
+//bool OCS::Abort()
 //{
 //    bool lockState;
 //    bool openState;
@@ -881,7 +883,7 @@ void OCS::TimerHit()
 //    return true;
 //}
 //
-//bool OnCueOCS::getFullOpenedLimitSwitch(bool* switchState)
+//bool OCS::getFullOpenedLimitSwitch(bool* switchState)
 //{
 //    if (isSimulation())
 //    {
@@ -913,7 +915,7 @@ void OCS::TimerHit()
 //    }
 //}
 //
-//bool OnCueOCS::getFullClosedLimitSwitch(bool* switchState)
+//bool OCS::getFullClosedLimitSwitch(bool* switchState)
 //{
 //    if (isSimulation())
 //    {
@@ -945,7 +947,7 @@ void OCS::TimerHit()
 //    }
 //}
 //
-//bool OnCueOCS::getRoofLockedSwitch(bool* switchState)
+//bool OCS::getRoofLockedSwitch(bool* switchState)
 //{
 //    // If there is no lock switch, return success with status false
 //    if (isSimulation())
@@ -969,7 +971,7 @@ void OCS::TimerHit()
 //    }
 //}
 //
-//bool OnCueOCS::getRoofAuxSwitch(bool* switchState)
+//bool OCS::getRoofAuxSwitch(bool* switchState)
 //{
 //    // If there is no lock switch, return success with status false
 //    if (isSimulation())
@@ -1005,7 +1007,7 @@ void OCS::TimerHit()
 // * -------------------------------------------------------------------------------------------
 // *
 // */
-//bool OnCueOCS::roofOpen()
+//bool OCS::roofOpen()
 //{
 //    if (isSimulation())
 //    {
@@ -1014,7 +1016,7 @@ void OCS::TimerHit()
 //    return pushRoofButton(ROOF_OPEN_RELAY, true, false);
 //}
 //
-//bool OnCueOCS::roofClose()
+//bool OCS::roofClose()
 //{
 //    if (isSimulation())
 //    {
@@ -1023,7 +1025,7 @@ void OCS::TimerHit()
 //    return pushRoofButton(ROOF_CLOSE_RELAY, true, false);
 //}
 //
-//bool OnCueOCS::roofAbort()
+//bool OCS::roofAbort()
 //{
 //    if (isSimulation())
 //    {
@@ -1032,7 +1034,7 @@ void OCS::TimerHit()
 //    return pushRoofButton(ROOF_ABORT_RELAY, true, false);
 //}
 //
-//bool OnCueOCS::setRoofLock(bool switchOn)
+//bool OCS::setRoofLock(bool switchOn)
 //{
 //    if (isSimulation())
 //    {
@@ -1041,7 +1043,7 @@ void OCS::TimerHit()
 //    return pushRoofButton(ROOF_LOCK_RELAY, switchOn, true);
 //}
 //
-//bool OnCueOCS::setRoofAux(bool switchOn)
+//bool OCS::setRoofAux(bool switchOn)
 //{
 //    if (isSimulation())
 //    {
@@ -1054,7 +1056,7 @@ void OCS::TimerHit()
 // * If unable to determine switch state due to errors, return false.
 // * If no errors return true. Return in result true if switch and false if switch off.
 // */
-//bool OnCueOCS::readRoofSwitch(const char* roofSwitchId, bool *result)
+//bool OCS::readRoofSwitch(const char* roofSwitchId, bool *result)
 //{
 //    char readBuffer[MAXINOBUF];
 //    char writeBuffer[MAXINOLINE];
@@ -1083,7 +1085,7 @@ void OCS::TimerHit()
 ///*
 // * See if the controller is running
 // */
-//bool OnCueOCS::initialContact(void)
+//bool OCS::initialContact(void)
 //{
 //    char readBuffer[MAXINOBUF];
 //    bool result = false;
@@ -1104,7 +1106,7 @@ void OCS::TimerHit()
 // * Whether roof is moving or stopped in any position along with the nature of the button requested will
 // * determine the effect on the roof. This could mean stopping, or starting in a reversed direction.
 // */
-//bool OnCueOCS::pushRoofButton(const char* button, bool switchOn, bool ignoreLock)
+//bool OCS::pushRoofButton(const char* button, bool switchOn, bool ignoreLock)
 //{
 //    char readBuffer[MAXINOBUF];
 //    char writeBuffer[MAXINOBUF];
@@ -1148,7 +1150,7 @@ void OCS::TimerHit()
 // * if ACK return true and set result true|false indicating if switch is on
 // *
 // */
-// bool OnCueOCS::evaluateResponse(char* buff, bool* result)
+// bool OCS::evaluateResponse(char* buff, bool* result)
 //{
 //    char inoCmd[MAXINOCMD+1];
 //    char inoTarget[MAXINOTARGET+1];
@@ -1168,7 +1170,7 @@ void OCS::TimerHit()
 //    return true;
 //}
 //
-//bool OnCueOCS::readIno(char* retBuf)
+//bool OCS::readIno(char* retBuf)
 //{
 //    bool stop = false;
 //    bool start_found = false;
@@ -1207,7 +1209,7 @@ void OCS::TimerHit()
 //    return true;
 //}
 //
-//bool OnCueOCS::writeIno(const char* msg)
+//bool OCS::writeIno(const char* msg)
 //{
 //    int retMsgLen = 0;
 //    int status;
@@ -1230,7 +1232,7 @@ void OCS::TimerHit()
 //    return true;
 //}
 //
-//void OnCueOCS::msSleep (int mSec)
+//void OCS::msSleep (int mSec)
 //{
 //    struct timespec req = {0,0};
 //    req.tv_sec = 0;
@@ -1239,10 +1241,10 @@ void OCS::TimerHit()
 //}
 
 /********************************************************************
- * OnCue OCS command functions, copied from lx200_OnStep
+ * OCS command functions, copied from lx200_OnStep
  *******************************************************************/
 
-bool OCS::sendOnCueCommandBlind(const char *cmd)
+bool OCS::sendOCSCommandBlind(const char *cmd)
 {
     int error_type;
     int nbytes_write = 0;
@@ -1251,7 +1253,7 @@ bool OCS::sendOnCueCommandBlind(const char *cmd)
 
     flushIO(PortFD);
     /* Add mutex */
-    std::unique_lock<std::mutex> guard(OnCueCommsLock);
+    std::unique_lock<std::mutex> guard(ocsCommsLock);
     tcflush(PortFD, TCIFLUSH);
 
 
@@ -1265,7 +1267,7 @@ bool OCS::sendOnCueCommandBlind(const char *cmd)
     return 1;
 }
 
-bool OCS::sendOnCueCommand(const char *cmd)
+bool OCS::sendOCSCommand(const char *cmd)
 {
     char response[1] = {0};
     int error_type;
@@ -1275,13 +1277,13 @@ bool OCS::sendOnCueCommand(const char *cmd)
 
     flushIO(PortFD);
     /* Add mutex */
-    std::unique_lock<std::mutex> guard(OnCueCommsLock);
+    std::unique_lock<std::mutex> guard(ocsCommsLock);
     tcflush(PortFD, TCIFLUSH);
 
     if ((error_type = tty_write_string(PortFD, cmd, &nbytes_write)) != TTY_OK)
         return error_type;
 
-    error_type = tty_read_expanded(PortFD, response, 1, OnCueTimeoutSeconds, OnCueTimeoutMicroSeconds, &nbytes_read);
+    error_type = tty_read_expanded(PortFD, response, 1, OCSTimeoutSeconds, OCSTimeoutMicroSeconds, &nbytes_read);
 
     tcflush(PortFD, TCIFLUSH);
     DEBUGF(INDI::Logger::DBG_DEBUG, "RES <%c>", response[0]);
@@ -1305,12 +1307,12 @@ int OCS::getCommandSingleCharResponse(int fd, char *data, const char *cmd)
 
     flushIO(fd);
     /* Add mutex */
-    std::unique_lock<std::mutex> guard(OnCueCommsLock);
+    std::unique_lock<std::mutex> guard(ocsCommsLock);
 
     if ((error_type = tty_write_string(fd, cmd, &nbytes_write)) != TTY_OK)
         return error_type;
 
-    error_type = tty_read_expanded(fd, data, 1, OnCueTimeoutSeconds, OnCueTimeoutMicroSeconds, &nbytes_read);
+    error_type = tty_read_expanded(fd, data, 1, OCSTimeoutSeconds, OCSTimeoutMicroSeconds, &nbytes_read);
     tcflush(fd, TCIFLUSH);
 
     if (error_type != TTY_OK)
@@ -1339,7 +1341,7 @@ int OCS::flushIO(int fd)
     tcflush(fd, TCIOFLUSH);
     int error_type = 0;
     int nbytes_read;
-    std::unique_lock<std::mutex> guard(OnCueCommsLock);
+    std::unique_lock<std::mutex> guard(ocsCommsLock);
     tcflush(fd, TCIOFLUSH);
     do
     {
@@ -1365,13 +1367,13 @@ int OCS::getCommandDoubleResponse(int fd, double *value, char *data, const char 
 
     flushIO(fd);
     /* Add mutex */
-    std::unique_lock<std::mutex> guard(OnCueCommsLock);
+    std::unique_lock<std::mutex> guard(ocsCommsLock);
     tcflush(fd, TCIFLUSH);
 
     if ((error_type = tty_write_string(fd, cmd, &nbytes_write)) != TTY_OK)
         return error_type;
 
-    error_type = tty_read_section_expanded(fd, data, '#', OnCueTimeoutSeconds, OnCueTimeoutMicroSeconds, &nbytes_read);
+    error_type = tty_read_section_expanded(fd, data, '#', OCSTimeoutSeconds, OCSTimeoutMicroSeconds, &nbytes_read);
     tcflush(fd, TCIFLUSH);
 
     term = strchr(data, '#');
@@ -1418,13 +1420,13 @@ int OCS::getCommandIntResponse(int fd, int *value, char *data, const char *cmd)
 
     flushIO(fd);
     /* Add mutex */
-    std::unique_lock<std::mutex> guard(OnCueCommsLock);
+    std::unique_lock<std::mutex> guard(ocsCommsLock);
     tcflush(fd, TCIFLUSH);
 
     if ((error_type = tty_write_string(fd, cmd, &nbytes_write)) != TTY_OK)
         return error_type;
 
-    error_type = tty_read_section_expanded(fd, data, '#', OnCueTimeoutSeconds, OnCueTimeoutMicroSeconds, &nbytes_read);
+    error_type = tty_read_section_expanded(fd, data, '#', OCSTimeoutSeconds, OCSTimeoutMicroSeconds, &nbytes_read);
     tcflush(fd, TCIFLUSH);
 
     term = strchr(data, '#');
@@ -1467,13 +1469,13 @@ int OCS::getCommandSingleCharErrorOrLongResponse(int fd, char *data, const char 
 
     flushIO(fd);
     /* Add mutex */
-    std::unique_lock<std::mutex> guard(OnCueCommsLock);
+    std::unique_lock<std::mutex> guard(ocsCommsLock);
     tcflush(fd, TCIFLUSH);
 
     if ((error_type = tty_write_string(fd, cmd, &nbytes_write)) != TTY_OK)
         return error_type;
 
-    error_type = tty_read_section_expanded(fd, data, '#', OnCueTimeoutSeconds, OnCueTimeoutMicroSeconds, &nbytes_read);
+    error_type = tty_read_section_expanded(fd, data, '#', OCSTimeoutSeconds, OCSTimeoutMicroSeconds, &nbytes_read);
     tcflush(fd, TCIFLUSH);
 
     term = strchr(data, '#');
