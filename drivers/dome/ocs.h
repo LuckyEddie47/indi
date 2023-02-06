@@ -22,6 +22,8 @@
 #include "connectionplugins/connectiontcp.h"
 #include "connectionplugins/connectionserial.h"
 
+#include "indipropertyswitch.h"
+
 #define RB_MAX_LEN 64
 #define CMD_MAX_LEN 32
 enum ResponseErrors {RES_ERR_FORMAT = -1001};
@@ -379,9 +381,9 @@ private:
 //    bool contactEstablished = false;
 //    bool roofOpening = false;
 //    bool roofClosing = false;
-//    ILight RoofStatusL[5];
-//    ILightVectorProperty RoofStatusLP;
-//    enum { ROOF_STATUS_OPENED, ROOF_STATUS_CLOSED, ROOF_STATUS_MOVING, ROOF_STATUS_LOCKED, ROOF_STATUS_AUXSTATE };
+    ILight RoofStatusL[5];
+    ILightVectorProperty RoofStatusLP;
+    enum { ROOF_STATUS_OPENED, ROOF_STATUS_CLOSED, ROOF_STATUS_MOVING, ROOF_STATUS_LOCKED, ROOF_STATUS_AUXSTATE };
 //
 //    ISwitch LockS[2];
 //    ISwitchVectorProperty LockSP;
@@ -403,8 +405,21 @@ private:
 //    bool simRoofClosed = true;
 //    unsigned int communicationErrors = 0;
 
-    IText ThermostatStatusT[10] {};
-    ITextVectorProperty ThermostatStatusTP;
+//    IText ThermostatStatusT[10] {};
+//    ITextVectorProperty ThermostatStatusTP;
 
+//    ITextVectorProperty OnstepStatTP;
+//    IText OnstepStat[0] {};
+
+    enum
+    {
+        THERMOSTAT_TEMERATURE,
+        THERMOSTAT_HUMIDITY,
+        THERMOSTAT_COUNT
+    };
+    ITextVectorProperty Thermostat_StatusTP;
+    IText Thermostat_StatusT[THERMOSTAT_COUNT] {};
+    char thermostat_temperature[RB_MAX_LEN] = {0};
+    char thermostat_humidity[RB_MAX_LEN] = {0};
 };
 

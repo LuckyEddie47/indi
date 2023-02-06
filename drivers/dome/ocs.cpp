@@ -179,8 +179,9 @@ bool OCS::initProperties()
 {
     INDI::Dome::initProperties();
 
+
 //    IUFillTextVector(&ThermostatStatusTP, ThermostatStatusT, 1, getDeviceName(), "ThermostatStatus", "Thermostat status", MAIN_CONTROL_TAB, IP_RO, 0, IPS_IDLE);
-      IUFillText(&ThermostatStatusTP, ThermostatStatusT,);
+//    IUFillText(&ThermostatStatusTP, ThermostatStatusT,);
 
 //    IUFillSwitch(&LockS[LOCK_DISABLE], "LOCK_DISABLE", "Off", ISS_ON);
 //    IUFillSwitch(&LockS[LOCK_ENABLE], "LOCK_ENABLE", "On", ISS_OFF);
@@ -195,14 +196,24 @@ bool OCS::initProperties()
 //    IUFillLight(&RoofStatusL[ROOF_STATUS_MOVING], "ROOF_MOVING", "Moving", IPS_IDLE);
 //    IUFillLight(&RoofStatusL[ROOF_STATUS_LOCKED], "ROOF_LOCK", "Roof Lock", IPS_IDLE);
 //    IUFillLight(&RoofStatusL[ROOF_STATUS_AUXSTATE], "ROOF_AUXILIARY", "Roof Auxiliary", IPS_IDLE);
-//    IUFillLightVector(&RoofStatusLP, RoofStatusL, 5, getDeviceName(), "ROOF STATUS", "Roof Status", MAIN_CONTROL_TAB, IPS_BUSY);
-//
+//    IUFillLightVector(&RoofStatusLP, RoofStatusL, 5, getDeviceName(), "ROOF STATUS", "Roof Status", THERMOSTAT_TAB, IPS_BUSY);
+
+//    IUFillText(&OnstepStat[0], ":GU# return", "", "");
+//    IUFillTextVector(&OnstepStatTP, OnstepStat, 11, getDeviceName(), "OnStep Status", "", THERMOSTAT_TAB, IP_RO, 0, IPS_OK);
+
+
 //    IUFillNumber(&RoofTimeoutN[0], "ROOF_TIMEOUT", "Timeout in Seconds", "%3.0f", 1, 300, 1, 15);
 //    IUFillNumberVector(&RoofTimeoutNP, RoofTimeoutN, 1, getDeviceName(), "ROOF_MOVEMENT", "Roof Movement", OPTIONS_TAB, IP_RW,
 //                       60, IPS_IDLE);
 
 //    SetParkDataType(PARK_NONE);
-    defineProperty(&ThermostatStatusTP);;
+//    defineProperty(&ThermostatStatusTP);;
+
+    IUFillText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], "THERMOSTAT_TEMPERATURE", "Temperature (deg.C)", "NA");
+    IUFillText(&Thermostat_StatusT[THERMOSTAT_HUMIDITY], "THERMOSTAT_HUMIDITY", "Humidity (%)", "NA");
+    IUFillTextVector(&Thermostat_StatusTP, Thermostat_StatusT, 2, getDeviceName(), "THERMOSTAT_STATUS", "Obsy Status", THERMOSTAT_TAB, IP_RO, 60, IPS_IDLE);
+
+
     addAuxControls();         // This is for standard controls not the local auxiliary switch
     return true;
 }
@@ -276,21 +287,25 @@ bool OCS::Disconnect()
 bool OCS::updateProperties()
 {
     INDI::Dome::updateProperties();
-//    if (isConnected())
-//    {
+    if (isConnected())
+    {
 //        defineProperty(&LockSP);            // Lock Switch,
 //        defineProperty(&AuxSP);             // Aux Switch,
 //        defineProperty(&RoofStatusLP);      // All the roof status lights
+//        defineProperty(&OnstepStatTP);
 //        defineProperty(&RoofTimeoutNP);
 //        setupConditions();
-//    }
-//    else
-//    {
+        defineProperty(&Thermostat_StatusTP);
+    }
+    else
+    {
 //        deleteProperty(RoofStatusLP.name);  // Delete the roof status lights
+//        deleteProperty(OnstepStatTP.name);
 //        deleteProperty(LockSP.name);        // Delete the Lock Switch buttons
 //        deleteProperty(AuxSP.name);         // Delete the Auxiliary Switch buttons
 //        deleteProperty(RoofTimeoutNP.name);
-//    }
+        deleteProperty(Thermostat_StatusTP.name);
+    }
     return true;
 }
 
@@ -568,24 +583,54 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
 /*******************************************************************************************
  * Poll properties for updates
  ******************************************************************************************/
-void OCS::TimerHit()
-{
-    if (!isConnected())
-            return;
-
-    SetTimer(getCurrentPollingPeriod());
-}
-
-/********************************************************************************************
-** Each 1 second timer tick, if roof active
-********************************************************************************************/
 //void OCS::TimerHit()
 //{
+//    if (!isConnected())
+//            return;
+//
+//    SetTimer(getCurrentPollingPeriod());
+//}
+
+/********************************************************************************************
+* Poll properties for updates
+********************************************************************************************/
+void OCS::TimerHit()
+{
+    // Update Obsy Thermostat readings
+    char thermostat_status_response[RB_MAX_LEN] = {0};
+    int thermostat_status_error  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
+    if (thermostat_status_error > 1) //> 1 as an OnStep error would be 1 char in response
+    {
+
+        LOG_INFO(thermostat_status_response);
+
+        strncpy(thermostat_temperature, thermostat_status_response, sizeof(thermostat_temperature));
+        IUSaveText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], thermostat_temperature);
+        IDSetText(&Thermostat_StatusTP, nullptr);
+    }
+    else
+    {
+        LOG_WARN("Communication error on Temperature (:GX9A#), this update aborted, will try again...");
+    }
+
+//    char humidity_response[RB_MAX_LEN] = {0};
+//    double humidity_value;
+//    int gx9c_error  = getCommandDoubleResponse(PortFD, &humidity_value, humidity_response, ":GX9C#");
+//    if (gx9c_error > 1) //> 1 as an OnStep error would be 1 char in response
+//    {
+//        *thermostat_humidity = humidity_value;
+//    }
+//    else
+//    {
+//        LOG_WARN("Communication error on Humidity (:GX9C#), this update aborted, will try again...");
+//    }getCommandDoubleResponse
+
+
 //    double timeleft = CalcTimeLeft(MotionStart);
 //    uint32_t delay = 1000 * INACTIVE_STATUS;   // inactive timer setting to maintain roof status lights
-//    if (!isConnected())
-//        return; //  No need to reset timer if we are not connected anymore
-//
+    if (!isConnected())
+        return; //  No need to reset timer if we are not connected anymore
+
 //    if (isSimulation())
 //    {
 //        if (timeleft -5 <= 0)            // Use timeout approaching to set faux switch indicator
@@ -672,8 +717,8 @@ void OCS::TimerHit()
 //
 //    // Even when no roof movement requested, will come through occasionally. Use timer to update roof status
 //    // in case roof has been operated externally by a remote control, locks applied...
-//    SetTimer(delay);
-//}
+    SetTimer(getCurrentPollingPeriod());
+}
 
 //float OCS::CalcTimeLeft(timeval start)
 //{
