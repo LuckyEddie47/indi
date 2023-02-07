@@ -120,15 +120,37 @@ void ISNewNumber(const char *dev, const char *name, double values[], char *names
 
 bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *names[],int n)
 {
-    if (dev != nullptr && strcmp(dev, getDeviceName()) == 0)
-    {
-//        if (!strcmp(RoofTimeoutNP.name, name))
-//        {
-//            IUUpdateNumber(&RoofTimeoutNP, values, names, n);
-//            RoofTimeoutNP.s = IPS_OK;
-//            IDSetNumber(&RoofTimeoutNP, nullptr);
-            return true;
-//        }
+    if (dev != nullptr && strcmp(dev, getDeviceName()) == 0) {
+        if (!strcmp(Thermostat_setpointsNP.name, name)) {
+            if ( THERMOSTAT_SETPOINT_COUNT == n) {
+                for (int parameter = THERMOSTAT_HEAT_SETPOINT; parameter < THERMOSTAT_SETPOINT_COUNT; parameter++) {
+                    if (parameter == THERMOSTAT_HEAT_SETPOINT) {
+                        char thermostat_setpoint_command[RB_MAX_LEN];
+                        sprintf(thermostat_setpoint_command, "%s%.0f%s",
+                                OCS_set_thermostat_heat_setpoint_part, values[THERMOSTAT_HEAT_SETPOINT], OCS_command_terminator);
+                        if (!sendOCSCommand(thermostat_setpoint_command)) {
+                            LOGF_INFO("Set Thermostat heat setpoint to: %.0f deg.C", values[THERMOSTAT_HEAT_SETPOINT]);
+                        } else {
+                            LOG_WARN("Failed to set Thermostat heat setpoint");
+                        }
+                    }
+                    else if (parameter == THERMOSTAT_COOL_SETPOINT) {
+                        char thermostat_setpoint_command[RB_MAX_LEN];
+                        sprintf(thermostat_setpoint_command, "%s%.0f%s",
+                                OCS_set_thermostat_cool_setpoint_part, values[THERMOSTAT_COOL_SETPOINT], OCS_command_terminator);
+                        if (!sendOCSCommand(thermostat_setpoint_command)) {
+                            LOGF_INFO("Set Thermostat cool setpoint to: %.0f deg.C", values[THERMOSTAT_COOL_SETPOINT]);
+                        } else {
+                            LOG_WARN("Failed to set Thermostat heat setpoint");
+                        }
+                    }
+                }
+                IUUpdateNumber(&Thermostat_setpointsNP, values, names, n);
+                Thermostat_setpointsNP.s = IPS_OK;
+                IDSetNumber(&Thermostat_setpointsNP, nullptr);
+                return true;
+            }
+        }
     }
 
     return INDI::Dome::ISNewNumber(dev,name,values,names,n);
@@ -209,12 +231,18 @@ bool OCS::initProperties()
 //    SetParkDataType(PARK_NONE);
 //    defineProperty(&ThermostatStatusTP);;
 
-    IUFillText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], "THERMOSTAT_TEMPERATURE", "Temperature (deg.C)", "NA");
-    IUFillText(&Thermostat_StatusT[THERMOSTAT_HUMIDITY], "THERMOSTAT_HUMIDITY", "Humidity (%)", "NA");
-    IUFillTextVector(&Thermostat_StatusTP, Thermostat_StatusT, 2, getDeviceName(), "THERMOSTAT_STATUS", "Obsy Status", THERMOSTAT_TAB, IP_RO, 60, IPS_IDLE);
+    // Thermostat tab controls
+    IUFillTextVector(&Thermostat_StatusTP, Thermostat_StatusT, 2, getDeviceName(), "THERMOSTAT_STATUS", "Obsy Status",
+                     THERMOSTAT_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], "THERMOSTAT_TEMPERATURE", "Temperature deg.C", "NA");
+    IUFillText(&Thermostat_StatusT[THERMOSTAT_HUMIDITY], "THERMOSTAT_HUMIDITY", "Humidity %", "NA");
 
+    IUFillNumberVector(&Thermostat_setpointsNP, Thermostat_setpointN, 2, getDeviceName(), "THERMOSTAT_SETPOINTS", "Setpoints",
+                       THERMOSTAT_TAB, IP_RW, 60, IPS_OK);
+    IUFillNumber(&Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT], "THERMOSTAT_HEAT_SETPOINT", "Heat deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
+    IUFillNumber(&Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT], "THERMOSTAT_COOL_SETPOINT", "Cool deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
 
-    addAuxControls();         // This is for standard controls not the local auxiliary switch
+    addAuxControls();
     return true;
 }
 
@@ -296,6 +324,7 @@ bool OCS::updateProperties()
 //        defineProperty(&RoofTimeoutNP);
 //        setupConditions();
         defineProperty(&Thermostat_StatusTP);
+        defineProperty(&Thermostat_setpointsNP);
     }
     else
     {
@@ -305,6 +334,7 @@ bool OCS::updateProperties()
 //        deleteProperty(AuxSP.name);         // Delete the Auxiliary Switch buttons
 //        deleteProperty(RoofTimeoutNP.name);
         deleteProperty(Thermostat_StatusTP.name);
+        deleteProperty(Thermostat_setpointsNP.name);
     }
     return true;
 }
@@ -598,9 +628,8 @@ void OCS::TimerHit()
 {
     // Update Obsy Thermostat readings
     char thermostat_status_response[RB_MAX_LEN] = {0};
-    int thermostat_status_error  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
-    if (thermostat_status_error > 1) //> 1 as an OnStep error would be 1 char in response
-    {
+    int thermostat_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
+    if (thermostat_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
         char *split;
         split = strtok(thermostat_status_response, ",");
         IUSaveText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], split);
@@ -608,11 +637,34 @@ void OCS::TimerHit()
         IUSaveText(&Thermostat_StatusT[THERMOSTAT_HUMIDITY], split);
         IDSetText(&Thermostat_StatusTP, nullptr);
     }
-    else
-    {
-        LOGF_WARN("Communication error on Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
+    else {
+        LOGF_WARN("Communication error on get Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
     }
 
+    // Get the Thermstat setpoints
+    int thermostat_heat_setpoint;
+    char value[RB_MAX_LEN] = {0};
+    int hot_setpoint_error_or_fail = getCommandIntResponse(PortFD, &thermostat_heat_setpoint, value, OCS_get_thermostat_heat_setpoint);
+    if (hot_setpoint_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+        Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT].value = thermostat_heat_setpoint;
+        IDSetNumber(&Thermostat_setpointsNP, nullptr);
+    }
+    else {
+        LOGF_WARN("Communication error on get Thermostat Heat Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_heat_setpoint);
+    }
+
+    int thermostat_vent_setpoint;
+    int cool_setpoint_error_or_fail = getCommandIntResponse(PortFD, &thermostat_vent_setpoint, value, OCS_get_thermostat_cool_setpoint);
+    if (cool_setpoint_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+        Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT].value = thermostat_vent_setpoint;
+        IDSetNumber(&Thermostat_setpointsNP, nullptr);
+    }
+    else {
+        LOGF_WARN("Communication error on get Thermostat Cool Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_cool_setpoint);
+    }
+
+
+    // Timer loop control
     if (!isConnected())
         return; //  No need to reset timer if we are not connected anymore
 

@@ -274,21 +274,21 @@ An unterminated 0 is returned from unconfigured items
 // where n.n is temperature in deg. C and m.m is % humidity
 
 // Get heat setpoint in deg. C
-#define OCS_get_thermostat_setpoint ":GH#"
+#define OCS_get_thermostat_heat_setpoint ":GH#"
 // Returns: n#, or 0# for invalid
 
 // Set heat setpoint in deg. C
-// ":SHnn#"
+#define OCS_set_thermostat_heat_setpoint_part ":SH"
 // Example: ":SH0#" turns heat off
 // Example: ":SH21#" heat setpoint 21 deg. C
 // Returns: 1# on success
 
 // Get cool/vent setpoint in deg. C
-#define OCS_get_vent_setpoint ":GV#"
+#define OCS_get_thermostat_cool_setpoint ":GV#"
 // Returns: n#, or 0# for invalid
 
 //Set cool/vent setpoint in deg. C
-// ":SCnnn#"
+#define OCS_set_thermostat_cool_setpoint_part ":SC"
 // Example: ":SC0#" turns cooling off
 // Example: ":SC30#" cool setpoint 30 deg. C
 // Returns: 1# on success
@@ -310,6 +310,9 @@ An unterminated 0 is returned from unconfigured items
 // Get Digital Sense n state
 // ":GSn#"
 // Returns: ON#, OFF#
+
+// For dynamically assembled commands
+#define OCS_command_terminator "#"
 
 /*******************************************************************************
 OnCue OCS lexicon end
@@ -381,9 +384,9 @@ private:
 //    bool contactEstablished = false;
 //    bool roofOpening = false;
 //    bool roofClosing = false;
-    ILight RoofStatusL[5];
-    ILightVectorProperty RoofStatusLP;
-    enum { ROOF_STATUS_OPENED, ROOF_STATUS_CLOSED, ROOF_STATUS_MOVING, ROOF_STATUS_LOCKED, ROOF_STATUS_AUXSTATE };
+//    ILight RoofStatusL[5];
+//    ILightVectorProperty RoofStatusLP;
+//    enum { ROOF_STATUS_OPENED, ROOF_STATUS_CLOSED, ROOF_STATUS_MOVING, ROOF_STATUS_LOCKED, ROOF_STATUS_AUXSTATE };
 //
 //    ISwitch LockS[2];
 //    ISwitchVectorProperty LockSP;
@@ -411,15 +414,22 @@ private:
 //    ITextVectorProperty OnstepStatTP;
 //    IText OnstepStat[0] {};
 
-    enum
-    {
+    enum {
         THERMOSTAT_TEMERATURE,
         THERMOSTAT_HUMIDITY,
         THERMOSTAT_COUNT
     };
     ITextVectorProperty Thermostat_StatusTP;
     IText Thermostat_StatusT[THERMOSTAT_COUNT] {};
-    char thermostat_temperature[RB_MAX_LEN] = {0};
-    char thermostat_humidity[RB_MAX_LEN] = {0};
+//    char thermostat_temperature[RB_MAX_LEN] = {0};
+//    char thermostat_humidity[RB_MAX_LEN] = {0};
+
+    enum {
+        THERMOSTAT_HEAT_SETPOINT,
+        THERMOSTAT_COOL_SETPOINT,
+        THERMOSTAT_SETPOINT_COUNT
+    };
+    INumberVectorProperty Thermostat_setpointsNP;
+    INumber Thermostat_setpointN[THERMOSTAT_SETPOINT_COUNT];
 };
 
