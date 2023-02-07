@@ -601,122 +601,21 @@ void OCS::TimerHit()
     int thermostat_status_error  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
     if (thermostat_status_error > 1) //> 1 as an OnStep error would be 1 char in response
     {
-
-        LOG_INFO(thermostat_status_response);
-
-        strncpy(thermostat_temperature, thermostat_status_response, sizeof(thermostat_temperature));
-        IUSaveText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], thermostat_temperature);
+        char *split;
+        split = strtok(thermostat_status_response, ",");
+        IUSaveText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], split);
+        split = strtok(NULL, ",");
+        IUSaveText(&Thermostat_StatusT[THERMOSTAT_HUMIDITY], split);
         IDSetText(&Thermostat_StatusTP, nullptr);
     }
     else
     {
-        LOG_WARN("Communication error on Temperature (:GX9A#), this update aborted, will try again...");
+        LOGF_WARN("Communication error on Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
     }
 
-//    char humidity_response[RB_MAX_LEN] = {0};
-//    double humidity_value;
-//    int gx9c_error  = getCommandDoubleResponse(PortFD, &humidity_value, humidity_response, ":GX9C#");
-//    if (gx9c_error > 1) //> 1 as an OnStep error would be 1 char in response
-//    {
-//        *thermostat_humidity = humidity_value;
-//    }
-//    else
-//    {
-//        LOG_WARN("Communication error on Humidity (:GX9C#), this update aborted, will try again...");
-//    }getCommandDoubleResponse
-
-
-//    double timeleft = CalcTimeLeft(MotionStart);
-//    uint32_t delay = 1000 * INACTIVE_STATUS;   // inactive timer setting to maintain roof status lights
     if (!isConnected())
         return; //  No need to reset timer if we are not connected anymore
 
-//    if (isSimulation())
-//    {
-//        if (timeleft -5 <= 0)            // Use timeout approaching to set faux switch indicator
-//        {
-//            if (DomeMotionS[DOME_CW].s == ISS_ON)              // Opening
-//            {
-//                simRoofOpen = true;
-//                simRoofClosed = false;
-//            }
-//            else if (DomeMotionS[DOME_CCW].s == ISS_ON)        // Closing
-//            {
-//                simRoofClosed = true;
-//                simRoofOpen = false;
-//            }
-//        }
-//    }
-//
-//    updateRoofStatus();
-//
-//    if (DomeMotionSP.s == IPS_BUSY)
-//    {
-//        // Abort called stop movement.
-//        if (MotionRequest < 0)
-//        {
-//            DEBUG(INDI::Logger::DBG_WARNING,"Roof motion is stopped");
-//            setDomeState(DOME_IDLE);
-//        }
-//        else
-//        {
-//            // Roll off is opening
-//            if (DomeMotionS[DOME_CW].s == ISS_ON)
-//            {
-//                if (fullyOpenedLimitSwitch == ISS_ON)
-//                {
-//                    DEBUG(INDI::Logger::DBG_DEBUG,"Roof is open");
-//                    SetParked(false);
-//                }
-//                // See if time to open has expired.
-//                else if (timeleft <= 0)
-//                {
-//                    LOG_WARN("Time allowed for opening the roof has expired?");
-//                    setDomeState(DOME_IDLE);
-//                    roofOpening = false;
-//                    roofTimedOut = EXPIRED_OPEN;
-//                }
-//                else
-//                {
-//                    delay = 1000;           // opening active
-//                }
-//            }
-//            // Roll Off is closing
-//            else if (DomeMotionS[DOME_CCW].s == ISS_ON)
-//            {
-//                if (fullyClosedLimitSwitch == ISS_ON)
-//                {
-//                    DEBUG(INDI::Logger::DBG_DEBUG,"Roof is closed");
-//                    SetParked(true);
-//                }
-//                // See if time to open has expired.
-//                else if (timeleft <= 0)
-//                {
-//                    LOG_WARN("Time allowed for closing the roof has expired?");
-//                    setDomeState(DOME_IDLE);
-//                    roofClosing = false;
-//                    roofTimedOut = EXPIRED_CLOSE;
-//                }
-//                else
-//                {
-//                    delay = 1000;           // closing active
-//                }
-//            }
-//        }
-//    }
-//
-//    // Added to highlight WiFi issues, not able to recover lost connection without a reconnect
-//    if (communicationErrors > MAX_CNTRL_COM_ERR)
-//    {
-//        LOG_ERROR("Too many errors communicating with Arduino");
-//        LOG_ERROR("Try a fresh connect. Check communication equipment and operation of Arduino controller.");
-//        INDI::Dome::Disconnect();
-//        initProperties();
-//        communicationErrors = 0;
-//    }
-//
-//    // Even when no roof movement requested, will come through occasionally. Use timer to update roof status
-//    // in case roof has been operated externally by a remote control, locks applied...
     SetTimer(getCurrentPollingPeriod());
 }
 
