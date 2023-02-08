@@ -44,8 +44,8 @@ USB and network connections supported.
 // Custom tabs
 #define WEATHER_TAB "Weather"
 #define THERMOSTAT_TAB "Thermostat"
-//#define GPIO_TAB "GPIO"
-const char *GPIO_TAB = "GPIO";
+#define GPIO_TAB "GPIO"
+//const char *GPIO_TAB = "GPIO";
 
 // From indi_rolloffino
 #define ROLLOFF_DURATION 15               // Seconds until Roof is fully opened or closed
@@ -182,8 +182,7 @@ bool OCS::ISSnoopDevice(XMLEle *root)
 
 OCS::OCS()
 {
-    SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK | DOME_CAN_ABS_MOVE | DOME_CAN_SYNC |
-                      DOME_HAS_BACKLASH | DOME_HAS_SHUTTER);
+    SetDomeCapability(DOME_CAN_ABORT | DOME_HAS_SHUTTER);
 }
 
 /**************************************************************************************
@@ -232,15 +231,48 @@ bool OCS::initProperties()
 //    defineProperty(&ThermostatStatusTP);;
 
     // Thermostat tab controls
-    IUFillTextVector(&Thermostat_StatusTP, Thermostat_StatusT, 2, getDeviceName(), "THERMOSTAT_STATUS", "Obsy Status",
+    IUFillTextVector(&Thermostat_StatusTP, Thermostat_StatusT, THERMOSTAT_COUNT, getDeviceName(), "THERMOSTAT_STATUS", "Obsy Status",
                      THERMOSTAT_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], "THERMOSTAT_TEMPERATURE", "Temperature deg.C", "NA");
     IUFillText(&Thermostat_StatusT[THERMOSTAT_HUMIDITY], "THERMOSTAT_HUMIDITY", "Humidity %", "NA");
 
-    IUFillNumberVector(&Thermostat_setpointsNP, Thermostat_setpointN, 2, getDeviceName(), "THERMOSTAT_SETPOINTS", "Setpoints",
+    IUFillNumberVector(&Thermostat_setpointsNP, Thermostat_setpointN, THERMOSTAT_SETPOINT_COUNT, getDeviceName(), "THERMOSTAT_SETPOINTS", "Setpoints",
                        THERMOSTAT_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT], "THERMOSTAT_HEAT_SETPOINT", "Heat deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT], "THERMOSTAT_COOL_SETPOINT", "Cool deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
+
+    // GPIO tab controls
+    IUFillNumberVector(&SenseNP, SenseN, SENSE_COUNT, getDeviceName(), "SENSE_INPUTS", "Inputs",
+                     GPIO_TAB, IP_RO, 60, IPS_OK);
+    IUFillNumber(&SenseN[SENSE_1], "SENSE_INPUT_1", "Input 1", "%.2f", 0.00, 5.00, 0.01, 0);
+    IUFillNumber(&SenseN[SENSE_2], "SENSE_INPUT_2", "Input 2", "%.2f", 0.00, 5.00, 0.01, 0);
+    IUFillNumber(&SenseN[SENSE_3], "SENSE_INPUT_3", "Input 3", "%.2f", 0.00, 5.00, 0.01, 0);
+    IUFillNumber(&SenseN[SENSE_4], "SENSE_INPUT_4", "Input 4", "%.2f", 0.00, 5.00, 0.01, 0);
+    IUFillNumber(&SenseN[SENSE_5], "SENSE_INPUT_5", "Input 5", "%.2f", 0.00, 5.00, 0.01, 0);
+    IUFillNumber(&SenseN[SENSE_6], "SENSE_INPUT_6", "Input 6", "%.2f", 0.00, 5.00, 0.01, 0);
+    IUFillNumber(&SenseN[SENSE_7], "SENSE_INPUT_7", "Input 7", "%.2f", 0.00, 5.00, 0.01, 0);
+    IUFillNumber(&SenseN[SENSE_8], "SENSE_INPUT_8", "Input 8", "%.2f", 0.00, 5.00, 0.01, 0);
+
+    IUFillSwitchVector(&RelaySP, RelayS, RELAY_COUNT, getDeviceName(), "RELAY_OUTPUTS", "Outputs",
+                       GPIO_TAB, IP_RW, ISR_NOFMANY, 60, IPS_OK);
+    IUFillSwitch(&RelayS[RELAY_1], "RELAY_OUTPUT_1", "Output 1", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_2], "RELAY_OUTPUT_2", "Output 2", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_3], "RELAY_OUTPUT_3", "Output 3", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_4], "RELAY_OUTPUT_4", "Output 4", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_5], "RELAY_OUTPUT_5", "Output 5", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_6], "RELAY_OUTPUT_6", "Output 6", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_7], "RELAY_OUTPUT_7", "Output 7", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_8], "RELAY_OUTPUT_8", "Output 8", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_9], "RELAY_OUTPUT_9", "Output 9", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_10], "RELAY_OUTPUT_10", "Output 10", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_11], "RELAY_OUTPUT_11", "Output 11", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_12], "RELAY_OUTPUT_12", "Output 12", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_13], "RELAY_OUTPUT_13", "Output 13", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_14], "RELAY_OUTPUT_14", "Output 14", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_15], "RELAY_OUTPUT_15", "Output 15", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_16], "RELAY_OUTPUT_16", "Output 16", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_17], "RELAY_OUTPUT_17", "Output 17", ISS_OFF);
+    IUFillSwitch(&RelayS[RELAY_18], "RELAY_OUTPUT_18", "Output 18", ISS_OFF);
 
     addAuxControls();
     return true;
@@ -275,6 +307,16 @@ bool OCS::Handshake()
         {
             LOG_DEBUG("OCS handshake established");
             handshake_status = true;
+
+            char OCS_dome_present_response[RB_MAX_LEN] = {0};
+            int OCS_dome_present = getCommandSingleCharErrorOrLongResponse(PortFD, OCS_dome_present_response, OCS_get_dome_status);
+            if (OCS_dome_present > 0) {
+                SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK | DOME_CAN_ABS_MOVE | DOME_CAN_SYNC |
+                                  DOME_HAS_BACKLASH | DOME_HAS_SHUTTER);
+                LOG_DEBUG("OCS has dome");
+            } else {
+                LOG_DEBUG("OCS does not have dome");
+            }
         }
         else
         {
@@ -325,6 +367,8 @@ bool OCS::updateProperties()
 //        setupConditions();
         defineProperty(&Thermostat_StatusTP);
         defineProperty(&Thermostat_setpointsNP);
+        defineProperty(&SenseNP);
+        defineProperty(&RelaySP);
     }
     else
     {
@@ -335,6 +379,8 @@ bool OCS::updateProperties()
 //        deleteProperty(RoofTimeoutNP.name);
         deleteProperty(Thermostat_StatusTP.name);
         deleteProperty(Thermostat_setpointsNP.name);
+        deleteProperty(SenseNP.name);
+        deleteProperty(RelaySP.name);
     }
     return true;
 }
@@ -626,7 +672,7 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
 ********************************************************************************************/
 void OCS::TimerHit()
 {
-    // Update Obsy Thermostat readings
+    // Get the Obsy Thermostat readings
     char thermostat_status_response[RB_MAX_LEN] = {0};
     int thermostat_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
     if (thermostat_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
@@ -662,6 +708,8 @@ void OCS::TimerHit()
     else {
         LOGF_WARN("Communication error on get Thermostat Cool Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_cool_setpoint);
     }
+
+    // Get the Sense Inputs values
 
 
     // Timer loop control

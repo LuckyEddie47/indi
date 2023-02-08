@@ -185,6 +185,7 @@ An unterminated 0 is returned from unconfigured items
 // Axis2 is Dome Altitude - optional
 
 // Get the axis/driver configuration for axis [n]
+#define OCS_get_axis_configuration_part ":GXA"
 // ":GXA[n]#"
 // Returns: s,s,s,s#
 // where s,s,s,s... comprises:
@@ -194,6 +195,7 @@ An unterminated 0 is returned from unconfigured items
 // parameter [3] = maximum limit
 
 // Get the stepper driver status for axis [n]
+#define OCS_get_driver_status_part ":GXU"
 // ":GXU[n]#"
 // Returns:
 //  ST# = At standstill
@@ -213,6 +215,7 @@ An unterminated 0 is returned from unconfigured items
 // ":SXA[n],R#"
 
 // Set the axis/driver configuration for axis [n]
+#define OCS_set_axis_configuration_part ":SXA"
 // :SXA[n],[s,s,s,s...]#
 // where s,s,s,s... comprises:
 // parameter [0] = steps per degree,
@@ -414,6 +417,7 @@ private:
 //    ITextVectorProperty OnstepStatTP;
 //    IText OnstepStat[0] {};
 
+    // Thermostat tb controls
     enum {
         THERMOSTAT_TEMERATURE,
         THERMOSTAT_HUMIDITY,
@@ -431,5 +435,44 @@ private:
     };
     INumberVectorProperty Thermostat_setpointsNP;
     INumber Thermostat_setpointN[THERMOSTAT_SETPOINT_COUNT];
+
+    // GPIO tab controls
+    enum {
+        SENSE_1,
+        SENSE_2,
+        SENSE_3,
+        SENSE_4,
+        SENSE_5,
+        SENSE_6,
+        SENSE_7,
+        SENSE_8,
+        SENSE_COUNT
+    };
+    INumberVectorProperty SenseNP;
+    INumber SenseN[SENSE_COUNT];
+
+    enum {
+        RELAY_1,
+        RELAY_2,
+        RELAY_3,
+        RELAY_4,
+        RELAY_5,
+        RELAY_6,
+        RELAY_7,
+        RELAY_8,
+        RELAY_9,
+        RELAY_10,
+        RELAY_11,
+        RELAY_12,
+        RELAY_13,
+        RELAY_14,
+        RELAY_15,
+        RELAY_16,
+        RELAY_17,
+        RELAY_18,
+        RELAY_COUNT
+    };
+    ISwitchVectorProperty RelaySP;
+    ISwitch RelayS[RELAY_COUNT];
 };
 
