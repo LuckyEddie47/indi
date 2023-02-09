@@ -418,6 +418,8 @@ private:
 //    IText OnstepStat[0] {};
 
     // Shutter control
+    char last_shutter_status[RB_MAX_LEN];
+    char last_shutter_error[RB_MAX_LEN];
     virtual IPState ControlShutter(ShutterOperation operation) override;
 
     // Thermostat tab controls
