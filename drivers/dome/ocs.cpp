@@ -78,28 +78,23 @@ USB and network connections supported.
 #define VERSION_ID      "20211115"
 // End from indi_rolloffino
 
-
-
 /* Add mutex to communications */
 std::mutex ocsCommsLock;
 
 // We declare an auto pointer to OCS.
 std::unique_ptr<OCS> ocs(new OCS());
 
+OCS::OCS()
+{
+    SetDomeCapability(DOME_CAN_ABORT | DOME_HAS_SHUTTER);
+}
+
+// Overrides
 void ISPoll(void *p);
 
 void ISGetProperties(const char *dev)
 {
     ocs->ISGetProperties(dev);
-}
-
-void OCS::ISGetProperties(const char *dev)
-{
-    INDI::Dome::ISGetProperties(dev);
-
-//    // Load Sync position
-//    defineProperty(&RoofTimeoutNP);
-//    loadConfig(true, "ENCODER_TICKS");
 }
 
 void ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
@@ -115,6 +110,86 @@ void ISNewText(const char *dev, const char *name, char *texts[], char *names[], 
 void ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
 {
     ocs->ISNewNumber(dev, name, values, names, n);
+}
+
+void ISSnoopDevice(XMLEle *root)
+{
+    ocs->ISSnoopDevice(root);
+}
+
+void OCS::ISGetProperties(const char *dev)
+{
+    INDI::Dome::ISGetProperties(dev);
+
+//    // Load Sync position
+//    defineProperty(&RoofTimeoutNP);
+//    loadConfig(true, "ENCODER_TICKS");
+}
+
+/********************************************************************************************
+** Client has changed the state of a switch, update
+*********************************************************************************************/
+bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
+{
+//    bool switchOn = false;
+//    // Make sure the call is for our device
+//    if(dev != nullptr && strcmp(dev,getDeviceName()) == 0)
+//    {
+//        // Check if the call for our Lock switch
+//        if (strcmp(name, LockSP.name) == 0)
+//        {
+//            // Find out which state is requested by the client
+//            const char *actionName = IUFindOnSwitchName(states, names, n);
+//            // If it is the same state as actionName, then we do nothing. i.e.
+//            // if actionName is LOCK_ON and our Lock switch is already on, we return
+//            int currentLockIndex = IUFindOnSwitchIndex(&LockSP);
+//            DEBUGF(INDI::Logger::DBG_SESSION, "Lock state Requested: %s, Current: %s", actionName, LockS[currentLockIndex].name);
+//            if (!strcmp(actionName, LockS[currentLockIndex].name))
+//            {
+//                DEBUGF(INDI::Logger::DBG_SESSION, "Lock switch is already %s", LockS[currentLockIndex].label);
+//                LockSP.s = IPS_IDLE;
+//                IDSetSwitch(&LockSP, NULL);
+//                return true;
+//            }
+//            // Update the switch state
+//            IUUpdateSwitch(&LockSP, states, names, n);
+//            currentLockIndex = IUFindOnSwitchIndex(&LockSP);
+//            LockSP.s = IPS_OK;
+//            IDSetSwitch(&LockSP, nullptr);
+//            if (strcmp(LockS[currentLockIndex].name, "LOCK_ENABLE") == 0)
+//                switchOn = true;
+//            setRoofLock(switchOn);
+//            updateRoofStatus();
+//        }
+//
+//        // Check if the call for our Aux switch
+//        if (strcmp(name, AuxSP.name) == 0)
+//        {
+//            // Find out which state is requested by the client
+//            const char *actionName = IUFindOnSwitchName(states, names, n);
+//            // If it is the same state as actionName, then we do nothing. i.e.
+//            // if actionName is AUX_ON and our Aux switch is already on, we return
+//            int currentAuxIndex = IUFindOnSwitchIndex(&AuxSP);
+//            DEBUGF(INDI::Logger::DBG_SESSION, "Auxiliary state Requested: %s, Current: %s", actionName, AuxS[currentAuxIndex].name);
+//            if (!strcmp(actionName, AuxS[currentAuxIndex].name))
+//            {
+//                DEBUGF(INDI::Logger::DBG_SESSION, "Auxiliary switch is already %s", AuxS[currentAuxIndex].label);
+//                AuxSP.s = IPS_IDLE;
+//                IDSetSwitch(&AuxSP, NULL);
+//                return true;
+//            }
+//            // Update the switch state
+//            IUUpdateSwitch(&AuxSP, states, names, n);
+//            currentAuxIndex = IUFindOnSwitchIndex(&AuxSP);
+//            AuxSP.s = IPS_OK;
+//            IDSetSwitch(&AuxSP, nullptr);
+//            if (strcmp(AuxS[currentAuxIndex].name, "AUX_ENABLE") == 0)
+//                switchOn = true;
+//            setRoofAux(switchOn);
+//            updateRoofStatus();
+//        }
+//    }
+    return INDI::Dome::ISNewSwitch(dev, name, states, names, n);
 }
 
 
@@ -170,20 +245,14 @@ bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *nam
 //    INDI_UNUSED(n);
 //}
 
-void ISSnoopDevice(XMLEle *root)
-{
-    ocs->ISSnoopDevice(root);
-}
+
 
 bool OCS::ISSnoopDevice(XMLEle *root)
 {
     return INDI::Dome::ISSnoopDevice(root);
 }
 
-OCS::OCS()
-{
-    SetDomeCapability(DOME_CAN_ABORT | DOME_HAS_SHUTTER);
-}
+
 
 /**************************************************************************************
 ** INDI is asking us for our default device name.
@@ -278,77 +347,7 @@ bool OCS::initProperties()
     return true;
 }
 
-/************************************************************************************
- * Called from Dome, BaseDevice to establish contact with device
- ************************************************************************************/
-bool OCS::Handshake()
-{
-    bool handshake_status = false;
 
-    if (PortFD > 0)
-    {
-        Connection::Interface *activeConnection = getActiveConnection();
-        if (!activeConnection->name().compare("CONNECTION_TCP"))
-        {
-            LOG_INFO("Network based connection, detection timeouts set to 2 seconds");
-            OCSTimeoutMicroSeconds = 0;
-            OCSTimeoutSeconds = 2;
-        }
-        else
-        {
-            LOG_INFO("Non-Network based connection, detection timeouts set to 0.1 seconds");
-            OCSTimeoutMicroSeconds = 100000;
-            OCSTimeoutSeconds = 0;
-        }
-
-        char handshake_response[RB_MAX_LEN] = {0};
-        handshake_status = getCommandSingleCharErrorOrLongResponse(PortFD, handshake_response, OCS_handshake);
-        if (strcmp(handshake_response, "OCS") == 0)
-        {
-            LOG_DEBUG("OCS handshake established");
-            handshake_status = true;
-
-            char OCS_dome_present_response[RB_MAX_LEN] = {0};
-            int OCS_dome_present = getCommandSingleCharErrorOrLongResponse(PortFD, OCS_dome_present_response, OCS_get_dome_status);
-            if (OCS_dome_present > 0) {
-                SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK | DOME_CAN_ABS_MOVE | DOME_CAN_SYNC |
-                                  DOME_HAS_BACKLASH | DOME_HAS_SHUTTER);
-                LOG_DEBUG("OCS has dome");
-            } else {
-                LOG_DEBUG("OCS does not have dome");
-            }
-        }
-        else
-        {
-            LOG_DEBUG("OCS handshake error, reponse was:");
-            LOG_DEBUG(handshake_response);
-        }
-    }
-    else
-    {
-        LOG_ERROR("OCS can't handshake, device not connected");
-    }
-
-    return handshake_status;
-}
-
-/**************************************************************************************
-** Client is asking us to establish connection to the device
-***************************************************************************************/
-bool OCS::Connect()
-{
-    bool status = INDI::Dome::Connect();
-    return status;
-}
-
-/**************************************************************************************
-** Client is asking us to terminate connection to the device
-***************************************************************************************/
-bool OCS::Disconnect()
-{
-    bool status = INDI::Dome::Disconnect();
-    return status;
-}
 
 /********************************************************************************************
 ** INDI request to update the properties because there is a change in CONNECTION status
@@ -496,71 +495,7 @@ bool OCS::updateProperties()
 //    return true;
 //}
 
-/********************************************************************************************
-** Client has changed the state of a switch, update
-*********************************************************************************************/
-bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
-{
-//    bool switchOn = false;
-//    // Make sure the call is for our device
-//    if(dev != nullptr && strcmp(dev,getDeviceName()) == 0)
-//    {
-//        // Check if the call for our Lock switch
-//        if (strcmp(name, LockSP.name) == 0)
-//        {
-//            // Find out which state is requested by the client
-//            const char *actionName = IUFindOnSwitchName(states, names, n);
-//            // If it is the same state as actionName, then we do nothing. i.e.
-//            // if actionName is LOCK_ON and our Lock switch is already on, we return
-//            int currentLockIndex = IUFindOnSwitchIndex(&LockSP);
-//            DEBUGF(INDI::Logger::DBG_SESSION, "Lock state Requested: %s, Current: %s", actionName, LockS[currentLockIndex].name);
-//            if (!strcmp(actionName, LockS[currentLockIndex].name))
-//            {
-//                DEBUGF(INDI::Logger::DBG_SESSION, "Lock switch is already %s", LockS[currentLockIndex].label);
-//                LockSP.s = IPS_IDLE;
-//                IDSetSwitch(&LockSP, NULL);
-//                return true;
-//            }
-//            // Update the switch state
-//            IUUpdateSwitch(&LockSP, states, names, n);
-//            currentLockIndex = IUFindOnSwitchIndex(&LockSP);
-//            LockSP.s = IPS_OK;
-//            IDSetSwitch(&LockSP, nullptr);
-//            if (strcmp(LockS[currentLockIndex].name, "LOCK_ENABLE") == 0)
-//                switchOn = true;
-//            setRoofLock(switchOn);
-//            updateRoofStatus();
-//        }
-//
-//        // Check if the call for our Aux switch
-//        if (strcmp(name, AuxSP.name) == 0)
-//        {
-//            // Find out which state is requested by the client
-//            const char *actionName = IUFindOnSwitchName(states, names, n);
-//            // If it is the same state as actionName, then we do nothing. i.e.
-//            // if actionName is AUX_ON and our Aux switch is already on, we return
-//            int currentAuxIndex = IUFindOnSwitchIndex(&AuxSP);
-//            DEBUGF(INDI::Logger::DBG_SESSION, "Auxiliary state Requested: %s, Current: %s", actionName, AuxS[currentAuxIndex].name);
-//            if (!strcmp(actionName, AuxS[currentAuxIndex].name))
-//            {
-//                DEBUGF(INDI::Logger::DBG_SESSION, "Auxiliary switch is already %s", AuxS[currentAuxIndex].label);
-//                AuxSP.s = IPS_IDLE;
-//                IDSetSwitch(&AuxSP, NULL);
-//                return true;
-//            }
-//            // Update the switch state
-//            IUUpdateSwitch(&AuxSP, states, names, n);
-//            currentAuxIndex = IUFindOnSwitchIndex(&AuxSP);
-//            AuxSP.s = IPS_OK;
-//            IDSetSwitch(&AuxSP, nullptr);
-//            if (strcmp(AuxS[currentAuxIndex].name, "AUX_ENABLE") == 0)
-//                switchOn = true;
-//            setRoofAux(switchOn);
-//            updateRoofStatus();
-//        }
-//    }
-    return INDI::Dome::ISNewSwitch(dev, name, states, names, n);
-}
+
 
 //void OCS::updateRoofStatus()
 //{
@@ -672,6 +607,65 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
 ********************************************************************************************/
 void OCS::TimerHit()
 {
+    // Get the roof status
+    char roof_status_response[RB_MAX_LEN] = {0};
+    int roof_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_status_response, OCS_get_roof_status);
+    if (roof_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+        char *split;
+        split = strtok(roof_status_response, ",");
+        if (strcmp(split, "o") == 0) {
+            setShutterState(SHUTTER_MOVING);
+            split = strtok(NULL, ",");
+            LOGF_DEBUG("Roof/shutter is opening. %s", split);
+        } else if (strcmp(split, "c") == 0) {
+            setShutterState(SHUTTER_MOVING);
+            split = strtok(NULL, ",");
+            LOGF_DEBUG("Roof/shutter is closing. %s", split);
+        } else if (strcmp(split, "i") == 0) {
+            split = strtok(NULL, ",");
+            if (strcmp(split, "OPEN") == 0) {
+                setShutterState(SHUTTER_OPENED);
+                LOG_DEBUG("Roof/shutter is open");
+            } else if (strcmp(split, "CLOSED") == 0) {
+                setShutterState(SHUTTER_CLOSED);
+                LOG_DEBUG("Roof/shutter is closed");
+            } else if (strcmp(split, "No Error") == 0) {
+                setShutterState(SHUTTER_UNKNOWN);
+                LOG_DEBUG("Roof/shutter is idle");
+            }
+        }
+    }
+
+    // Get the last roof error (if any)
+    char roof_error_response[RB_MAX_LEN] = {0};
+    int roof_error_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_error_response, OCS_get_roof_last_error);
+    if (roof_error_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+        setShutterState(SHUTTER_ERROR);
+        if (strcmp(roof_error_response, "RERR_OPEN_SAFETY_INTERLOCK") == 0) {
+            LOG_WARN("Roof/shutter error - Open safety interlock");
+        } else if (strcmp(roof_error_response, "RERR_CLOSE_SAFETY_INTERLOCK") == 0) {
+            LOG_WARN("Roof/shutter error - Close safety interlock");
+        } else if (strcmp(roof_error_response, "RERR_OPEN_UNKNOWN") == 0) {
+            LOG_WARN("Roof/shutter error - Open unknown");
+        } else if (strcmp(roof_error_response, "RERR_OPEN_LIMIT_SW") == 0) {
+            LOG_WARN("Roof/shutter error - Open limit switch");
+        } else if (strcmp(roof_error_response, "RERR_OPEN_MAX_TIME") == 0) {
+            LOG_WARN("Roof/shutter error - Open max time exceeded");
+        } else if (strcmp(roof_error_response, "RERR_OPEN_MIN_TIME") == 0) {
+            LOG_WARN("Roof/shutter error - Open min time not reached");
+        } else if (strcmp(roof_error_response, "RERR_CLOSE_UNKNOWN") == 0) {
+            LOG_WARN("Roof/shutter error - Close unknow");
+        } else if (strcmp(roof_error_response, "RERR_CLOSE_LIMIT_SW") == 0) {
+            LOG_WARN("Roof/shutter error - Close limit switch");
+        } else if (strcmp(roof_error_response, "RERR_CLOSE_MAX_TIME") == 0) {
+            LOG_WARN("Roof/shutter error - Close max time exceeded");
+        } else if (strcmp(roof_error_response, "RERR_CLOSE_MIN_TIME") == 0) {
+            LOG_WARN("Roof/shutter error - Close min time not reached");
+        } else if (strcmp(roof_error_response, "RERR_LIMIT_SW") == 0) {
+            LOG_WARN("Roof/shutter error - Both open & close limit switches active together");
+        }
+    }
+
     // Get the Obsy Thermostat readings
     char thermostat_status_response[RB_MAX_LEN] = {0};
     int thermostat_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
@@ -1284,6 +1278,89 @@ void OCS::TimerHit()
 //    nanosleep(&req, (struct timespec *)nullptr);
 //}
 
+IPState OCS::ControlShutter(ShutterOperation operation)
+{
+    if (operation == SHUTTER_OPEN) {
+        sendOCSCommand(OCS_roof_open);
+    }
+    else if (operation == SHUTTER_CLOSE) {
+       sendOCSCommandBlind(OCS_roof_close);
+    }
+
+    return IPS_OK;
+}
+
+/************************************************************************************
+ * Called from Dome, BaseDevice to establish contact with device
+ ************************************************************************************/
+bool OCS::Handshake()
+{
+    bool handshake_status = false;
+
+    if (PortFD > 0)
+    {
+        Connection::Interface *activeConnection = getActiveConnection();
+        if (!activeConnection->name().compare("CONNECTION_TCP"))
+        {
+            LOG_INFO("Network based connection, detection timeouts set to 2 seconds");
+            OCSTimeoutMicroSeconds = 0;
+            OCSTimeoutSeconds = 2;
+        }
+        else
+        {
+            LOG_INFO("Non-Network based connection, detection timeouts set to 0.1 seconds");
+            OCSTimeoutMicroSeconds = 100000;
+            OCSTimeoutSeconds = 0;
+        }
+
+        char handshake_response[RB_MAX_LEN] = {0};
+        handshake_status = getCommandSingleCharErrorOrLongResponse(PortFD, handshake_response, OCS_handshake);
+        if (strcmp(handshake_response, "OCS") == 0)
+        {
+            LOG_DEBUG("OCS handshake established");
+            handshake_status = true;
+
+            char OCS_dome_present_response[RB_MAX_LEN] = {0};
+            int OCS_dome_present = getCommandSingleCharErrorOrLongResponse(PortFD, OCS_dome_present_response, OCS_get_dome_status);
+            if (OCS_dome_present > 0) {
+                SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK | DOME_CAN_ABS_MOVE | DOME_CAN_SYNC |
+                                  DOME_HAS_BACKLASH | DOME_HAS_SHUTTER);
+                LOG_DEBUG("OCS has dome");
+            } else {
+                LOG_DEBUG("OCS does not have dome");
+            }
+        }
+        else
+        {
+            LOG_DEBUG("OCS handshake error, reponse was:");
+            LOG_DEBUG(handshake_response);
+        }
+    }
+    else
+    {
+        LOG_ERROR("OCS can't handshake, device not connected");
+    }
+
+    return handshake_status;
+}
+
+/**************************************************************************************
+** Client is asking us to establish connection to the device
+***************************************************************************************/
+bool OCS::Connect()
+{
+    bool status = INDI::Dome::Connect();
+    return status;
+}
+
+/**************************************************************************************
+** Client is asking us to terminate connection to the device
+***************************************************************************************/
+bool OCS::Disconnect()
+{
+    bool status = INDI::Dome::Disconnect();
+    return status;
+}
 /********************************************************************
  * OCS command functions, copied from lx200_OnStep
  *******************************************************************/

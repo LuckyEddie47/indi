@@ -112,8 +112,8 @@ An unterminated 0 is returned from unconfigured items
 // RERR_CLOSE_LIMIT_SW#
 // RERR_CLOSE_MAX_TIME#
 // RERR_CLOSE_MIN_TIME#
-// RERR_LIMIT_SW# (both open and closed limit switches simultaneously)
-// nothing if never errored
+// RERR_LIMIT_SW#
+// or nothing if never errored
 
 //Dome commands
 
@@ -417,7 +417,10 @@ private:
 //    ITextVectorProperty OnstepStatTP;
 //    IText OnstepStat[0] {};
 
-    // Thermostat tb controls
+    // Shutter control
+    virtual IPState ControlShutter(ShutterOperation operation) override;
+
+    // Thermostat tab controls
     enum {
         THERMOSTAT_TEMERATURE,
         THERMOSTAT_HUMIDITY,
