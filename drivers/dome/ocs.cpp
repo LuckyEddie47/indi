@@ -1303,7 +1303,7 @@ void OCS::TimerHit()
 IPState OCS::ControlShutter(ShutterOperation operation)
 {
     if (operation == SHUTTER_OPEN) {
-        sendOCSCommand(OCS_roof_open);
+        sendOCSCommandBlind(OCS_roof_open);
     }
     else if (operation == SHUTTER_CLOSE) {
        sendOCSCommandBlind(OCS_roof_close);
