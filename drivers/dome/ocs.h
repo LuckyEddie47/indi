@@ -437,12 +437,15 @@ private:
 //    ITextVectorProperty OnstepStatTP;
 //    IText OnstepStat[0] {};
 
-    // Shutter control
+    // Roof/Shutter control
+    int ROOF_TIME_PRE_MOTION = 0;
+    int ROOF_TIME_POST_MOTION = 0;
     char last_shutter_status[RB_MAX_LEN];
     char last_shutter_error[RB_MAX_LEN];
     virtual IPState ControlShutter(ShutterOperation operation) override;
 
     // Thermostat tab controls
+    bool thermostat_controls_enabled = false;
     enum {
         THERMOSTAT_TEMERATURE,
         THERMOSTAT_HUMIDITY,
@@ -461,7 +464,9 @@ private:
     INumberVectorProperty Thermostat_setpointsNP;
     INumber Thermostat_setpointN[THERMOSTAT_SETPOINT_COUNT];
 
-    // GPIO tab controls
+    // Lights tab controls
+    bool lights_tab_enabled = false;
+
     enum {
         SENSE_1,
         SENSE_2,
@@ -476,6 +481,8 @@ private:
     INumberVectorProperty SenseNP;
     INumber SenseN[SENSE_COUNT];
 
+    // Power tab controls
+    bool power_tab_enabled = false;
     enum {
         RELAY_1,
         RELAY_2,

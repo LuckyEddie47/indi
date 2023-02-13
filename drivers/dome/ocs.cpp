@@ -1322,7 +1322,8 @@ IPState OCS::ControlShutter(ShutterOperation operation)
     // into the functions feeding into the OCS get roof status function
     // that allow for the delays between roof/shutter start/end of travel
     // and the activation of the respective interlock switches
-    SetTimer(2000);
+    // Delay from OCS in seconds, need to convert to ms and add 1/2 second
+    SetTimer((ROOF_TIME_PRE_MOTION * 1000) + 500);
 
     return IPS_BUSY;
 }
@@ -1357,6 +1358,7 @@ bool OCS::Handshake()
             LOG_DEBUG("OCS handshake established");
             handshake_status = true;
 
+            // Get dome presence
             char OCS_dome_present_response[RB_MAX_LEN] = {0};
             int OCS_dome_present = getCommandSingleCharErrorOrLongResponse(PortFD, OCS_dome_present_response, OCS_get_dome_status);
             if (OCS_dome_present > 0) {
@@ -1366,6 +1368,27 @@ bool OCS::Handshake()
             } else {
                 LOG_DEBUG("OCS does not have dome");
             }
+
+            // Get roof delays
+            char roof_timeout_response[RB_MAX_LEN] = {0};
+            int roof_timeout_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_timeout_response, OCS_get_timeouts);
+            if (roof_timeout_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+                char *split;
+                split = strtok(roof_timeout_response, ",");
+                ROOF_TIME_PRE_MOTION = atoi(split);
+                split = strtok(NULL, ",");
+                ROOF_TIME_POST_MOTION = atoi(split);
+            }
+            else {
+                LOGF_WARN("Communication error on get roof delays %s, this update aborted, will try again...", OCS_get_timeouts);
+                LOGF_WARN("thermostat_status_error_or_fail = %d", roof_timeout_error_or_fail);
+                LOGF_WARN("thermostat_status_response = %s", roof_timeout_response);
+            }
+
+
+            // Get power relay definitions
+
+            // Get light relay definitions
         }
         else
         {
