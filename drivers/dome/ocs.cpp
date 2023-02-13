@@ -1345,8 +1345,8 @@ bool OCS::Handshake()
         }
         else
         {
-            LOG_INFO("Non-Network based connection, detection timeouts set to 0.5 seconds");
-            OCSTimeoutMicroSeconds = 500000;
+            LOG_INFO("Non-Network based connection, detection timeouts set to 0.2 seconds");
+            OCSTimeoutMicroSeconds = 200000;
             OCSTimeoutSeconds = 0;
         }
 
