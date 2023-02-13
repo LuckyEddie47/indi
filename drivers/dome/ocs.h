@@ -45,6 +45,11 @@ An unterminated 0 is returned from unconfigured items
 #define OCS_get_firmware ":IN#"
 // Returns: firmware_string# for example 3.03i#
 
+// Get timeouts
+#define OCS_get_timeouts ":IT"
+// Returns: n.n,m.m#
+// where n.n is ROOF_TIME_PRE_MOTION and m.m ROOF_TIME_POST_MOTION
+
 // Get safety status
 #define OCS_get_safety_status ":Gs#"
 // Returns: SAFE#, UNSAFE#
@@ -297,6 +302,21 @@ An unterminated 0 is returned from unconfigured items
 // Returns: 1# on success
 
 // Power/GPIO commands
+
+// Get Light relay #defines
+#define OCS_get_light_definitions ":IL#"
+// Returns: n,n,-1,n,n#
+// LIGHT_WRW_RELAY,LIGHT_WRR_RELAY,LIGHT_ORW_RELAY,LIGHT_ORR_RELAY,LIGHT_OUTSIDE_RELAY
+// -1 indicates function not defined
+
+// Get Power device relays
+#define OCS_get_power_definitions ":Ip#"
+// Returns: n,n,-1,n,n,n#
+// POWER_DEVICE1_RELAY...POWER_DEVICE6_RELAY
+
+// Get Power device names
+#define OCS_get_power_names_part ":Ip"
+// Returns: name_string#
 
 // Get Relay n state
 // ":GRn#"

@@ -630,7 +630,6 @@ void OCS::TimerHit()
                 setShutterState(SHUTTER_CLOSED);
                 LOG_DEBUG("Roof/shutter is closed");
             } else if (strcmp(split, "No Error") == 0) {
-                setShutterState(SHUTTER_UNKNOWN);
                 LOG_DEBUG("Roof/shutter is idle");
             }
         }
@@ -640,7 +639,13 @@ void OCS::TimerHit()
     char roof_error_response[RB_MAX_LEN] = {0};
     int roof_error_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_error_response, OCS_get_roof_last_error);
     if (roof_error_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-        setShutterState(SHUTTER_ERROR);
+        if (getShutterState() != SHUTTER_ERROR) {
+            setShutterState(SHUTTER_ERROR);
+
+            LOGF_WARN("roof_error_error_or_fail = %d", roof_error_error_or_fail);
+            LOGF_WARN("roof_error_response = %s", roof_error_response);
+
+        }
         if (strcmp(roof_error_response, "RERR_OPEN_SAFETY_INTERLOCK") == 0 &&
                 strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
@@ -686,6 +691,8 @@ void OCS::TimerHit()
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
             LOG_WARN("Roof/shutter error - Both open & close limit switches active together");
         }
+    } else if (roof_error_error_or_fail == 1) {
+        LOGF_WARN("Communication error on get Roof/Shutter last error %s, this update aborted, will try again...", OCS_get_roof_last_error);
     }
 
     // Get the Obsy Thermostat readings
@@ -701,6 +708,8 @@ void OCS::TimerHit()
     }
     else {
         LOGF_WARN("Communication error on get Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
+        LOGF_WARN("thermostat_status_error_or_fail = %d", thermostat_status_error_or_fail);
+        LOGF_WARN("thermostat_status_response = %s", thermostat_status_response);
     }
 
     // Get the Thermstat setpoints
@@ -1303,13 +1312,19 @@ void OCS::TimerHit()
 IPState OCS::ControlShutter(ShutterOperation operation)
 {
     if (operation == SHUTTER_OPEN) {
-        sendOCSCommand(OCS_roof_open);
+        sendOCSCommandBlind(OCS_roof_open);
     }
     else if (operation == SHUTTER_CLOSE) {
        sendOCSCommandBlind(OCS_roof_close);
     }
 
-    return IPS_OK;
+    // We have to delay the polling timer to account for the delays built
+    // into the functions feeding into the OCS get roof status function
+    // that allow for the delays between roof/shutter start/end of travel
+    // and the activation of the respective interlock switches
+    SetTimer(2000);
+
+    return IPS_BUSY;
 }
 
 /************************************************************************************
@@ -1330,8 +1345,8 @@ bool OCS::Handshake()
         }
         else
         {
-            LOG_INFO("Non-Network based connection, detection timeouts set to 0.1 seconds");
-            OCSTimeoutMicroSeconds = 100000;
+            LOG_INFO("Non-Network based connection, detection timeouts set to 0.5 seconds");
+            OCSTimeoutMicroSeconds = 500000;
             OCSTimeoutSeconds = 0;
         }
 
