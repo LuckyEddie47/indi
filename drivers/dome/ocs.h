@@ -347,29 +347,21 @@ class OCS : public INDI::Dome
     OCS();
     virtual ~OCS() override = default;
 
-    virtual bool initProperties();
+    virtual bool initProperties() override;
     virtual void ISGetProperties(const char *dev) override;
-    virtual bool ISNewNumber(const char *dev,const char *name,double values[],char *names[],int n);
-    const char *getDefaultName();
-    bool updateProperties();
-    virtual bool ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n);
+    virtual bool ISNewNumber(const char *dev,const char *name,double values[],char *names[],int n) override;
+    const char *getDefaultName() override;
+    bool updateProperties() override;
+    virtual bool ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n) override;
 //    virtual bool saveConfigItems(FILE *fp);
-    virtual bool ISSnoopDevice(XMLEle *root);
-    virtual bool Handshake();
+    virtual bool ISSnoopDevice(XMLEle *root) override;
+    virtual bool Handshake() override;
 
   protected:
-    bool Connect();
-    bool Disconnect();
+    bool Connect() override;
+    bool Disconnect() override;
 
-    void TimerHit();
-
-//    virtual IPState Move(DomeDirection dir, DomeMotionCommand operation);
-//    virtual IPState Park();
-//    virtual IPState UnPark();
-//    virtual bool Abort();
-//
-//    virtual bool getFullOpenedLimitSwitch(bool*);
-//    virtual bool getFullClosedLimitSwitch(bool*);
+    void TimerHit() override;
 
     bool sendOCSCommand(const char *cmd);
     bool sendOCSCommandBlind(const char *cmd);
@@ -384,58 +376,6 @@ class OCS : public INDI::Dome
     long int OCSTimeoutMicroSeconds = 100000;
 
 private:
-//    void updateRoofStatus();
-//    bool getRoofLockedSwitch(bool*);
-//    bool getRoofAuxSwitch(bool*);
-//    bool setRoofLock(bool switchOn);
-//    bool setRoofAux(bool switchOn);
-//    bool readRoofSwitch(const char* roofSwitchId, bool* result);
-//    bool roofOpen();
-//    bool roofClose();
-//    bool roofAbort();
-//    bool pushRoofButton(const char*, bool switchOn, bool ignoreLock);
-//    bool initialContact();
-//    bool evaluateResponse(char*, bool*);
-//    bool writeIno(const char*);
-//    bool readIno(char*);
-//    void msSleep(int);
-//
-//    bool setupConditions();
-//    float CalcTimeLeft(timeval);
-//    double MotionRequest { 0 };
-//    struct timeval MotionStart { 0, 0 };
-//    bool contactEstablished = false;
-//    bool roofOpening = false;
-//    bool roofClosing = false;
-//    ILight RoofStatusL[5];
-//    ILightVectorProperty RoofStatusLP;
-//    enum { ROOF_STATUS_OPENED, ROOF_STATUS_CLOSED, ROOF_STATUS_MOVING, ROOF_STATUS_LOCKED, ROOF_STATUS_AUXSTATE };
-//
-//    ISwitch LockS[2];
-//    ISwitchVectorProperty LockSP;
-//    enum { LOCK_ENABLE, LOCK_DISABLE };
-//
-//    ISwitch AuxS[2];
-//    ISwitchVectorProperty AuxSP;
-//    enum { AUX_ENABLE, AUX_DISABLE };
-//
-//    ISState fullyOpenedLimitSwitch {ISS_OFF};
-//    ISState fullyClosedLimitSwitch {ISS_OFF};
-//    ISState roofLockedSwitch {ISS_OFF};
-//    ISState roofAuxiliarySwitch {ISS_OFF};
-//    INumber RoofTimeoutN[1] {};
-//    INumberVectorProperty RoofTimeoutNP;
-//    enum { EXPIRED_CLEAR, EXPIRED_OPEN, EXPIRED_CLOSE };
-//    unsigned int roofTimedOut;
-//    bool simRoofOpen = false;
-//    bool simRoofClosed = true;
-//    unsigned int communicationErrors = 0;
-
-//    IText ThermostatStatusT[10] {};
-//    ITextVectorProperty ThermostatStatusTP;
-
-//    ITextVectorProperty OnstepStatTP;
-//    IText OnstepStat[0] {};
 
     // Roof/Shutter control
     int ROOF_TIME_PRE_MOTION = 0;
@@ -453,8 +393,6 @@ private:
     };
     ITextVectorProperty Thermostat_StatusTP;
     IText Thermostat_StatusT[THERMOSTAT_COUNT] {};
-//    char thermostat_temperature[RB_MAX_LEN] = {0};
-//    char thermostat_humidity[RB_MAX_LEN] = {0};
 
     enum {
         THERMOSTAT_HEAT_SETPOINT,
