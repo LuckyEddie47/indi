@@ -46,7 +46,7 @@ An unterminated 0 is returned from unconfigured items
 // Returns: firmware_string# for example 3.03i#
 
 // Get timeouts
-#define OCS_get_timeouts ":IT"
+#define OCS_get_timeouts ":IT#"
 // Returns: n.n,m.m#
 // where n.n is ROOF_TIME_PRE_MOTION and m.m ROOF_TIME_POST_MOTION
 
@@ -316,22 +316,27 @@ An unterminated 0 is returned from unconfigured items
 
 // Get Power device names
 #define OCS_get_power_names_part ":Ip"
+// Example: ":Ip1#"
 // Returns: name_string#
 
 // Get Relay n state
-// ":GRn#"
+#define OCS_get_relay_part ":GR"
+// Example: ":GR1#"
 // Returns: ON#, OFF#, n# (pwm 0-9)
 
 // Set Relay n [state] = ON, OFF, DELAY, n (pwm 0 to 10)
-// ":SRn,[state]#"
+#define OCS_set_relay_part ":SR"
+// Example: ":SR1,ON#"
 // Returns: 1# on success
 
 // Get Analog n state
-// ":GAn#"
+#define OCS_get_analog_part ":GA"
+// Example: ":GA1#"
 // Returns: n# (0 to 1023, 0 to 5V)
 
 // Get Digital Sense n state
-// ":GSn#"
+#define OCS_get_digital_part ":GS"
+// Example: ":GS1#"
 // Returns: ON#, OFF#
 
 // For dynamically assembled commands
@@ -402,8 +407,8 @@ private:
     INumberVectorProperty Thermostat_setpointsNP;
     INumber Thermostat_setpointN[THERMOSTAT_SETPOINT_COUNT];
 
-    // Lights tab controls
-    bool lights_tab_enabled = false;
+    // Sensors tab controls
+    bool sensors_tab_enabled = false;
 
     enum {
         SENSE_1,
@@ -421,6 +426,24 @@ private:
 
     // Power tab controls
     bool power_tab_enabled = false;
+    enum {
+        POWER_DEVICE1,
+        POWER_DEVICE2,
+        POWER_DEVICE3,
+        POWER_DEVICE4,
+        POWER_DEVICE5,
+        POWER_DEVICE6,
+        POWER_DEVICE_COUNT
+    };
+
+    int power_device_relays[POWER_DEVICE_COUNT];
+    char POWER_DEVICE1_NAME[RB_MAX_LEN];
+    char POWER_DEVICE2_NAME[RB_MAX_LEN];
+    char POWER_DEVICE3_NAME[RB_MAX_LEN];
+    char POWER_DEVICE4_NAME[RB_MAX_LEN];
+    char POWER_DEVICE5_NAME[RB_MAX_LEN];
+    char POWER_DEVICE6_NAME[RB_MAX_LEN];
+
     enum {
         RELAY_1,
         RELAY_2,
@@ -442,7 +465,41 @@ private:
         RELAY_18,
         RELAY_COUNT
     };
-    ISwitchVectorProperty RelaySP;
-    ISwitch RelayS[RELAY_COUNT];
+    ISwitchVectorProperty Power_Device1SP;
+    ISwitch Power_Device1S[1];
+    ISwitchVectorProperty Power_Device2SP;
+    ISwitch Power_Device2S[1];
+    ISwitchVectorProperty Power_Device3SP;
+    ISwitch Power_Device3S[1];
+    ISwitchVectorProperty Power_Device4SP;
+    ISwitch Power_Device4S[1];
+    ISwitchVectorProperty Power_Device5SP;
+    ISwitch Power_Device5S[1];
+    ISwitchVectorProperty Power_Device6SP;
+    ISwitch Power_Device6S[1];
+    ITextVectorProperty Power_Device_Name1TP;
+    IText Power_Device_Name1T[1] {};
+    ITextVectorProperty Power_Device_Name2TP;
+    IText Power_Device_Name2T[1] {};
+    ITextVectorProperty Power_Device_Name3TP;
+    IText Power_Device_Name3T[1] {};
+    ITextVectorProperty Power_Device_Name4TP;
+    IText Power_Device_Name4T[1] {};
+    ITextVectorProperty Power_Device_Name5TP;
+    IText Power_Device_Name5T[1] {};
+    ITextVectorProperty Power_Device_Name6TP;
+    IText Power_Device_Name6T[1] {};
+
+    // Lights tab controls
+    bool lights_tab_enabled = false;
+
+    enum {
+        LIGHT_WRW_RELAY,
+        LIGHT_WRR_RELAY,
+        LIGHT_ORW_RELAY,
+        LIGHT_ORR_RELAY,
+        LIGHT_OUTSIDE_RELAY,
+        LIGHT_COUNT
+    };
 };
 
