@@ -381,13 +381,15 @@ class OCS : public INDI::Dome
     long int OCSTimeoutMicroSeconds = 100000;
 
 private:
+    // Capability queries on connection
+    void GetCapabilites();
 
     // Roof/Shutter control
     int ROOF_TIME_PRE_MOTION = 0;
     int ROOF_TIME_POST_MOTION = 0;
     char last_shutter_status[RB_MAX_LEN];
     char last_shutter_error[RB_MAX_LEN];
-    virtual IPState ControlShutter(ShutterOperation operation) override;
+    IPState ControlShutter(ShutterOperation operation) override;
 
     // Thermostat tab controls
     bool thermostat_controls_enabled = false;

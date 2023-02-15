@@ -143,7 +143,7 @@ bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *nam
             if ( THERMOSTAT_SETPOINT_COUNT == n) {
                 for (int parameter = THERMOSTAT_HEAT_SETPOINT; parameter < THERMOSTAT_SETPOINT_COUNT; parameter++) {
                     if (parameter == THERMOSTAT_HEAT_SETPOINT) {
-                        char thermostat_setpoint_command[RB_MAX_LEN];
+                        char thermostat_setpoint_command[CMD_MAX_LEN];
                         sprintf(thermostat_setpoint_command, "%s%.0f%s",
                                 OCS_set_thermostat_heat_setpoint_part, values[THERMOSTAT_HEAT_SETPOINT], OCS_command_terminator);
                         if (!sendOCSCommand(thermostat_setpoint_command)) {
@@ -153,7 +153,7 @@ bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *nam
                         }
                     }
                     else if (parameter == THERMOSTAT_COOL_SETPOINT) {
-                        char thermostat_setpoint_command[RB_MAX_LEN];
+                        char thermostat_setpoint_command[CMD_MAX_LEN];
                         sprintf(thermostat_setpoint_command, "%s%.0f%s",
                                 OCS_set_thermostat_cool_setpoint_part, values[THERMOSTAT_COOL_SETPOINT], OCS_command_terminator);
                         if (!sendOCSCommand(thermostat_setpoint_command)) {
@@ -223,37 +223,42 @@ bool OCS::initProperties()
     IUFillSwitch(&Power_Device1S[0], "POWER_DEVICE1", "POWER_DEVICE 1", ISS_OFF);
     IUFillTextVector(&Power_Device_Name1TP, Power_Device_Name1T, 1, getDeviceName(), "POWER_DEVICE_1_NAME", "Power Dev1",
                POWER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Power_Device_Name1T[0], "DEVICE_1_NAME", "Name", "");
+    IUFillText(&Power_Device_Name1T[0], "DEVICE_1_NAME", "Name", POWER_DEVICE1_NAME);
+
     IUFillSwitchVector(&Power_Device2SP, Power_Device2S, 1, getDeviceName(), "POWER_DEVICE2", "Power Device 2",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Power_Device2S[0], "POWER_DEVICE2", "POWER_DEVICE 2", ISS_OFF);
     IUFillTextVector(&Power_Device_Name2TP, Power_Device_Name2T, 1, getDeviceName(), "POWER_DEVICE_2_NAME", "Power Dev2",
                POWER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Power_Device_Name2T[0], "DEVICE_2_NAME", "Name", "");
+    IUFillText(&Power_Device_Name2T[0], "DEVICE_2_NAME", "Name", POWER_DEVICE2_NAME);
+
     IUFillSwitchVector(&Power_Device3SP, Power_Device3S, 1, getDeviceName(), "POWER_DEVICE3", "Power Device 3",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Power_Device1S[0], "POWER_DEVICE3", "POWER_DEVICE 3", ISS_OFF);
     IUFillTextVector(&Power_Device_Name3TP, Power_Device_Name3T, 1, getDeviceName(), "POWER_DEVICE_3_NAME", "Power Dev3",
                POWER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Power_Device_Name3T[0], "DEVICE_3_NAME", "Name", "");
+    IUFillText(&Power_Device_Name3T[0], "DEVICE_3_NAME", "Name", POWER_DEVICE3_NAME);
+
     IUFillSwitchVector(&Power_Device4SP, Power_Device4S, 1, getDeviceName(), "POWER_DEVICE4", "Power Device 4",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Power_Device4S[0], "POWER_DEVICE4", "POWER_DEVICE 4", ISS_OFF);
     IUFillTextVector(&Power_Device_Name4TP, Power_Device_Name4T, 1, getDeviceName(), "POWER_DEVICE_4_NAME", "Power Dev4",
                POWER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Power_Device_Name4T[0], "DEVICE_4_NAME", "Name", "");
+    IUFillText(&Power_Device_Name4T[0], "DEVICE_4_NAME", "Name", POWER_DEVICE4_NAME);
+
     IUFillSwitchVector(&Power_Device5SP, Power_Device5S, 1, getDeviceName(), "POWER_DEVICE5", "Power Device 5",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Power_Device5S[0], "POWER_DEVICE5", "POWER_DEVICE 5", ISS_OFF);
     IUFillTextVector(&Power_Device_Name5TP, Power_Device_Name5T, 1, getDeviceName(), "POWER_DEVICE_5_NAME", "Power Dev5",
                POWER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Power_Device_Name5T[0], "DEVICE_5_NAME", "Name", "");
+    IUFillText(&Power_Device_Name5T[0], "DEVICE_5_NAME", "Name", POWER_DEVICE5_NAME);
+
     IUFillSwitchVector(&Power_Device6SP, Power_Device6S, 1, getDeviceName(), "POWER_DEVICE6", "Power Device 6",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Power_Device6S[0], "POWER_DEVICE6", "POWER_DEVICE 6", ISS_OFF);
     IUFillTextVector(&Power_Device_Name6TP, Power_Device_Name6T, 1, getDeviceName(), "POWER_DEVICE_6_NAME", "Power Dev6",
                POWER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Power_Device_Name6T[0], "DEVICE_6_NAME", "Name", "");
+    IUFillText(&Power_Device_Name6T[0], "DEVICE_6_NAME", "Name", POWER_DEVICE6_NAME);
 
     addAuxControls();
     return true;
@@ -469,6 +474,13 @@ void OCS::TimerHit()
 
     // Get the Sense Inputs values
 
+    // Power tab
+    IDSetText(&Power_Device_Name1TP, nullptr);
+    IDSetText(&Power_Device_Name2TP, nullptr);
+    IDSetText(&Power_Device_Name3TP, nullptr);
+    IDSetText(&Power_Device_Name4TP, nullptr);
+    IDSetText(&Power_Device_Name5TP, nullptr);
+    IDSetText(&Power_Device_Name6TP, nullptr);
 
     // Timer loop control
     if (!isConnected())
@@ -503,17 +515,14 @@ bool OCS::Handshake()
 {
     bool handshake_status = false;
 
-    if (PortFD > 0)
-    {
+    if (PortFD > 0) {
         Connection::Interface *activeConnection = getActiveConnection();
-        if (!activeConnection->name().compare("CONNECTION_TCP"))
-        {
+        if (!activeConnection->name().compare("CONNECTION_TCP")) {
             LOG_INFO("Network based connection, detection timeouts set to 2 seconds");
             OCSTimeoutMicroSeconds = 0;
             OCSTimeoutSeconds = 2;
         }
-        else
-        {
+        else {
             LOG_INFO("Non-Network based connection, detection timeouts set to 0.2 seconds");
             OCSTimeoutMicroSeconds = 200000;
             OCSTimeoutSeconds = 0;
@@ -525,91 +534,98 @@ bool OCS::Handshake()
         {
             LOG_DEBUG("OCS handshake established");
             handshake_status = true;
-
-            // Get dome presence
-            char OCS_dome_present_response[RB_MAX_LEN] = {0};
-            int OCS_dome_present_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OCS_dome_present_response, OCS_get_dome_status);
-            if (OCS_dome_present_error_or_fail > 0) {
-                SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK | DOME_CAN_ABS_MOVE | DOME_CAN_SYNC |
-                                  DOME_HAS_BACKLASH | DOME_HAS_SHUTTER);
-                LOG_DEBUG("OCS has dome");
-            } else {
-                LOG_DEBUG("OCS does not have dome");
-            }
-
-            // Get roof delays
-            char roof_timeout_response[RB_MAX_LEN] = {0};
-            int roof_timeout_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_timeout_response, OCS_get_timeouts);
-            if (roof_timeout_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-                char *split;
-                split = strtok(roof_timeout_response, ",");
-                ROOF_TIME_PRE_MOTION = atoi(split);
-                split = strtok(NULL, ",");
-                ROOF_TIME_POST_MOTION = atoi(split);
-            }
-            else {
-                LOGF_WARN("Communication error on get roof delays %s, this update aborted, will try again...", OCS_get_timeouts);
-                LOGF_DEBUG("thermostat_status_error_or_fail = %d", roof_timeout_error_or_fail);
-                LOGF_DEBUG("thermostat_status_response = %s", roof_timeout_response);
-            }
-
-            // Get power relay definitions
-            char power_relay_definitions_response[RB_MAX_LEN] = {0};
-            int power_relay_definitions_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, power_relay_definitions_response, OCS_get_power_definitions);
-            if (power_relay_definitions_error_or_fail > 1) {
-                char *split;
-                split = strtok(power_relay_definitions_response, ",");
-                for (int deviceNo = 0; deviceNo < POWER_DEVICE_COUNT; deviceNo ++) {
-                    power_device_relays[deviceNo] = atoi (split);
-                    split = strtok(NULL, ",");
-                }
-                int powerDisabled = 0;
-                for (int deviceNo = 1; deviceNo <= POWER_DEVICE_COUNT; deviceNo ++) {
-                    powerDisabled += power_device_relays[deviceNo];
-                }
-                if (powerDisabled != (-1 * POWER_DEVICE_COUNT)) {
-                    power_tab_enabled = true;
-                    for (int deviceNo = 1; deviceNo <= POWER_DEVICE_COUNT; deviceNo ++) {
-                        if (power_device_relays[(deviceNo - 1)] != -1)
-                        {
-                            char power_relay_name_response[RB_MAX_LEN] = {0};
-                            char get_power_device_name_command[RB_MAX_LEN] = {0};
-                            sprintf(get_power_device_name_command, "%s%i%s",
-                                    OCS_get_power_names_part, deviceNo, OCS_command_terminator);
-                            int power_relay_name_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, power_relay_name_response, get_power_device_name_command);
-                            if (power_relay_name_error_or_fail > 0) {
-                                if (deviceNo == 1) {
-                                    strncpy(POWER_DEVICE1_NAME, power_relay_name_response, sizeof(POWER_DEVICE1_NAME));
-                                } else if (deviceNo == 2) {
-                                    strncpy(POWER_DEVICE2_NAME, power_relay_name_response, sizeof(POWER_DEVICE2_NAME));
-                                } else if (deviceNo == 3) {
-                                    strncpy(POWER_DEVICE3_NAME, power_relay_name_response, sizeof(POWER_DEVICE3_NAME));
-                                } else if (deviceNo == 4) {
-                                    strncpy(POWER_DEVICE4_NAME, power_relay_name_response, sizeof(POWER_DEVICE4_NAME));
-                                } else if (deviceNo == 5) {
-                                    strncpy(POWER_DEVICE5_NAME, power_relay_name_response, sizeof(POWER_DEVICE5_NAME));
-                                } else if (deviceNo == 61) {
-                                    strncpy(POWER_DEVICE6_NAME, power_relay_name_response, sizeof(POWER_DEVICE6_NAME));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-
-            // Get light relay definitions
+            GetCapabilites();
         }
         else {
             LOGF_DEBUG("OCS handshake error, reponse was: %s", handshake_response);
         }
     }
-    else
-    {
+    else {
         LOG_ERROR("OCS can't handshake, device not connected");
     }
 
     return handshake_status;
+}
+
+/**************************************************************************************
+** Query connected OCS for capabilities - called from Handshake
+***************************************************************************************/
+
+void OCS::GetCapabilites()
+{
+    // Get dome presence
+    char OCS_dome_present_response[RB_MAX_LEN] = {0};
+    int OCS_dome_present_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OCS_dome_present_response, OCS_get_dome_status);
+    if (OCS_dome_present_error_or_fail > 0) {
+        SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK | DOME_CAN_ABS_MOVE | DOME_CAN_SYNC |
+                          DOME_HAS_BACKLASH | DOME_HAS_SHUTTER);
+        LOG_DEBUG("OCS has dome");
+    } else {
+        LOG_DEBUG("OCS does not have dome");
+    }
+
+    // Get roof delays
+    char roof_timeout_response[RB_MAX_LEN] = {0};
+    int roof_timeout_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_timeout_response, OCS_get_timeouts);
+    if (roof_timeout_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+        char *split;
+        split = strtok(roof_timeout_response, ",");
+        ROOF_TIME_PRE_MOTION = atoi(split);
+        split = strtok(NULL, ",");
+        ROOF_TIME_POST_MOTION = atoi(split);
+    }
+    else {
+        LOGF_WARN("Communication error on get roof delays %s, this update aborted, will try again...", OCS_get_timeouts);
+        LOGF_DEBUG("thermostat_status_error_or_fail = %d", roof_timeout_error_or_fail);
+        LOGF_DEBUG("thermostat_status_response = %s", roof_timeout_response);
+    }
+
+    // Get power relay definitions
+    char power_relay_definitions_response[RB_MAX_LEN] = {0};
+    int power_relay_definitions_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, power_relay_definitions_response, OCS_get_power_definitions);
+    if (power_relay_definitions_error_or_fail > 1) {
+        char *split;
+        split = strtok(power_relay_definitions_response, ",");
+        for (int deviceNo = 0; deviceNo < POWER_DEVICE_COUNT; deviceNo ++) {
+            power_device_relays[deviceNo] = atoi (split);
+            split = strtok(NULL, ",");
+        }
+        int powerDisabled = 0;
+        for (int deviceNo = 1; deviceNo <= POWER_DEVICE_COUNT; deviceNo ++) {
+            powerDisabled += power_device_relays[deviceNo];
+        }
+        if (powerDisabled != (-1 * POWER_DEVICE_COUNT)) {
+            power_tab_enabled = true;
+            for (int deviceNo = 1; deviceNo <= POWER_DEVICE_COUNT; deviceNo ++) {
+                if (power_device_relays[(deviceNo - 1)] != -1)
+                {
+                    char power_relay_name_response[RB_MAX_LEN] = {0};
+                    char get_power_device_name_command[CMD_MAX_LEN] = {0};
+                    sprintf(get_power_device_name_command, "%s%i%s",
+                            OCS_get_power_names_part, deviceNo, OCS_command_terminator);
+                    int power_relay_name_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, power_relay_name_response, get_power_device_name_command);
+                    if (power_relay_name_error_or_fail > 0) {
+                        if (deviceNo == 1) {
+                            strncpy(POWER_DEVICE1_NAME, power_relay_name_response, sizeof(POWER_DEVICE1_NAME));
+                        } else if (deviceNo == 2) {
+                            strncpy(POWER_DEVICE2_NAME, power_relay_name_response, sizeof(POWER_DEVICE2_NAME));
+                        } else if (deviceNo == 3) {
+                            strncpy(POWER_DEVICE3_NAME, power_relay_name_response, sizeof(POWER_DEVICE3_NAME));
+                        } else if (deviceNo == 4) {
+                            strncpy(POWER_DEVICE4_NAME, power_relay_name_response, sizeof(POWER_DEVICE4_NAME));
+                        } else if (deviceNo == 5) {
+                            strncpy(POWER_DEVICE5_NAME, power_relay_name_response, sizeof(POWER_DEVICE5_NAME));
+                        } else if (deviceNo == 61) {
+                            strncpy(POWER_DEVICE6_NAME, power_relay_name_response, sizeof(POWER_DEVICE6_NAME));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    // Get light relay definitions
 }
 
 /**************************************************************************************
@@ -725,26 +741,6 @@ int OCS::getCommandSingleCharResponse(int fd, char *data, const char *cmd)
     return nbytes_read;
 }
 
-int OCS::flushIO(int fd)
-{
-    tcflush(fd, TCIOFLUSH);
-    int error_type = 0;
-    int nbytes_read;
-    std::unique_lock<std::mutex> guard(ocsCommsLock);
-    tcflush(fd, TCIOFLUSH);
-    do
-    {
-        char discard_data[RB_MAX_LEN] = {0};
-        error_type = tty_read_section_expanded(fd, discard_data, '#', 0, 1000, &nbytes_read);
-        if (error_type >= 0)
-        {
-            LOGF_DEBUG("flushIO: Information in buffer: Bytes: %u, string: %s", nbytes_read, discard_data);
-        }
-        //LOGF_DEBUG("flushIO: error_type = %i", error_type);
-    }
-    while (error_type > 0);
-    return 0;
-}
 
 int OCS::getCommandDoubleResponse(int fd, double *value, char *data, const char *cmd)
 {
@@ -888,4 +884,25 @@ int OCS::getCommandSingleCharErrorOrLongResponse(int fd, char *data, const char 
         return error_type;
     }
     return nbytes_read;
+}
+
+int OCS::flushIO(int fd)
+{
+    tcflush(fd, TCIOFLUSH);
+    int error_type = 0;
+    int nbytes_read;
+    std::unique_lock<std::mutex> guard(ocsCommsLock);
+    tcflush(fd, TCIOFLUSH);
+    do
+    {
+        char discard_data[RB_MAX_LEN] = {0};
+        error_type = tty_read_section_expanded(fd, discard_data, '#', 0, 1000, &nbytes_read);
+        if (error_type >= 0)
+        {
+            LOGF_DEBUG("flushIO: Information in buffer: Bytes: %u, string: %s", nbytes_read, discard_data);
+        }
+        //LOGF_DEBUG("flushIO: error_type = %i", error_type);
+    }
+    while (error_type > 0);
+    return 0;
 }
