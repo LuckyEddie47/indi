@@ -218,45 +218,45 @@ bool OCS::initProperties()
     IUFillNumber(&SenseN[SENSE_8], "SENSE_INPUT_8", "Input 8", "%.2f", 0.00, 5.00, 0.01, 0);
 
     // Power devices tab controls
-    IUFillSwitchVector(&Power_Device1SP, Power_Device1S, 1, getDeviceName(), "POWER_DEVICE1", "Power Device 1",
+    IUFillSwitchVector(&Power_Device1SP, Power_Device1S, 1, getDeviceName(), "POWER_DEVICE1", "Device 1",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Power_Device1S[0], "POWER_DEVICE1", "POWER_DEVICE 1", ISS_OFF);
-    IUFillTextVector(&Power_Device_Name1TP, Power_Device_Name1T, 1, getDeviceName(), "POWER_DEVICE_1_NAME", "Power Dev1",
+    IUFillSwitch(&Power_Device1S[0], "POWER_DEVICE1", "DEVICE 1", ISS_OFF);
+    IUFillTextVector(&Power_Device_Name1TP, Power_Device_Name1T, 1, getDeviceName(), "POWER_DEVICE_1_NAME", "Device 1",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name1T[0], "DEVICE_1_NAME", "Name", POWER_DEVICE1_NAME);
 
-    IUFillSwitchVector(&Power_Device2SP, Power_Device2S, 1, getDeviceName(), "POWER_DEVICE2", "Power Device 2",
+    IUFillSwitchVector(&Power_Device2SP, Power_Device2S, 1, getDeviceName(), "POWER_DEVICE2", "Device 2",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Power_Device2S[0], "POWER_DEVICE2", "POWER_DEVICE 2", ISS_OFF);
-    IUFillTextVector(&Power_Device_Name2TP, Power_Device_Name2T, 1, getDeviceName(), "POWER_DEVICE_2_NAME", "Power Dev2",
+    IUFillSwitch(&Power_Device2S[0], "POWER_DEVICE2", "DEVICE 2", ISS_OFF);
+    IUFillTextVector(&Power_Device_Name2TP, Power_Device_Name2T, 1, getDeviceName(), "POWER_DEVICE_2_NAME", "Device 2",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name2T[0], "DEVICE_2_NAME", "Name", POWER_DEVICE2_NAME);
 
-    IUFillSwitchVector(&Power_Device3SP, Power_Device3S, 1, getDeviceName(), "POWER_DEVICE3", "Power Device 3",
+    IUFillSwitchVector(&Power_Device3SP, Power_Device3S, 1, getDeviceName(), "POWER_DEVICE3", "Device 3",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Power_Device1S[0], "POWER_DEVICE3", "POWER_DEVICE 3", ISS_OFF);
-    IUFillTextVector(&Power_Device_Name3TP, Power_Device_Name3T, 1, getDeviceName(), "POWER_DEVICE_3_NAME", "Power Dev3",
+    IUFillSwitch(&Power_Device3S[0], "POWER_DEVICE3", "DEVICE 3", ISS_OFF);
+    IUFillTextVector(&Power_Device_Name3TP, Power_Device_Name3T, 1, getDeviceName(), "POWER_DEVICE_3_NAME", "Device 3",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name3T[0], "DEVICE_3_NAME", "Name", POWER_DEVICE3_NAME);
 
-    IUFillSwitchVector(&Power_Device4SP, Power_Device4S, 1, getDeviceName(), "POWER_DEVICE4", "Power Device 4",
+    IUFillSwitchVector(&Power_Device4SP, Power_Device4S, 1, getDeviceName(), "POWER_DEVICE4", "Device 4",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Power_Device4S[0], "POWER_DEVICE4", "POWER_DEVICE 4", ISS_OFF);
-    IUFillTextVector(&Power_Device_Name4TP, Power_Device_Name4T, 1, getDeviceName(), "POWER_DEVICE_4_NAME", "Power Dev4",
+    IUFillSwitch(&Power_Device4S[0], "POWER_DEVICE4", "DEVICE 4", ISS_OFF);
+    IUFillTextVector(&Power_Device_Name4TP, Power_Device_Name4T, 1, getDeviceName(), "POWER_DEVICE_4_NAME", "Device 4",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name4T[0], "DEVICE_4_NAME", "Name", POWER_DEVICE4_NAME);
 
-    IUFillSwitchVector(&Power_Device5SP, Power_Device5S, 1, getDeviceName(), "POWER_DEVICE5", "Power Device 5",
+    IUFillSwitchVector(&Power_Device5SP, Power_Device5S, 1, getDeviceName(), "POWER_DEVICE5", "Device 5",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Power_Device5S[0], "POWER_DEVICE5", "POWER_DEVICE 5", ISS_OFF);
-    IUFillTextVector(&Power_Device_Name5TP, Power_Device_Name5T, 1, getDeviceName(), "POWER_DEVICE_5_NAME", "Power Dev5",
+    IUFillSwitch(&Power_Device5S[0], "POWER_DEVICE5", "DEVICE 5", ISS_OFF);
+    IUFillTextVector(&Power_Device_Name5TP, Power_Device_Name5T, 1, getDeviceName(), "POWER_DEVICE_5_NAME", "Device 5",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name5T[0], "DEVICE_5_NAME", "Name", POWER_DEVICE5_NAME);
 
-    IUFillSwitchVector(&Power_Device6SP, Power_Device6S, 1, getDeviceName(), "POWER_DEVICE6", "Power Device 6",
+    IUFillSwitchVector(&Power_Device6SP, Power_Device6S, 1, getDeviceName(), "POWER_DEVICE6", "Device 6",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Power_Device6S[0], "POWER_DEVICE6", "POWER_DEVICE 6", ISS_OFF);
-    IUFillTextVector(&Power_Device_Name6TP, Power_Device_Name6T, 1, getDeviceName(), "POWER_DEVICE_6_NAME", "Power Dev6",
+    IUFillSwitch(&Power_Device6S[0], "POWER_DEVICE6", "DEVICE 6", ISS_OFF);
+    IUFillTextVector(&Power_Device_Name6TP, Power_Device_Name6T, 1, getDeviceName(), "POWER_DEVICE_6_NAME", "Device 6",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name6T[0], "DEVICE_6_NAME", "Name", POWER_DEVICE6_NAME);
 
