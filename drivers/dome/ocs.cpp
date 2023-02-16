@@ -48,37 +48,6 @@ USB and network connections supported.
 #define SENSORS_TAB "Sensors"
 #define WEATHER_TAB "Weather"
 
-// // From indi_rolloffino
-// #define ROLLOFF_DURATION 15               // Seconds until Roof is fully opened or closed
-// #define INACTIVE_STATUS  5                // Seconds between updating status lights
-// #define ROR_D_PRESS      1000             // Milliseconds after issuing command before expecting response
-// #define MAX_CNTRL_COM_ERR 10             // Maximum consecutive errors communicating with Arduino
-// // Read only
-// #define ROOF_OPENED_SWITCH "OPENED"
-// #define ROOF_CLOSED_SWITCH "CLOSED"
-// #define ROOF_LOCKED_SWITCH "LOCKED"
-// #define ROOF_AUX_SWITCH    "AUXSTATE"
-//
-// // Write only
-// #define ROOF_OPEN_RELAY     "OPEN"
-// #define ROOF_CLOSE_RELAY    "CLOSE"
-// #define ROOF_ABORT_RELAY    "ABORT"
-// #define ROOF_LOCK_RELAY     "LOCK"
-// #define ROOF_AUX_RELAY      "AUXSET"
-//
-// // Arduino controller interface limits
-// #define MAXINOCMD        15          // Command buffer
-// #define MAXINOTARGET     15          // Target buffer
-// #define MAXINOVAL        127         // Value bufffer, sized to contain NAK error strings
-// #define MAXINOLINE       63          // Sized to contain outgoing command requests
-// #define MAXINOBUF        255         // Sized for maximum overall input / output
-// #define MAXINOERR        255         // System call error message buffer
-// #define MAXINOWAIT       2           // seconds
-
-// Driver version id
-#define VERSION_ID      "20211115"
-// End from indi_rolloffino
-
 /* Add mutex to communications */
 std::mutex ocsCommsLock;
 
@@ -122,9 +91,6 @@ void OCS::ISGetProperties(const char *dev)
 {
     INDI::Dome::ISGetProperties(dev);
 
-//    // Load Sync position
-//    defineProperty(&RoofTimeoutNP);
-//    loadConfig(true, "ENCODER_TICKS");
 }
 
 /********************************************************************************************
@@ -607,16 +573,28 @@ void OCS::GetCapabilites()
                     if (power_relay_name_error_or_fail > 0) {
                         if (deviceNo == 1) {
                             strncpy(POWER_DEVICE1_NAME, power_relay_name_response, sizeof(POWER_DEVICE1_NAME));
+                            IUSaveText(&Power_Device_Name1T[0], POWER_DEVICE1_NAME);
+                            IDSetText(&Power_Device_Name1TP, nullptr);
                         } else if (deviceNo == 2) {
                             strncpy(POWER_DEVICE2_NAME, power_relay_name_response, sizeof(POWER_DEVICE2_NAME));
+                            IUSaveText(&Power_Device_Name2T[0], POWER_DEVICE2_NAME);
+                            IDSetText(&Power_Device_Name2TP, nullptr);
                         } else if (deviceNo == 3) {
                             strncpy(POWER_DEVICE3_NAME, power_relay_name_response, sizeof(POWER_DEVICE3_NAME));
+                            IUSaveText(&Power_Device_Name3T[0], POWER_DEVICE3_NAME);
+                            IDSetText(&Power_Device_Name3TP, nullptr);
                         } else if (deviceNo == 4) {
                             strncpy(POWER_DEVICE4_NAME, power_relay_name_response, sizeof(POWER_DEVICE4_NAME));
+                            IUSaveText(&Power_Device_Name4T[0], POWER_DEVICE4_NAME);
+                            IDSetText(&Power_Device_Name4TP, nullptr);
                         } else if (deviceNo == 5) {
                             strncpy(POWER_DEVICE5_NAME, power_relay_name_response, sizeof(POWER_DEVICE5_NAME));
+                            IUSaveText(&Power_Device_Name5T[0], POWER_DEVICE5_NAME);
+                            IDSetText(&Power_Device_Name5TP, nullptr);
                         } else if (deviceNo == 61) {
                             strncpy(POWER_DEVICE6_NAME, power_relay_name_response, sizeof(POWER_DEVICE6_NAME));
+                            IUSaveText(&Power_Device_Name6T[0], POWER_DEVICE6_NAME);
+                            IDSetText(&Power_Device_Name6TP, nullptr);
                         }
                     }
                 }
