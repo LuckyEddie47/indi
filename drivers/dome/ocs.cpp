@@ -345,54 +345,86 @@ void OCS::TimerHit()
     char roof_error_response[RB_MAX_LEN] = {0};
     int roof_error_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_error_response, OCS_get_roof_last_error);
     if (roof_error_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-        if (getShutterState() != SHUTTER_ERROR) {
-            setShutterState(SHUTTER_ERROR);
-            LOGF_DEBUG("roof_error_error_or_fail = %d", roof_error_error_or_fail);
-            LOGF_DEBUG("roof_error_response = %s", roof_error_response);
-        }
+
+        LOGF_DEBUG("roof_error_error_or_fail = %d", roof_error_error_or_fail);
+        LOGF_DEBUG("roof_error_response = %s", roof_error_response);
+
         if (strcmp(roof_error_response, "RERR_OPEN_SAFETY_INTERLOCK") == 0 &&
                 strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            if (getShutterState() != SHUTTER_ERROR) {
+                setShutterState(SHUTTER_ERROR);
+            }
             LOG_WARN("Roof/shutter error - Open safety interlock");
         } else if (strcmp(roof_error_response, "RERR_CLOSE_SAFETY_INTERLOCK") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            if (getShutterState() != SHUTTER_ERROR) {
+                setShutterState(SHUTTER_ERROR);
+            }
             LOG_WARN("Roof/shutter error - Close safety interlock");
         } else if (strcmp(roof_error_response, "RERR_OPEN_UNKNOWN") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            if (getShutterState() != SHUTTER_ERROR) {
+                setShutterState(SHUTTER_ERROR);
+            }
             LOG_WARN("Roof/shutter error - Open unknown");
         } else if (strcmp(roof_error_response, "RERR_OPEN_LIMIT_SW") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            if (getShutterState() != SHUTTER_ERROR) {
+                setShutterState(SHUTTER_ERROR);
+            }
             LOG_WARN("Roof/shutter error - Open limit switch");
         } else if (strcmp(roof_error_response, "RERR_OPEN_MAX_TIME") == 0 &&
             strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            if (getShutterState() != SHUTTER_ERROR) {
+                setShutterState(SHUTTER_ERROR);
+            }
             LOG_WARN("Roof/shutter error - Open max time exceeded");
         } else if (strcmp(roof_error_response, "RERR_OPEN_MIN_TIME") == 0 &&
             strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            if (getShutterState() != SHUTTER_ERROR) {
+                setShutterState(SHUTTER_ERROR);
+            }
             LOG_WARN("Roof/shutter error - Open min time not reached");
         } else if (strcmp(roof_error_response, "RERR_CLOSE_UNKNOWN") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            if (getShutterState() != SHUTTER_ERROR) {
+                setShutterState(SHUTTER_ERROR);
+            }
             LOG_WARN("Roof/shutter error - Close unknow");
         } else if (strcmp(roof_error_response, "RERR_CLOSE_LIMIT_SW") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            if (getShutterState() != SHUTTER_ERROR) {
+                setShutterState(SHUTTER_ERROR);
+            }
             LOG_WARN("Roof/shutter error - Close limit switch");
         } else if (strcmp(roof_error_response, "RERR_CLOSE_MAX_TIME") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            if (getShutterState() != SHUTTER_ERROR) {
+                setShutterState(SHUTTER_ERROR);
+            }
             LOG_WARN("Roof/shutter error - Close max time exceeded");
         } else if (strcmp(roof_error_response, "RERR_CLOSE_MIN_TIME") == 0 &&
             strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
             LOG_WARN("Roof/shutter error - Close min time not reached");
+            if (getShutterState() != SHUTTER_ERROR) {
+                setShutterState(SHUTTER_ERROR);
+            }
         } else if (strcmp(roof_error_response, "RERR_LIMIT_SW") == 0 &&
                 strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            if (getShutterState() != SHUTTER_ERROR) {
+                setShutterState(SHUTTER_ERROR);
+            }
             LOG_WARN("Roof/shutter error - Both open & close limit switches active together");
         }
     } else if (roof_error_error_or_fail == 1) {
