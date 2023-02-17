@@ -107,17 +107,26 @@ An unterminated 0 is returned from unconfigured items
 // Get the roof/shutter last status error
 #define OCS_get_roof_last_error ":RSL#"
 // Returns:
-// RERR_OPEN_SAFETY_INTERLOCK#
-// RERR_CLOSE_SAFETY_INTERLOCK#
-// RERR_OPEN_UNKNOWN#
-// RERR_OPEN_LIMIT_SW#
-// RERR_OPEN_MAX_TIME#
-// RERR_OPEN_MIN_TIME#
-// RERR_CLOSE_UNKNOWN#
-// RERR_CLOSE_LIMIT_SW#
-// RERR_CLOSE_MAX_TIME#
-// RERR_CLOSE_MIN_TIME#
-// RERR_LIMIT_SW#
+// Error: Open safety interlock#
+// Error: Close safety interlock#
+// Error: Open unknown error#
+// Error: Open limit sw fail#
+// Error: Open over time#
+// Error: Open under time#
+// Error: Close unknown error#
+// Error: Close limit sw fail#
+// Error: Close over time#
+// Error: Close under time#
+// Error: Limit switch malfunction#
+// Error: Closed/opened limit sw on#
+// Warning: Already closed#
+// Error: Close location unknown#
+// Error: Motion direction unknown#
+// Error: Close already in motion#
+// Error: Opened/closed limit sw on#
+// Warning: Already open#
+// Error: Open location unknown#
+// Error: Open already in motion#
 // or nothing if never errored
 
 //Dome commands
@@ -361,6 +370,7 @@ class OCS : public INDI::Dome
 //    virtual bool saveConfigItems(FILE *fp);
     virtual bool ISSnoopDevice(XMLEle *root) override;
     virtual bool Handshake() override;
+    virtual bool Abort() override;
 
   protected:
     bool Connect() override;
@@ -428,6 +438,13 @@ private:
 
     // Power tab controls
     bool power_tab_enabled = false;
+
+    enum {
+        ON_SWITCH,
+        OFF_SWITCH,
+        SWITCH_TOGGLE_COUNT
+    };
+
     enum {
         POWER_DEVICE1,
         POWER_DEVICE2,
@@ -468,17 +485,17 @@ private:
         RELAY_COUNT
     };
     ISwitchVectorProperty Power_Device1SP;
-    ISwitch Power_Device1S[1];
+    ISwitch Power_Device1S[SWITCH_TOGGLE_COUNT];
     ISwitchVectorProperty Power_Device2SP;
-    ISwitch Power_Device2S[1];
+    ISwitch Power_Device2S[SWITCH_TOGGLE_COUNT];
     ISwitchVectorProperty Power_Device3SP;
-    ISwitch Power_Device3S[1];
+    ISwitch Power_Device3S[SWITCH_TOGGLE_COUNT];
     ISwitchVectorProperty Power_Device4SP;
-    ISwitch Power_Device4S[1];
+    ISwitch Power_Device4S[SWITCH_TOGGLE_COUNT];
     ISwitchVectorProperty Power_Device5SP;
-    ISwitch Power_Device5S[1];
+    ISwitch Power_Device5S[SWITCH_TOGGLE_COUNT];
     ISwitchVectorProperty Power_Device6SP;
-    ISwitch Power_Device6S[1];
+    ISwitch Power_Device6S[SWITCH_TOGGLE_COUNT];
     ITextVectorProperty Power_Device_Name1TP;
     IText Power_Device_Name1T[1] {};
     ITextVectorProperty Power_Device_Name2TP;
@@ -503,5 +520,22 @@ private:
         LIGHT_OUTSIDE_RELAY,
         LIGHT_COUNT
     };
+
+    // Manual tab controls
+    enum {
+        SAFETY_INTERLOCK_OVERRIDE,
+        ROOF_HIGH_POWER,
+        WATCHDOG_RESET,
+        MANUAL_CONTROLS_COUNT
+    };
+
+    ITextVectorProperty Manual_WarningTP;
+    IText Manual_WarningT[2] {};
+    ISwitchVectorProperty Safety_Interlock_OverrideSP;
+    ISwitch Safety_Interlock_OverrideS[1];
+    ISwitchVectorProperty Roof_High_PowerSP;
+    ISwitch Roof_High_PowerS[1];
+    ISwitchVectorProperty Watchdog_ResetSP;
+    ISwitch Watchdog_ResetS[1];
 };
 

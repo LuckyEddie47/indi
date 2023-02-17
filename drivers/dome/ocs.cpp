@@ -47,6 +47,7 @@ USB and network connections supported.
 #define LIGHTS_TAB "Lights"
 #define SENSORS_TAB "Sensors"
 #define WEATHER_TAB "Weather"
+#define MANUAL_TAB "Manual"
 
 /* Add mutex to communications */
 std::mutex ocsCommsLock;
@@ -90,7 +91,6 @@ void ISSnoopDevice(XMLEle *root)
 void OCS::ISGetProperties(const char *dev)
 {
     INDI::Dome::ISGetProperties(dev);
-
 }
 
 /********************************************************************************************
@@ -98,6 +98,121 @@ void OCS::ISGetProperties(const char *dev)
 *********************************************************************************************/
 bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
 {
+    if (dev != nullptr && strcmp(dev, getDeviceName()) == 0) {
+
+        LOGF_DEBUG("Got an IsNewSwitch for: %s", name);
+
+        // Power devices
+        if (strcmp(Power_Device1SP.name, name) == 0) {
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "POWER_DEVICE1_ON") == 0) {
+                    char set_power_dev_1_on_cmd[CMD_MAX_LEN];
+                    sprintf(set_power_dev_1_on_cmd, "%s%d,ON%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE1], OCS_command_terminator);
+                    return sendOCSCommand(set_power_dev_1_on_cmd);
+                } else if (strcmp(names[i], "POWER_DEVICE1_OFF") == 0) {
+                    char set_power_dev_1_off_cmd[CMD_MAX_LEN];
+                    sprintf(set_power_dev_1_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE1], OCS_command_terminator);
+                    return sendOCSCommand(set_power_dev_1_off_cmd);
+                }
+            }
+            IDSetSwitch(&Power_Device1SP, nullptr);
+            return true;
+        } else if (strcmp(Power_Device2SP.name, name) == 0) {
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "POWER_DEVICE2_ON") == 0) {
+                    char set_power_dev_2_on_cmd[CMD_MAX_LEN];
+                    sprintf(set_power_dev_2_on_cmd, "%s%d,ON%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE2], OCS_command_terminator);
+                    return sendOCSCommand(set_power_dev_2_on_cmd);
+                } else if (strcmp(names[i], "POWER_DEVICE2_OFF") == 0) {
+                    char set_power_dev_2_off_cmd[CMD_MAX_LEN];
+                    sprintf(set_power_dev_2_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE2], OCS_command_terminator);
+                    return sendOCSCommand(set_power_dev_2_off_cmd);
+                }
+            }
+            IDSetSwitch(&Power_Device2SP, nullptr);
+            return true;
+        } else if (strcmp(Power_Device3SP.name, name) == 0) {
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "POWER_DEVICE3_ON") == 0) {
+                    char set_power_dev_3_on_cmd[CMD_MAX_LEN];
+                    sprintf(set_power_dev_3_on_cmd, "%s%d,ON%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE3], OCS_command_terminator);
+                    return sendOCSCommand(set_power_dev_3_on_cmd);
+                } else if (strcmp(names[i], "POWER_DEVICE1_OFF") == 0) {
+                    char set_power_dev_3_off_cmd[CMD_MAX_LEN];
+                    sprintf(set_power_dev_3_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE3], OCS_command_terminator);
+                    return sendOCSCommand(set_power_dev_3_off_cmd);
+                }
+            }
+            IDSetSwitch(&Power_Device3SP, nullptr);
+            return true;
+        } else if (strcmp(Power_Device4SP.name, name) == 0) {
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "POWER_DEVICE4_ON") == 0) {
+                    char set_power_dev_4_on_cmd[CMD_MAX_LEN];
+                    sprintf(set_power_dev_4_on_cmd, "%s%d,ON%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE4], OCS_command_terminator);
+                    return sendOCSCommand(set_power_dev_4_on_cmd);
+                } else if (strcmp(names[i], "POWER_DEVICE1_OFF") == 0) {
+                    char set_power_dev_4_off_cmd[CMD_MAX_LEN];
+                    sprintf(set_power_dev_4_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE4], OCS_command_terminator);
+                    return sendOCSCommand(set_power_dev_4_off_cmd);
+                }
+            }
+            IDSetSwitch(&Power_Device4SP, nullptr);
+            return true;
+        } else if (strcmp(Power_Device5SP.name, name) == 0) {
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "POWER_DEVICE5_ON") == 0) {
+                    char set_power_dev_5_on_cmd[CMD_MAX_LEN];
+                    sprintf(set_power_dev_5_on_cmd, "%s%d,ON%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE5], OCS_command_terminator);
+                    return sendOCSCommand(set_power_dev_5_on_cmd);
+                } else if (strcmp(names[i], "POWER_DEVICE5_OFF") == 0) {
+                    char set_power_dev_5_off_cmd[CMD_MAX_LEN];
+                    sprintf(set_power_dev_5_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE5], OCS_command_terminator);
+                    return sendOCSCommand(set_power_dev_5_off_cmd);
+                }
+            }
+            IDSetSwitch(&Power_Device5SP, nullptr);
+            return true;
+        } else if (strcmp(Power_Device6SP.name, name) == 0) {
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "POWER_DEVICE1_ON") == 0) {
+                    char set_power_dev_6_on_cmd[CMD_MAX_LEN];
+                    sprintf(set_power_dev_6_on_cmd, "%s%d,ON%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE6], OCS_command_terminator);
+                    IDSetSwitch(&Power_Device6SP, nullptr);
+                    return sendOCSCommand(set_power_dev_6_on_cmd);
+                } else if (strcmp(names[i], "POWER_DEVICE1_OFF") == 0) {
+                    char set_power_dev_6_off_cmd[CMD_MAX_LEN];
+                    sprintf(set_power_dev_6_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE6], OCS_command_terminator);
+                    IDSetSwitch(&Power_Device6SP, nullptr);
+                    return sendOCSCommand(set_power_dev_6_off_cmd);
+                }
+            }
+
+        // Safety Override
+        } else if (strcmp(Safety_Interlock_OverrideSP.name, name) == 0) {
+            IUResetSwitch(&Safety_Interlock_OverrideSP);
+            return sendOCSCommand(OCS_roof_safety_override);
+
+        // Roof max power
+        } else if (strcmp(Roof_High_PowerSP.name, name) == 0) {
+            IUResetSwitch(&Roof_High_PowerSP);
+            return sendOCSCommand(OCS_roof_high_power_mode);
+
+        // Reset Watchdog
+        } else if (strcmp(Watchdog_ResetSP.name, name) == 0) {
+            char watchdog_response[RB_MAX_LEN] = {0};
+            int watchdog_fail_or_error = getCommandSingleCharErrorOrLongResponse(PortFD, watchdog_response, OCS_set_watchdog_flag);
+            (void) watchdog_fail_or_error;
+            if (strcmp(watchdog_response, "Rebooting in 8 seconds...") == 0) {
+                LOG_WARN("Rebooting the OCS controller in 8 seconds...");
+                IDSetSwitch(&Safety_Interlock_OverrideSP, nullptr);
+                return true;
+            } else if (strcmp(watchdog_response, "0") == 0) {
+                LOGF_DEBUG("OCS watchdog reset error, reponse was: %s. Maybe watchdog is not enabled?", watchdog_response);
+            }
+        }
+    }
+
     return INDI::Dome::ISNewSwitch(dev, name, states, names, n);
 }
 
@@ -106,7 +221,7 @@ bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *nam
 {
     if (dev != nullptr && strcmp(dev, getDeviceName()) == 0) {
         if (!strcmp(Thermostat_setpointsNP.name, name)) {
-            if ( THERMOSTAT_SETPOINT_COUNT == n) {
+            if (THERMOSTAT_SETPOINT_COUNT == n) {
                 for (int parameter = THERMOSTAT_HEAT_SETPOINT; parameter < THERMOSTAT_SETPOINT_COUNT; parameter++) {
                     if (parameter == THERMOSTAT_HEAT_SETPOINT) {
                         char thermostat_setpoint_command[CMD_MAX_LEN];
@@ -153,6 +268,7 @@ const char *OCS::getDefaultName()
 {
     return (const char *)"OCS";
 }
+
 /**************************************************************************************
 ** INDI request to init properties. Connected Define properties to Ekos
 ***************************************************************************************/
@@ -161,6 +277,7 @@ bool OCS::initProperties()
     INDI::Dome::initProperties();
 
     // Thermostat tab controls
+    //------------------------
     IUFillTextVector(&Thermostat_StatusTP, Thermostat_StatusT, THERMOSTAT_COUNT, getDeviceName(), "THERMOSTAT_STATUS", "Obsy Status",
                      THERMOSTAT_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], "THERMOSTAT_TEMPERATURE", "Temperature deg.C", "NA");
@@ -172,6 +289,7 @@ bool OCS::initProperties()
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT], "THERMOSTAT_COOL_SETPOINT", "Cool deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
 
     // Sensors tab controls
+    //---------------------
     IUFillNumberVector(&SenseNP, SenseN, SENSE_COUNT, getDeviceName(), "SENSE_INPUTS", "Inputs",
                      SENSORS_TAB, IP_RO, 60, IPS_OK);
     IUFillNumber(&SenseN[SENSE_1], "SENSE_INPUT_1", "Input 1", "%.2f", 0.00, 5.00, 0.01, 0);
@@ -184,49 +302,77 @@ bool OCS::initProperties()
     IUFillNumber(&SenseN[SENSE_8], "SENSE_INPUT_8", "Input 8", "%.2f", 0.00, 5.00, 0.01, 0);
 
     // Power devices tab controls
-    IUFillSwitchVector(&Power_Device1SP, Power_Device1S, 1, getDeviceName(), "POWER_DEVICE1", "Device 1",
+    //---------------------------
+    IUFillSwitchVector(&Power_Device1SP, Power_Device1S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE1", "Device 1",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Power_Device1S[0], "POWER_DEVICE1", "DEVICE 1", ISS_OFF);
+    IUFillSwitch(&Power_Device1S[ON_SWITCH], "POWER_DEVICE1_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Power_Device1S[OFF_SWITCH], "POWER_DEVICE1_OFF", "OFF", ISS_OFF);
     IUFillTextVector(&Power_Device_Name1TP, Power_Device_Name1T, 1, getDeviceName(), "POWER_DEVICE_1_NAME", "Device 1",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name1T[0], "DEVICE_1_NAME", "Name", POWER_DEVICE1_NAME);
 
-    IUFillSwitchVector(&Power_Device2SP, Power_Device2S, 1, getDeviceName(), "POWER_DEVICE2", "Device 2",
+    IUFillSwitchVector(&Power_Device2SP, Power_Device2S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE2", "Device 2",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Power_Device2S[0], "POWER_DEVICE2", "DEVICE 2", ISS_OFF);
+    IUFillSwitch(&Power_Device2S[ON_SWITCH], "POWER_DEVICE2_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Power_Device2S[OFF_SWITCH], "POWER_DEVICE2_OFF", "OFF", ISS_OFF);
     IUFillTextVector(&Power_Device_Name2TP, Power_Device_Name2T, 1, getDeviceName(), "POWER_DEVICE_2_NAME", "Device 2",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name2T[0], "DEVICE_2_NAME", "Name", POWER_DEVICE2_NAME);
 
-    IUFillSwitchVector(&Power_Device3SP, Power_Device3S, 1, getDeviceName(), "POWER_DEVICE3", "Device 3",
+    IUFillSwitchVector(&Power_Device3SP, Power_Device3S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE3", "Device 3",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Power_Device3S[0], "POWER_DEVICE3", "DEVICE 3", ISS_OFF);
+    IUFillSwitch(&Power_Device3S[ON_SWITCH], "POWER_DEVICE3_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Power_Device3S[OFF_SWITCH], "POWER_DEVICE3_ON", "OFF", ISS_OFF);
     IUFillTextVector(&Power_Device_Name3TP, Power_Device_Name3T, 1, getDeviceName(), "POWER_DEVICE_3_NAME", "Device 3",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name3T[0], "DEVICE_3_NAME", "Name", POWER_DEVICE3_NAME);
 
-    IUFillSwitchVector(&Power_Device4SP, Power_Device4S, 1, getDeviceName(), "POWER_DEVICE4", "Device 4",
+    IUFillSwitchVector(&Power_Device4SP, Power_Device4S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE4", "Device 4",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Power_Device4S[0], "POWER_DEVICE4", "DEVICE 4", ISS_OFF);
+    IUFillSwitch(&Power_Device4S[ON_SWITCH], "POWER_DEVICE4_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Power_Device4S[OFF_SWITCH], "POWER_DEVICE4_OFF", "OFF", ISS_OFF);
     IUFillTextVector(&Power_Device_Name4TP, Power_Device_Name4T, 1, getDeviceName(), "POWER_DEVICE_4_NAME", "Device 4",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name4T[0], "DEVICE_4_NAME", "Name", POWER_DEVICE4_NAME);
 
-    IUFillSwitchVector(&Power_Device5SP, Power_Device5S, 1, getDeviceName(), "POWER_DEVICE5", "Device 5",
+    IUFillSwitchVector(&Power_Device5SP, Power_Device5S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE5", "Device 5",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Power_Device5S[0], "POWER_DEVICE5", "DEVICE 5", ISS_OFF);
+    IUFillSwitch(&Power_Device5S[ON_SWITCH], "POWER_DEVICE5_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Power_Device5S[OFF_SWITCH], "POWER_DEVICE5_OFF", "OFF", ISS_OFF);
     IUFillTextVector(&Power_Device_Name5TP, Power_Device_Name5T, 1, getDeviceName(), "POWER_DEVICE_5_NAME", "Device 5",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name5T[0], "DEVICE_5_NAME", "Name", POWER_DEVICE5_NAME);
 
-    IUFillSwitchVector(&Power_Device6SP, Power_Device6S, 1, getDeviceName(), "POWER_DEVICE6", "Device 6",
+    IUFillSwitchVector(&Power_Device6SP, Power_Device6S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE6", "Device 6",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Power_Device6S[0], "POWER_DEVICE6", "DEVICE 6", ISS_OFF);
+    IUFillSwitch(&Power_Device6S[ON_SWITCH], "POWER_DEVICE6_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Power_Device6S[OFF_SWITCH], "POWER_DEVICE6_OFF", "OFF", ISS_OFF);
     IUFillTextVector(&Power_Device_Name6TP, Power_Device_Name6T, 1, getDeviceName(), "POWER_DEVICE_6_NAME", "Device 6",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name6T[0], "DEVICE_6_NAME", "Name", POWER_DEVICE6_NAME);
 
+    // Manual tab controls
+    //--------------------
+    IUFillTextVector(&Manual_WarningTP, Manual_WarningT, 2, getDeviceName(), "MANUAL_WARNINGS", "NOTE",
+                     MANUAL_TAB, IP_RO, 60, IPS_ALERT);
+    IUFillText(&Manual_WarningT[0], "WARNING_LINE1", "CAUTION:", "THESE CONTROLS ARE POTENTIALLY HAZARDOUS");
+    IUFillText(&Manual_WarningT[1], "WARNING_LINE2", "CAUTION:", "UNDERSTAND THE IMPLICATIONS BEFORE USING");
+
+    IUFillSwitchVector(&Safety_Interlock_OverrideSP, Safety_Interlock_OverrideS, 1, getDeviceName(), "SAFETY_INTERLOCK_OVERRIDE", "Interlocks",
+                       MANUAL_TAB, IP_RW, ISR_1OFMANY, 60, IPS_IDLE);
+    IUFillSwitch(&Safety_Interlock_OverrideS[0], "Safety_Interlock_Override", "OVERRIDE", ISS_OFF);
+
+    IUFillSwitchVector(&Roof_High_PowerSP, Roof_High_PowerS, 1, getDeviceName(), "ROOF_HIGH_POWER", "Roof Power",
+                       MANUAL_TAB, IP_RW, ISR_1OFMANY, 60, IPS_IDLE);
+    IUFillSwitch(&Roof_High_PowerS[0], "Roof High Power", "MAX", ISS_OFF);
+    IUFillSwitchVector(&Watchdog_ResetSP, Watchdog_ResetS, 1, getDeviceName(), "WATCHDOG_RESET", "Watchdog",
+                       MANUAL_TAB, IP_RW, ISR_1OFMANY, 60, IPS_IDLE);
+    IUFillSwitch(&Watchdog_ResetS[0], "Watchdog Reset", "REBOOT", ISS_OFF);
+
+    // Standard Indi aux controls
+    //---------------------------
     addAuxControls();
+
     return true;
 }
 
@@ -242,6 +388,10 @@ bool OCS::updateProperties()
         defineProperty(&Thermostat_StatusTP);
         defineProperty(&Thermostat_setpointsNP);
         defineProperty(&SenseNP);
+        defineProperty(&Manual_WarningTP);
+        defineProperty(&Safety_Interlock_OverrideSP);
+        defineProperty(&Roof_High_PowerSP);
+        defineProperty(&Watchdog_ResetSP);
         if (power_device_relays[0] > 0) {
             defineProperty(&Power_Device1SP);
             defineProperty(&Power_Device_Name1TP);
@@ -272,6 +422,10 @@ bool OCS::updateProperties()
         deleteProperty(Thermostat_StatusTP.name);
         deleteProperty(Thermostat_setpointsNP.name);
         deleteProperty(SenseNP.name);
+        deleteProperty(Manual_WarningTP.name);
+        deleteProperty(Safety_Interlock_OverrideSP.name);
+        deleteProperty(Roof_High_PowerSP.name);
+        deleteProperty(Watchdog_ResetSP.name);
         if (power_device_relays[0] > 0) {
             deleteProperty(Power_Device1SP.name);
             deleteProperty(Power_Device_Name1TP.name);
@@ -346,86 +500,145 @@ void OCS::TimerHit()
     int roof_error_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_error_response, OCS_get_roof_last_error);
     if (roof_error_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
 
-        LOGF_DEBUG("roof_error_error_or_fail = %d", roof_error_error_or_fail);
-        LOGF_DEBUG("roof_error_response = %s", roof_error_response);
+        if (strcmp(roof_error_response, last_shutter_error) != 0) {
+            LOGF_DEBUG("roof_error_error_or_fail = %d", roof_error_error_or_fail);
+            LOGF_DEBUG("roof_error_response = %s", roof_error_response);
+        }
 
-        if (strcmp(roof_error_response, "RERR_OPEN_SAFETY_INTERLOCK") == 0 &&
+        if (strcmp(roof_error_response, "Error: Open safety interlock") == 0 &&
                 strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Open safety interlock");
-        } else if (strcmp(roof_error_response, "RERR_CLOSE_SAFETY_INTERLOCK") == 0 &&
+        } else if (strcmp(roof_error_response, "Error: Close safety interlock") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Close safety interlock");
-        } else if (strcmp(roof_error_response, "RERR_OPEN_UNKNOWN") == 0 &&
+        } else if (strcmp(roof_error_response, "Error: Open unknown error") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Open unknown");
-        } else if (strcmp(roof_error_response, "RERR_OPEN_LIMIT_SW") == 0 &&
+        } else if (strcmp(roof_error_response, "Error: Open limit sw fail") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
-            LOG_WARN("Roof/shutter error - Open limit switch");
-        } else if (strcmp(roof_error_response, "RERR_OPEN_MAX_TIME") == 0 &&
+            LOG_WARN("Roof/shutter error - Open limit switch fail");
+        } else if (strcmp(roof_error_response, "Error: Open over time") == 0 &&
             strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Open max time exceeded");
-        } else if (strcmp(roof_error_response, "RERR_OPEN_MIN_TIME") == 0 &&
+        } else if (strcmp(roof_error_response, "Error: Open under time") == 0 &&
             strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Open min time not reached");
-        } else if (strcmp(roof_error_response, "RERR_CLOSE_UNKNOWN") == 0 &&
+        } else if (strcmp(roof_error_response, "Error: Close unknown error") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Close unknow");
-        } else if (strcmp(roof_error_response, "RERR_CLOSE_LIMIT_SW") == 0 &&
+        } else if (strcmp(roof_error_response, "Error: Close limit sw fail") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Close limit switch");
-        } else if (strcmp(roof_error_response, "RERR_CLOSE_MAX_TIME") == 0 &&
+        } else if (strcmp(roof_error_response, "Error: Close over time") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Close max time exceeded");
-        } else if (strcmp(roof_error_response, "RERR_CLOSE_MIN_TIME") == 0 &&
+        } else if (strcmp(roof_error_response, "Error: Close under tim") == 0 &&
             strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             LOG_WARN("Roof/shutter error - Close min time not reached");
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
-        } else if (strcmp(roof_error_response, "RERR_LIMIT_SW") == 0 &&
+        } else if (strcmp(roof_error_response, "Error: Limit switch malfunction") == 0 &&
                 strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_status_response, RB_MAX_LEN);
+            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Both open & close limit switches active together");
+        } else if (strcmp(roof_error_response, "Error: Closed/opened limit sw on") == 0 &&
+                   strcmp(roof_error_response, last_shutter_error) != 0) {
+               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               if (getShutterState() != SHUTTER_ERROR) {
+                   setShutterState(SHUTTER_ERROR);
+               }
+               LOG_WARN("Roof/shutter error - Closed/opened limit switch on");
+        } else if (strcmp(roof_error_response, "Warning: Already closed") == 0 &&
+                   strcmp(roof_error_response, last_shutter_error) != 0) {
+               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               LOG_WARN("Roof/shutter warning - Roof/shutter is already closed");
+        } else if (strcmp(roof_error_response, "Error: Close location unknown") == 0 &&
+                   strcmp(roof_error_response, last_shutter_error) != 0) {
+               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               if (getShutterState() != SHUTTER_ERROR) {
+                   setShutterState(SHUTTER_ERROR);
+               }
+               LOG_WARN("Roof/shutter error - Close location unknown");
+        } else if (strcmp(roof_error_response, "Error: Motion direction unknown") == 0 &&
+                   strcmp(roof_error_response, last_shutter_error) != 0) {
+               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               if (getShutterState() != SHUTTER_ERROR) {
+                   setShutterState(SHUTTER_ERROR);
+               }
+               LOG_WARN("Roof/shutter error - Motion direction unknown");
+        } else if (strcmp(roof_error_response, "Error: Close already in motion") == 0 &&
+                   strcmp(roof_error_response, last_shutter_error) != 0) {
+               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               if (getShutterState() != SHUTTER_ERROR) {
+                   setShutterState(SHUTTER_ERROR);
+               }
+               LOG_WARN("Roof/shutter error - Close already in motion");
+        } else if (strcmp(roof_error_response, "Error: Opened/closed limit sw on") == 0 &&
+                   strcmp(roof_error_response, last_shutter_error) != 0) {
+               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               if (getShutterState() != SHUTTER_ERROR) {
+                   setShutterState(SHUTTER_ERROR);
+               }
+               LOG_WARN("Roof/shutter error - Opened/closed limit switch on");
+        } else if (strcmp(roof_error_response, "Warning: Already open") == 0 &&
+                   strcmp(roof_error_response, last_shutter_error) != 0) {
+               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               LOG_WARN("Roof/shutter warning - Roof/shutter is already open");
+        } else if (strcmp(roof_error_response, "Error: Open location unknow") == 0 &&
+                   strcmp(roof_error_response, last_shutter_error) != 0) {
+               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               if (getShutterState() != SHUTTER_ERROR) {
+                   setShutterState(SHUTTER_ERROR);
+               }
+               LOG_WARN("Roof/shutter error - Open location unknow");
+        } else if (strcmp(roof_error_response, "Error: Open already in motion") == 0 &&
+                   strcmp(roof_error_response, last_shutter_error) != 0) {
+               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               if (getShutterState() != SHUTTER_ERROR) {
+                   setShutterState(SHUTTER_ERROR);
+               }
+               LOG_WARN("Roof/shutter error - Open already in motion");
         }
     } else if (roof_error_error_or_fail == 1) {
         LOGF_WARN("Communication error on get Roof/Shutter last error %s, this update aborted, will try again...", OCS_get_roof_last_error);
@@ -490,10 +703,14 @@ void OCS::TimerHit()
 IPState OCS::ControlShutter(ShutterOperation operation)
 {
     if (operation == SHUTTER_OPEN) {
+        // Sending roof/shutter commands clears any OCS roof errors so we need to do the same here
+        strncpy(last_shutter_error, "", RB_MAX_LEN);
         sendOCSCommandBlind(OCS_roof_open);
     }
     else if (operation == SHUTTER_CLOSE) {
-       sendOCSCommandBlind(OCS_roof_close);
+        // Sending roof/shutter commands clears any OCS roof errors so we need to do the same here
+        strncpy(last_shutter_error, "", RB_MAX_LEN);
+        sendOCSCommandBlind(OCS_roof_close);
     }
 
     // We have to delay the polling timer to account for the delays built
@@ -504,6 +721,13 @@ IPState OCS::ControlShutter(ShutterOperation operation)
     SetTimer((ROOF_TIME_PRE_MOTION * 1000) + 500);
 
     return IPS_BUSY;
+}
+
+bool OCS::Abort()
+{
+    sendOCSCommandBlind(OCS_roof_stop);
+    sendOCSCommandBlind(OCS_dome_stop);
+    return true;
 }
 
 /************************************************************************************
