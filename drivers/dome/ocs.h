@@ -360,11 +360,11 @@ class OCS : public INDI::Dome
   public:
     OCS();
     virtual ~OCS() override = default;
-
+    const char *getDefaultName() override;
     virtual bool initProperties() override;
     virtual void ISGetProperties(const char *dev) override;
     virtual bool ISNewNumber(const char *dev,const char *name,double values[],char *names[],int n) override;
-    const char *getDefaultName() override;
+    virtual bool ISNewText(const char *dev, const char *name, char *texts[], char *names[], int n) override;
     bool updateProperties() override;
     virtual bool ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n) override;
 //    virtual bool saveConfigItems(FILE *fp);
@@ -537,5 +537,9 @@ private:
     ISwitch Roof_High_PowerS[1];
     ISwitchVectorProperty Watchdog_ResetSP;
     ISwitch Watchdog_ResetS[1];
+
+    // Debug only?
+    ITextVectorProperty Arbitary_CommandTP;
+    IText Arbitary_CommandT[1];
 };
 

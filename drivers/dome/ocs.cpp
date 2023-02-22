@@ -255,6 +255,35 @@ bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *nam
     return INDI::Dome::ISNewNumber(dev,name,values,names,n);
 }
 
+bool OCS::ISNewText(const char *dev,const char *name,char *texts[],char *names[],int n)
+{
+    if (dev != nullptr && strcmp(dev, getDeviceName()) == 0) {
+        if (!strcmp(Arbitary_CommandTP.name, name)) {
+            if (1 == n) {
+                char command_response[RB_MAX_LEN] = {0};
+                int command_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, command_response, texts[0]);
+                if (command_error_or_fail > 0) {
+                    if (strcmp(command_response, "") == 0) {
+                        strncpy(command_response, "No response", sizeof(command_response));
+                    }
+                } else {
+                    char error_code[RB_MAX_LEN] = {0};
+                    sprintf(error_code, "Error: %d", command_error_or_fail);
+                    strncpy(command_response, error_code, sizeof(command_response));
+                }
+
+                // Replace the user entered string with the OCS response
+                strncpy(texts[0], command_response, RB_MAX_LEN);
+                IUUpdateText(&Arbitary_CommandTP, texts, names, n);
+                IDSetText(&Arbitary_CommandTP, nullptr);
+                return true;
+            }
+        }
+    }
+
+    return INDI::Dome::ISNewText(dev,name,texts,names,n);
+}
+
 bool OCS::ISSnoopDevice(XMLEle *root)
 {
     return INDI::Dome::ISSnoopDevice(root);
@@ -309,7 +338,7 @@ bool OCS::initProperties()
     IUFillSwitch(&Power_Device1S[OFF_SWITCH], "POWER_DEVICE1_OFF", "OFF", ISS_OFF);
     IUFillTextVector(&Power_Device_Name1TP, Power_Device_Name1T, 1, getDeviceName(), "POWER_DEVICE_1_NAME", "Device 1",
                POWER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Power_Device_Name1T[0], "DEVICE_1_NAME", "Name", POWER_DEVICE1_NAME);
+    IUFillText(&Power_Device_Name1T[0], "DEVICE_1_NAME", "Name", "");
 
     IUFillSwitchVector(&Power_Device2SP, Power_Device2S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE2", "Device 2",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
@@ -317,7 +346,7 @@ bool OCS::initProperties()
     IUFillSwitch(&Power_Device2S[OFF_SWITCH], "POWER_DEVICE2_OFF", "OFF", ISS_OFF);
     IUFillTextVector(&Power_Device_Name2TP, Power_Device_Name2T, 1, getDeviceName(), "POWER_DEVICE_2_NAME", "Device 2",
                POWER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Power_Device_Name2T[0], "DEVICE_2_NAME", "Name", POWER_DEVICE2_NAME);
+    IUFillText(&Power_Device_Name2T[0], "DEVICE_2_NAME", "Name", "");
 
     IUFillSwitchVector(&Power_Device3SP, Power_Device3S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE3", "Device 3",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
@@ -325,7 +354,7 @@ bool OCS::initProperties()
     IUFillSwitch(&Power_Device3S[OFF_SWITCH], "POWER_DEVICE3_ON", "OFF", ISS_OFF);
     IUFillTextVector(&Power_Device_Name3TP, Power_Device_Name3T, 1, getDeviceName(), "POWER_DEVICE_3_NAME", "Device 3",
                POWER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Power_Device_Name3T[0], "DEVICE_3_NAME", "Name", POWER_DEVICE3_NAME);
+    IUFillText(&Power_Device_Name3T[0], "DEVICE_3_NAME", "Name", "");
 
     IUFillSwitchVector(&Power_Device4SP, Power_Device4S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE4", "Device 4",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
@@ -333,7 +362,7 @@ bool OCS::initProperties()
     IUFillSwitch(&Power_Device4S[OFF_SWITCH], "POWER_DEVICE4_OFF", "OFF", ISS_OFF);
     IUFillTextVector(&Power_Device_Name4TP, Power_Device_Name4T, 1, getDeviceName(), "POWER_DEVICE_4_NAME", "Device 4",
                POWER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Power_Device_Name4T[0], "DEVICE_4_NAME", "Name", POWER_DEVICE4_NAME);
+    IUFillText(&Power_Device_Name4T[0], "DEVICE_4_NAME", "Name", "");
 
     IUFillSwitchVector(&Power_Device5SP, Power_Device5S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE5", "Device 5",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
@@ -341,7 +370,7 @@ bool OCS::initProperties()
     IUFillSwitch(&Power_Device5S[OFF_SWITCH], "POWER_DEVICE5_OFF", "OFF", ISS_OFF);
     IUFillTextVector(&Power_Device_Name5TP, Power_Device_Name5T, 1, getDeviceName(), "POWER_DEVICE_5_NAME", "Device 5",
                POWER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Power_Device_Name5T[0], "DEVICE_5_NAME", "Name", POWER_DEVICE5_NAME);
+    IUFillText(&Power_Device_Name5T[0], "DEVICE_5_NAME", "Name", "");
 
     IUFillSwitchVector(&Power_Device6SP, Power_Device6S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE6", "Device 6",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
@@ -349,7 +378,7 @@ bool OCS::initProperties()
     IUFillSwitch(&Power_Device6S[OFF_SWITCH], "POWER_DEVICE6_OFF", "OFF", ISS_OFF);
     IUFillTextVector(&Power_Device_Name6TP, Power_Device_Name6T, 1, getDeviceName(), "POWER_DEVICE_6_NAME", "Device 6",
                POWER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Power_Device_Name6T[0], "DEVICE_6_NAME", "Name", POWER_DEVICE6_NAME);
+    IUFillText(&Power_Device_Name6T[0], "DEVICE_6_NAME", "Name", "");
 
     // Manual tab controls
     //--------------------
@@ -368,6 +397,11 @@ bool OCS::initProperties()
     IUFillSwitchVector(&Watchdog_ResetSP, Watchdog_ResetS, 1, getDeviceName(), "WATCHDOG_RESET", "Watchdog",
                        MANUAL_TAB, IP_RW, ISR_1OFMANY, 60, IPS_IDLE);
     IUFillSwitch(&Watchdog_ResetS[0], "Watchdog Reset", "REBOOT", ISS_OFF);
+
+    // Debug only?
+    IUFillTextVector(&Arbitary_CommandTP, Arbitary_CommandT, 1, getDeviceName(), "ARBITARY_COMMAND", "Command",
+                     MANUAL_TAB, IP_RW, 60, IPS_IDLE);
+    IUFillText(&Arbitary_CommandT[0], "ARBITARY_COMMANDT", "Response:", ":IP#");
 
     // Standard Indi aux controls
     //---------------------------
@@ -392,6 +426,7 @@ bool OCS::updateProperties()
         defineProperty(&Safety_Interlock_OverrideSP);
         defineProperty(&Roof_High_PowerSP);
         defineProperty(&Watchdog_ResetSP);
+        defineProperty(&Arbitary_CommandTP);
         if (power_device_relays[0] > 0) {
             defineProperty(&Power_Device1SP);
             defineProperty(&Power_Device_Name1TP);
@@ -426,6 +461,7 @@ bool OCS::updateProperties()
         deleteProperty(Safety_Interlock_OverrideSP.name);
         deleteProperty(Roof_High_PowerSP.name);
         deleteProperty(Watchdog_ResetSP.name);
+        deleteProperty(Arbitary_CommandTP.name);
         if (power_device_relays[0] > 0) {
             deleteProperty(Power_Device1SP.name);
             deleteProperty(Power_Device_Name1TP.name);
@@ -686,12 +722,24 @@ void OCS::TimerHit()
     // Get the Sense Inputs values
 
     // Power tab
-    IDSetText(&Power_Device_Name1TP, nullptr);
-    IDSetText(&Power_Device_Name2TP, nullptr);
-    IDSetText(&Power_Device_Name3TP, nullptr);
-    IDSetText(&Power_Device_Name4TP, nullptr);
-    IDSetText(&Power_Device_Name5TP, nullptr);
-    IDSetText(&Power_Device_Name6TP, nullptr);
+    if (power_device_relays[0] > 0) {
+        IDSetText(&Power_Device_Name1TP, nullptr);
+    }
+    if (power_device_relays[1] > 0) {
+        IDSetText(&Power_Device_Name2TP, nullptr);
+    }
+    if (power_device_relays[2] > 0) {
+        IDSetText(&Power_Device_Name3TP, nullptr);
+    }
+    if (power_device_relays[3] > 0) {
+        IDSetText(&Power_Device_Name4TP, nullptr);
+    }
+    if (power_device_relays[4] > 0) {
+        IDSetText(&Power_Device_Name5TP, nullptr);
+    }
+    if (power_device_relays[5] > 0) {
+        IDSetText(&Power_Device_Name6TP, nullptr);
+    }
 
     // Timer loop control
     if (!isConnected())
