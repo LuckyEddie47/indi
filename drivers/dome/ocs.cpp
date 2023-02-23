@@ -108,71 +108,81 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
                 if (strcmp(names[i], "POWER_DEVICE1_ON") == 0) {
                     char set_power_dev_1_on_cmd[CMD_MAX_LEN];
                     sprintf(set_power_dev_1_on_cmd, "%s%d,ON%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE1], OCS_command_terminator);
+                    IDSetSwitch(&Power_Device1SP, nullptr);
                     return sendOCSCommand(set_power_dev_1_on_cmd);
                 } else if (strcmp(names[i], "POWER_DEVICE1_OFF") == 0) {
                     char set_power_dev_1_off_cmd[CMD_MAX_LEN];
                     sprintf(set_power_dev_1_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE1], OCS_command_terminator);
+                    IDSetSwitch(&Power_Device1SP, nullptr);
                     return sendOCSCommand(set_power_dev_1_off_cmd);
                 }
             }
             IDSetSwitch(&Power_Device1SP, nullptr);
-            return true;
+            return false;
         } else if (strcmp(Power_Device2SP.name, name) == 0) {
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "POWER_DEVICE2_ON") == 0) {
                     char set_power_dev_2_on_cmd[CMD_MAX_LEN];
                     sprintf(set_power_dev_2_on_cmd, "%s%d,ON%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE2], OCS_command_terminator);
+                    IDSetSwitch(&Power_Device2SP, nullptr);
                     return sendOCSCommand(set_power_dev_2_on_cmd);
                 } else if (strcmp(names[i], "POWER_DEVICE2_OFF") == 0) {
                     char set_power_dev_2_off_cmd[CMD_MAX_LEN];
                     sprintf(set_power_dev_2_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE2], OCS_command_terminator);
+                    IDSetSwitch(&Power_Device2SP, nullptr);
                     return sendOCSCommand(set_power_dev_2_off_cmd);
                 }
             }
             IDSetSwitch(&Power_Device2SP, nullptr);
-            return true;
+            return false;
         } else if (strcmp(Power_Device3SP.name, name) == 0) {
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "POWER_DEVICE3_ON") == 0) {
                     char set_power_dev_3_on_cmd[CMD_MAX_LEN];
                     sprintf(set_power_dev_3_on_cmd, "%s%d,ON%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE3], OCS_command_terminator);
+                    IDSetSwitch(&Power_Device3SP, nullptr);
                     return sendOCSCommand(set_power_dev_3_on_cmd);
                 } else if (strcmp(names[i], "POWER_DEVICE1_OFF") == 0) {
                     char set_power_dev_3_off_cmd[CMD_MAX_LEN];
                     sprintf(set_power_dev_3_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE3], OCS_command_terminator);
+                    IDSetSwitch(&Power_Device3SP, nullptr);
                     return sendOCSCommand(set_power_dev_3_off_cmd);
                 }
             }
             IDSetSwitch(&Power_Device3SP, nullptr);
-            return true;
+            return false;
         } else if (strcmp(Power_Device4SP.name, name) == 0) {
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "POWER_DEVICE4_ON") == 0) {
                     char set_power_dev_4_on_cmd[CMD_MAX_LEN];
                     sprintf(set_power_dev_4_on_cmd, "%s%d,ON%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE4], OCS_command_terminator);
+                    IDSetSwitch(&Power_Device4SP, nullptr);
                     return sendOCSCommand(set_power_dev_4_on_cmd);
                 } else if (strcmp(names[i], "POWER_DEVICE1_OFF") == 0) {
                     char set_power_dev_4_off_cmd[CMD_MAX_LEN];
                     sprintf(set_power_dev_4_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE4], OCS_command_terminator);
+                    IDSetSwitch(&Power_Device4SP, nullptr);
                     return sendOCSCommand(set_power_dev_4_off_cmd);
                 }
             }
             IDSetSwitch(&Power_Device4SP, nullptr);
-            return true;
+            return false;
         } else if (strcmp(Power_Device5SP.name, name) == 0) {
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "POWER_DEVICE5_ON") == 0) {
                     char set_power_dev_5_on_cmd[CMD_MAX_LEN];
                     sprintf(set_power_dev_5_on_cmd, "%s%d,ON%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE5], OCS_command_terminator);
+                    IDSetSwitch(&Power_Device5SP, nullptr);
                     return sendOCSCommand(set_power_dev_5_on_cmd);
                 } else if (strcmp(names[i], "POWER_DEVICE5_OFF") == 0) {
                     char set_power_dev_5_off_cmd[CMD_MAX_LEN];
                     sprintf(set_power_dev_5_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, power_device_relays[POWER_DEVICE5], OCS_command_terminator);
+                    IDSetSwitch(&Power_Device5SP, nullptr);
                     return sendOCSCommand(set_power_dev_5_off_cmd);
                 }
             }
             IDSetSwitch(&Power_Device5SP, nullptr);
-            return true;
+            return false;
         } else if (strcmp(Power_Device6SP.name, name) == 0) {
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "POWER_DEVICE1_ON") == 0) {
@@ -187,6 +197,90 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
                     return sendOCSCommand(set_power_dev_6_off_cmd);
                 }
             }
+            IDSetSwitch(&Power_Device6SP, nullptr);
+            return false;
+
+        // Lights
+        } else if (strcmp(LIGHT_WRWSP.name, name) == 0) {
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "WRW_ON") == 0) {
+                    char set_light_wrw_on_cmd[CMD_MAX_LEN];
+                    sprintf(set_light_wrw_on_cmd, "%s%d,ON%s", OCS_set_relay_part, light_relays[LIGHT_WRW_RELAY], OCS_command_terminator);
+                    IDSetSwitch(&LIGHT_WRWSP, nullptr);
+                    return sendOCSCommand(set_light_wrw_on_cmd);
+                } else if (strcmp(names[i], "WRW_OFF") == 0) {
+                    char set_light_wrw_off_cmd[CMD_MAX_LEN];
+                    sprintf(set_light_wrw_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, light_relays[LIGHT_WRW_RELAY], OCS_command_terminator);
+                    IDSetSwitch(&LIGHT_WRWSP, nullptr);
+                    return sendOCSCommand(set_light_wrw_off_cmd);
+                }
+            }
+            IDSetSwitch(&LIGHT_WRWSP, nullptr);
+            return false;
+        } else if (strcmp(LIGHT_WRRSP.name, name) == 0) {
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "WRR_ON") == 0) {
+                    char set_light_wrr_on_cmd[CMD_MAX_LEN];
+                    sprintf(set_light_wrr_on_cmd, "%s%d,ON%s", OCS_set_relay_part, light_relays[LIGHT_WRR_RELAY], OCS_command_terminator);
+                    IDSetSwitch(&LIGHT_WRRSP, nullptr);
+                    return sendOCSCommand(set_light_wrr_on_cmd);
+                } else if (strcmp(names[i], "WRR_OFF") == 0) {
+                    char set_light_wrr_off_cmd[CMD_MAX_LEN];
+                    sprintf(set_light_wrr_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, light_relays[LIGHT_WRR_RELAY], OCS_command_terminator);
+                    IDSetSwitch(&LIGHT_WRRSP, nullptr);
+                    return sendOCSCommand(set_light_wrr_off_cmd);
+                }
+            }
+            IDSetSwitch(&LIGHT_WRRSP, nullptr);
+            return false;
+        } else if (strcmp(LIGHT_ORWSP.name, name) == 0) {
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ORW_ON") == 0) {
+                    char set_light_orw_on_cmd[CMD_MAX_LEN];
+                    sprintf(set_light_orw_on_cmd, "%s%d,ON%s", OCS_set_relay_part, light_relays[LIGHT_ORW_RELAY], OCS_command_terminator);
+                    IDSetSwitch(&LIGHT_ORWSP, nullptr);
+                    return sendOCSCommand(set_light_orw_on_cmd);
+                } else if (strcmp(names[i], "ORW_OFF") == 0) {
+                    char set_light_orw_off_cmd[CMD_MAX_LEN];
+                    sprintf(set_light_orw_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, light_relays[LIGHT_ORW_RELAY], OCS_command_terminator);
+                    IDSetSwitch(&LIGHT_ORWSP, nullptr);
+                    return sendOCSCommand(set_light_orw_off_cmd);
+                }
+            }
+            IDSetSwitch(&LIGHT_ORWSP, nullptr);
+            return false;
+        } else if (strcmp(LIGHT_ORRSP.name, name) == 0) {
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ORR_ON") == 0) {
+                    char set_light_orr_on_cmd[CMD_MAX_LEN];
+                    sprintf(set_light_orr_on_cmd, "%s%d,ON%s", OCS_set_relay_part, light_relays[LIGHT_ORR_RELAY], OCS_command_terminator);
+                    IDSetSwitch(&LIGHT_ORRSP, nullptr);
+                    return sendOCSCommand(set_light_orr_on_cmd);
+                } else if (strcmp(names[i], "ORR_OFF") == 0) {
+                    char set_light_orr_off_cmd[CMD_MAX_LEN];
+                    sprintf(set_light_orr_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, light_relays[LIGHT_ORR_RELAY], OCS_command_terminator);
+                    IDSetSwitch(&LIGHT_ORRSP, nullptr);
+                    return sendOCSCommand(set_light_orr_off_cmd);
+                }
+            }
+            IDSetSwitch(&LIGHT_ORRSP, nullptr);
+            return false;
+        } else if (strcmp(LIGHT_OUTSIDESP.name, name) == 0) {
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "OUTSIDE_ON") == 0) {
+                    char set_light_outside_on_cmd[CMD_MAX_LEN];
+                    sprintf(set_light_outside_on_cmd, "%s%d,ON%s", OCS_set_relay_part, light_relays[LIGHT_OUTSIDE_RELAY], OCS_command_terminator);
+                    IDSetSwitch(&LIGHT_OUTSIDESP, nullptr);
+                    return sendOCSCommand(set_light_outside_on_cmd);
+                } else if (strcmp(names[i], "OUTSIDE_OFF") == 0) {
+                    char set_light_outside_off_cmd[CMD_MAX_LEN];
+                    sprintf(set_light_outside_off_cmd, "%s%d,OFF%s", OCS_set_relay_part, light_relays[LIGHT_OUTSIDE_RELAY], OCS_command_terminator);
+                    IDSetSwitch(&LIGHT_OUTSIDESP, nullptr);
+                    return sendOCSCommand(set_light_outside_off_cmd);
+                }
+            }
+            IDSetSwitch(&LIGHT_OUTSIDESP, nullptr);
+            return false;
 
         // Safety Override
         } else if (strcmp(Safety_Interlock_OverrideSP.name, name) == 0) {
@@ -305,6 +399,7 @@ bool OCS::initProperties()
 {
     INDI::Dome::initProperties();
 
+
     // Thermostat tab controls
     //------------------------
     IUFillTextVector(&Thermostat_StatusTP, Thermostat_StatusT, THERMOSTAT_COUNT, getDeviceName(), "THERMOSTAT_STATUS", "Obsy Status",
@@ -316,6 +411,7 @@ bool OCS::initProperties()
                        THERMOSTAT_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT], "THERMOSTAT_HEAT_SETPOINT", "Heat deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT], "THERMOSTAT_COOL_SETPOINT", "Cool deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
+
 
     // Sensors tab controls
     //---------------------
@@ -330,12 +426,13 @@ bool OCS::initProperties()
     IUFillNumber(&SenseN[SENSE_7], "SENSE_INPUT_7", "Input 7", "%.2f", 0.00, 5.00, 0.01, 0);
     IUFillNumber(&SenseN[SENSE_8], "SENSE_INPUT_8", "Input 8", "%.2f", 0.00, 5.00, 0.01, 0);
 
+
     // Power devices tab controls
     //---------------------------
     IUFillSwitchVector(&Power_Device1SP, Power_Device1S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE1", "Device 1",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Power_Device1S[ON_SWITCH], "POWER_DEVICE1_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Power_Device1S[OFF_SWITCH], "POWER_DEVICE1_OFF", "OFF", ISS_OFF);
+    IUFillSwitch(&Power_Device1S[OFF_SWITCH], "POWER_DEVICE1_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Power_Device_Name1TP, Power_Device_Name1T, 1, getDeviceName(), "POWER_DEVICE_1_NAME", "Device 1",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name1T[0], "DEVICE_1_NAME", "Name", "");
@@ -343,7 +440,7 @@ bool OCS::initProperties()
     IUFillSwitchVector(&Power_Device2SP, Power_Device2S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE2", "Device 2",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Power_Device2S[ON_SWITCH], "POWER_DEVICE2_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Power_Device2S[OFF_SWITCH], "POWER_DEVICE2_OFF", "OFF", ISS_OFF);
+    IUFillSwitch(&Power_Device2S[OFF_SWITCH], "POWER_DEVICE2_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Power_Device_Name2TP, Power_Device_Name2T, 1, getDeviceName(), "POWER_DEVICE_2_NAME", "Device 2",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name2T[0], "DEVICE_2_NAME", "Name", "");
@@ -351,7 +448,7 @@ bool OCS::initProperties()
     IUFillSwitchVector(&Power_Device3SP, Power_Device3S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE3", "Device 3",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Power_Device3S[ON_SWITCH], "POWER_DEVICE3_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Power_Device3S[OFF_SWITCH], "POWER_DEVICE3_ON", "OFF", ISS_OFF);
+    IUFillSwitch(&Power_Device3S[OFF_SWITCH], "POWER_DEVICE3_ON", "OFF", ISS_ON);
     IUFillTextVector(&Power_Device_Name3TP, Power_Device_Name3T, 1, getDeviceName(), "POWER_DEVICE_3_NAME", "Device 3",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name3T[0], "DEVICE_3_NAME", "Name", "");
@@ -359,7 +456,7 @@ bool OCS::initProperties()
     IUFillSwitchVector(&Power_Device4SP, Power_Device4S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE4", "Device 4",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Power_Device4S[ON_SWITCH], "POWER_DEVICE4_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Power_Device4S[OFF_SWITCH], "POWER_DEVICE4_OFF", "OFF", ISS_OFF);
+    IUFillSwitch(&Power_Device4S[OFF_SWITCH], "POWER_DEVICE4_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Power_Device_Name4TP, Power_Device_Name4T, 1, getDeviceName(), "POWER_DEVICE_4_NAME", "Device 4",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name4T[0], "DEVICE_4_NAME", "Name", "");
@@ -367,7 +464,7 @@ bool OCS::initProperties()
     IUFillSwitchVector(&Power_Device5SP, Power_Device5S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE5", "Device 5",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Power_Device5S[ON_SWITCH], "POWER_DEVICE5_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Power_Device5S[OFF_SWITCH], "POWER_DEVICE5_OFF", "OFF", ISS_OFF);
+    IUFillSwitch(&Power_Device5S[OFF_SWITCH], "POWER_DEVICE5_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Power_Device_Name5TP, Power_Device_Name5T, 1, getDeviceName(), "POWER_DEVICE_5_NAME", "Device 5",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name5T[0], "DEVICE_5_NAME", "Name", "");
@@ -375,10 +472,40 @@ bool OCS::initProperties()
     IUFillSwitchVector(&Power_Device6SP, Power_Device6S, SWITCH_TOGGLE_COUNT, getDeviceName(), "POWER_DEVICE6", "Device 6",
                        POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Power_Device6S[ON_SWITCH], "POWER_DEVICE6_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Power_Device6S[OFF_SWITCH], "POWER_DEVICE6_OFF", "OFF", ISS_OFF);
+    IUFillSwitch(&Power_Device6S[OFF_SWITCH], "POWER_DEVICE6_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Power_Device_Name6TP, Power_Device_Name6T, 1, getDeviceName(), "POWER_DEVICE_6_NAME", "Device 6",
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name6T[0], "DEVICE_6_NAME", "Name", "");
+
+
+    // Lights tab controls
+    //--------------------
+    IUFillSwitchVector(&LIGHT_WRWSP, LIGHT_WRWS, SWITCH_TOGGLE_COUNT, getDeviceName(), "LIGHT_WRW", "Warm Room White",
+                       LIGHTS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&LIGHT_WRWS[ON_SWITCH], "WRW_ON", "ON", ISS_OFF);
+    IUFillSwitch(&LIGHT_WRWS[OFF_SWITCH], "WRW_OFF", "OFF", ISS_ON);
+
+    IUFillSwitchVector(&LIGHT_WRRSP, LIGHT_WRRS, SWITCH_TOGGLE_COUNT, getDeviceName(), "LIGHT_WRR", "Warm Room Red",
+                       LIGHTS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&LIGHT_WRRS[ON_SWITCH], "WRR_ON", "ON", ISS_OFF);
+    IUFillSwitch(&LIGHT_WRRS[OFF_SWITCH], "WRR_OFF", "OFF", ISS_ON);
+
+    IUFillSwitchVector(&LIGHT_ORWSP, LIGHT_ORWS, SWITCH_TOGGLE_COUNT, getDeviceName(), "LIGHT_ORW", "Obsy White",
+                       LIGHTS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&LIGHT_ORWS[ON_SWITCH], "ORW_ON", "ON", ISS_OFF);
+    IUFillSwitch(&LIGHT_ORWS[OFF_SWITCH], "ORW_OFF", "OFF", ISS_ON);
+
+    IUFillSwitchVector(&LIGHT_ORRSP, LIGHT_ORRS, SWITCH_TOGGLE_COUNT, getDeviceName(), "LIGHT_ORR", "Obsy Red",
+                       LIGHTS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&LIGHT_ORRS[ON_SWITCH], "ORR_ON", "ON", ISS_OFF);
+    IUFillSwitch(&LIGHT_ORRS[OFF_SWITCH], "ORR_OFF", "OFF", ISS_ON);
+
+    IUFillSwitchVector(&LIGHT_OUTSIDESP, LIGHT_OUTSIDES, SWITCH_TOGGLE_COUNT, getDeviceName(), "LIGHT_OUTSIDE", "Outside",
+                       LIGHTS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&LIGHT_OUTSIDES[ON_SWITCH], "OUTSIDE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&LIGHT_OUTSIDES[OFF_SWITCH], "OUTSIDE_OFF", "OFF", ISS_ON);
+
+
 
     // Manual tab controls
     //--------------------
@@ -402,6 +529,7 @@ bool OCS::initProperties()
     IUFillTextVector(&Arbitary_CommandTP, Arbitary_CommandT, 1, getDeviceName(), "ARBITARY_COMMAND", "Command",
                      MANUAL_TAB, IP_RW, 60, IPS_IDLE);
     IUFillText(&Arbitary_CommandT[0], "ARBITARY_COMMANDT", "Response:", ":IP#");
+
 
     // Standard Indi aux controls
     //---------------------------
@@ -427,6 +555,8 @@ bool OCS::updateProperties()
         defineProperty(&Roof_High_PowerSP);
         defineProperty(&Watchdog_ResetSP);
         defineProperty(&Arbitary_CommandTP);
+
+        // Dynamically defined properties
         if (power_device_relays[0] > 0) {
             defineProperty(&Power_Device1SP);
             defineProperty(&Power_Device_Name1TP);
@@ -451,6 +581,21 @@ bool OCS::updateProperties()
             defineProperty(&Power_Device6SP);
             defineProperty(&Power_Device_Name6TP);
         }
+        if (light_relays[LIGHT_WRW_RELAY] > 0) {
+            defineProperty(&LIGHT_WRWSP);
+        }
+        if (light_relays[LIGHT_WRR_RELAY] > 0) {
+            defineProperty(&LIGHT_WRRSP);
+        }
+        if (light_relays[LIGHT_ORW_RELAY] > 0) {
+            defineProperty(&LIGHT_ORWSP);
+        }
+        if (light_relays[LIGHT_ORR_RELAY] > 0) {
+            defineProperty(&LIGHT_ORRSP);
+        }
+        if (light_relays[LIGHT_OUTSIDE_RELAY] > 0) {
+            defineProperty(&LIGHT_OUTSIDESP);
+        }
     }
     else
     {
@@ -462,6 +607,8 @@ bool OCS::updateProperties()
         deleteProperty(Roof_High_PowerSP.name);
         deleteProperty(Watchdog_ResetSP.name);
         deleteProperty(Arbitary_CommandTP.name);
+
+        // Dynamically defined properties
         if (power_device_relays[0] > 0) {
             deleteProperty(Power_Device1SP.name);
             deleteProperty(Power_Device_Name1TP.name);
@@ -485,6 +632,21 @@ bool OCS::updateProperties()
         if (power_device_relays[5] > 0) {
             deleteProperty(Power_Device6SP.name);
             deleteProperty(Power_Device_Name6TP.name);
+        }
+        if (light_relays[LIGHT_WRW_RELAY] > 0) {
+            deleteProperty(LIGHT_WRWSP.name);
+        }
+        if (light_relays[LIGHT_WRR_RELAY] > 0) {
+            deleteProperty(LIGHT_WRRSP.name);
+        }
+        if (light_relays[LIGHT_ORW_RELAY] > 0) {
+            deleteProperty(LIGHT_ORWSP.name);
+        }
+        if (light_relays[LIGHT_ORR_RELAY] > 0) {
+            deleteProperty(LIGHT_ORRSP.name);
+        }
+        if (light_relays[LIGHT_OUTSIDE_RELAY] > 0) {
+            deleteProperty(LIGHT_OUTSIDESP.name);
         }
     }
     return true;
@@ -860,6 +1022,8 @@ void OCS::GetCapabilites()
             power_device_relays[deviceNo] = atoi (split);
             split = strtok(NULL, ",");
         }
+        // Defined devices have a positive integer relay definition, undefined return -1
+        // so we can sum these to check if any are defined, if not then keep tab hidden
         int powerDisabled = 0;
         for (int deviceNo = 1; deviceNo <= POWER_DEVICE_COUNT; deviceNo ++) {
             powerDisabled += power_device_relays[deviceNo];
@@ -906,8 +1070,26 @@ void OCS::GetCapabilites()
         }
     }
 
-
     // Get light relay definitions
+    char light_relay_definitions_response[RB_MAX_LEN] = {0};
+    int light_relay_definitions_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, light_relay_definitions_response, OCS_get_light_definitions);
+    if (light_relay_definitions_error_or_fail > 1) {
+        char *split;
+        split = strtok(light_relay_definitions_response, ",");
+        for (int lrelay = 0; lrelay < LIGHT_COUNT; lrelay ++) {
+            light_relays[lrelay] = atoi (split);
+            split = strtok(NULL, ",");
+        }
+        // Defined lights have a positive integer relay definition, undefined return -1
+        // so we can sum these to check if any are defined, if not then keep tab hidden
+        int lightsDisabled = 0;
+        for (int lrelay = 1; lrelay <= LIGHT_COUNT; lrelay ++) {
+            lightsDisabled += power_device_relays[lrelay];
+        }
+        if (lightsDisabled != (-1 * LIGHT_COUNT)) {
+            lights_tab_enabled = true;
+        }
+    }
 }
 
 /**************************************************************************************

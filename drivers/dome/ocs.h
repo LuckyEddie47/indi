@@ -521,6 +521,19 @@ private:
         LIGHT_COUNT
     };
 
+    int light_relays[LIGHT_COUNT];
+
+    ISwitchVectorProperty LIGHT_WRWSP;
+    ISwitch LIGHT_WRWS[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty LIGHT_WRRSP;
+    ISwitch LIGHT_WRRS[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty LIGHT_ORWSP;
+    ISwitch LIGHT_ORWS[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty LIGHT_ORRSP;
+    ISwitch LIGHT_ORRS[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty LIGHT_OUTSIDESP;
+    ISwitch LIGHT_OUTSIDES[SWITCH_TOGGLE_COUNT];
+
     // Manual tab controls
     enum {
         SAFETY_INTERLOCK_OVERRIDE,
