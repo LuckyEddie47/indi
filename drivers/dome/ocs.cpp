@@ -30,6 +30,15 @@ Hardware communication is via a simple text protocol similar to the LX200.
 USB and network connections supported.
 *******************************************************************************/
 
+// To do:
+// Move temperature polling to 1 minute timer
+// Query relay status + sensors on timer, update controls
+// Test Power / Lights
+// Sensor handlers
+// Dome handlers
+// Weather - safety status, and separate tab?
+// Test, test, test
+
 #include "ocs.h"
 //#include "connectionplugins/connectioninterface.h"
 #include "indicom.h"
@@ -301,8 +310,14 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
                 LOG_WARN("Rebooting the OCS controller in 8 seconds...");
                 IDSetSwitch(&Safety_Interlock_OverrideSP, nullptr);
                 return true;
+            } else if (strcmp(watchdog_response, "23") == 0) {
+                LOG_WARN("Unable to reboot, roof/shutter/dome in motion");
+                IDSetSwitch(&Safety_Interlock_OverrideSP, nullptr);
+                return false;
             } else if (strcmp(watchdog_response, "0") == 0) {
                 LOGF_DEBUG("OCS watchdog reset error, reponse was: %s. Maybe watchdog is not enabled?", watchdog_response);
+                IDSetSwitch(&Safety_Interlock_OverrideSP, nullptr);
+                return false;
             }
         }
     }
@@ -352,6 +367,8 @@ bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *nam
 bool OCS::ISNewText(const char *dev,const char *name,char *texts[],char *names[],int n)
 {
     if (dev != nullptr && strcmp(dev, getDeviceName()) == 0) {
+
+        // Manual tab - Arbitary command
         if (!strcmp(Arbitary_CommandTP.name, name)) {
             if (1 == n) {
                 char command_response[RB_MAX_LEN] = {0};
@@ -362,8 +379,12 @@ bool OCS::ISNewText(const char *dev,const char *name,char *texts[],char *names[]
                     }
                 } else {
                     char error_code[RB_MAX_LEN] = {0};
-                    sprintf(error_code, "Error: %d", command_error_or_fail);
-                    strncpy(command_response, error_code, sizeof(command_response));
+                    if (command_error_or_fail == TTY_TIME_OUT) {
+                        strncpy(command_response, "No response", sizeof(command_response));
+                    } else {
+                        sprintf(error_code, "Error: %d", command_error_or_fail);
+                        strncpy(command_response, error_code, sizeof(command_response));
+                    }
                 }
 
                 // Replace the user entered string with the OCS response
@@ -547,8 +568,6 @@ bool OCS::updateProperties()
     INDI::Dome::updateProperties();
     if (isConnected())
     {
-        defineProperty(&Thermostat_StatusTP);
-        defineProperty(&Thermostat_setpointsNP);
         defineProperty(&SenseNP);
         defineProperty(&Manual_WarningTP);
         defineProperty(&Safety_Interlock_OverrideSP);
@@ -557,6 +576,10 @@ bool OCS::updateProperties()
         defineProperty(&Arbitary_CommandTP);
 
         // Dynamically defined properties
+        if (thermostat_controls_enabled) {
+            defineProperty(&Thermostat_StatusTP);
+            defineProperty(&Thermostat_setpointsNP);
+        }
         if (power_device_relays[0] > 0) {
             defineProperty(&Power_Device1SP);
             defineProperty(&Power_Device_Name1TP);
@@ -609,6 +632,10 @@ bool OCS::updateProperties()
         deleteProperty(Arbitary_CommandTP.name);
 
         // Dynamically defined properties
+        if (thermostat_controls_enabled) {
+            deleteProperty(Thermostat_StatusTP.name);
+            deleteProperty(Thermostat_setpointsNP.name);
+        }
         if (power_device_relays[0] > 0) {
             deleteProperty(Power_Device1SP.name);
             deleteProperty(Power_Device_Name1TP.name);
@@ -842,66 +869,48 @@ void OCS::TimerHit()
         LOGF_WARN("Communication error on get Roof/Shutter last error %s, this update aborted, will try again...", OCS_get_roof_last_error);
     }
 
-    // Get the Obsy Thermostat readings
-    char thermostat_status_response[RB_MAX_LEN] = {0};
-    int thermostat_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
-    if (thermostat_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-        char *split;
-        split = strtok(thermostat_status_response, ",");
-        IUSaveText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], split);
-        split = strtok(NULL, ",");
-        IUSaveText(&Thermostat_StatusT[THERMOSTAT_HUMIDITY], split);
-        IDSetText(&Thermostat_StatusTP, nullptr);
-    }
-    else {
-        LOGF_WARN("Communication error on get Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
-        LOGF_WARN("thermostat_status_error_or_fail = %d", thermostat_status_error_or_fail);
-        LOGF_WARN("thermostat_status_response = %s", thermostat_status_response);
-    }
+    if (thermostat_controls_enabled) {
+        // Get the Obsy Thermostat readings
+        char thermostat_status_response[RB_MAX_LEN] = {0};
+        int thermostat_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
+        if (thermostat_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+            char *split;
+            split = strtok(thermostat_status_response, ",");
+            IUSaveText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], split);
+            split = strtok(NULL, ",");
+            IUSaveText(&Thermostat_StatusT[THERMOSTAT_HUMIDITY], split);
+            IDSetText(&Thermostat_StatusTP, nullptr);
+        }
+        else {
+            LOGF_WARN("Communication error on get Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
+            LOGF_WARN("thermostat_status_error_or_fail = %d", thermostat_status_error_or_fail);
+            LOGF_WARN("thermostat_status_response = %s", thermostat_status_response);
+        }
 
-    // Get the Thermstat setpoints
-    int thermostat_heat_setpoint;
-    char value[RB_MAX_LEN] = {0};
-    int hot_setpoint_error_or_fail = getCommandIntResponse(PortFD, &thermostat_heat_setpoint, value, OCS_get_thermostat_heat_setpoint);
-    if (hot_setpoint_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-        Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT].value = thermostat_heat_setpoint;
-        IDSetNumber(&Thermostat_setpointsNP, nullptr);
-    }
-    else {
-        LOGF_WARN("Communication error on get Thermostat Heat Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_heat_setpoint);
-    }
+        // Get the Thermostat setpoints
+        int thermostat_heat_setpoint;
+        char value[RB_MAX_LEN] = {0};
+        int hot_setpoint_error_or_fail = getCommandIntResponse(PortFD, &thermostat_heat_setpoint, value, OCS_get_thermostat_heat_setpoint);
+        if (hot_setpoint_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+            Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT].value = thermostat_heat_setpoint;
+            IDSetNumber(&Thermostat_setpointsNP, nullptr);
+        }
+        else {
+            LOGF_WARN("Communication error on get Thermostat Heat Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_heat_setpoint);
+        }
 
-    int thermostat_vent_setpoint;
-    int cool_setpoint_error_or_fail = getCommandIntResponse(PortFD, &thermostat_vent_setpoint, value, OCS_get_thermostat_cool_setpoint);
-    if (cool_setpoint_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-        Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT].value = thermostat_vent_setpoint;
-        IDSetNumber(&Thermostat_setpointsNP, nullptr);
-    }
-    else {
-        LOGF_WARN("Communication error on get Thermostat Cool Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_cool_setpoint);
+        int thermostat_vent_setpoint;
+        int cool_setpoint_error_or_fail = getCommandIntResponse(PortFD, &thermostat_vent_setpoint, value, OCS_get_thermostat_cool_setpoint);
+        if (cool_setpoint_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+            Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT].value = thermostat_vent_setpoint;
+            IDSetNumber(&Thermostat_setpointsNP, nullptr);
+        }
+        else {
+            LOGF_WARN("Communication error on get Thermostat Cool Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_cool_setpoint);
+        }
     }
 
     // Get the Sense Inputs values
-
-    // Power tab
-    if (power_device_relays[0] > 0) {
-        IDSetText(&Power_Device_Name1TP, nullptr);
-    }
-    if (power_device_relays[1] > 0) {
-        IDSetText(&Power_Device_Name2TP, nullptr);
-    }
-    if (power_device_relays[2] > 0) {
-        IDSetText(&Power_Device_Name3TP, nullptr);
-    }
-    if (power_device_relays[3] > 0) {
-        IDSetText(&Power_Device_Name4TP, nullptr);
-    }
-    if (power_device_relays[4] > 0) {
-        IDSetText(&Power_Device_Name5TP, nullptr);
-    }
-    if (power_device_relays[5] > 0) {
-        IDSetText(&Power_Device_Name6TP, nullptr);
-    }
 
     // Timer loop control
     if (!isConnected())
@@ -938,6 +947,44 @@ bool OCS::Abort()
     sendOCSCommandBlind(OCS_roof_stop);
     sendOCSCommandBlind(OCS_dome_stop);
     return true;
+}
+
+IPState OCS::Park()
+{
+    if (sendOCSCommand(OCS_dome_park)) {
+        return IPS_OK;
+    } else {
+        return IPS_ALERT;
+    }
+}
+
+IPState OCS::UnPark()
+{
+    if (sendOCSCommand(OCS_restore_dome_park)) {
+        return IPS_OK;
+    } else {
+        return IPS_ALERT;
+    }
+}
+
+IPState OCS::MoveAbs(double az)
+{
+    char set_dome_azimuth_command[CMD_MAX_LEN] = {0};
+    sprintf(set_dome_azimuth_command, "%s%f%s",
+            OCS_set_dome_azimuth_part, az, OCS_command_terminator);
+    sendOCSCommandBlind(set_dome_azimuth_command);
+    char dome_goto_target_response[RB_MAX_LEN] = {0};
+    int dome_goto_target_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, dome_goto_target_response, OCS_dome_goto_taget);
+    if (dome_goto_target_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+
+
+    }
+
+//    if (gototarget :DS(set_dome_azimuth_command)) {
+        return IPS_OK;
+//    } else {
+//        return IPS_ALERT;
+//    }
 }
 
 /************************************************************************************
@@ -989,8 +1036,7 @@ void OCS::GetCapabilites()
     char OCS_dome_present_response[RB_MAX_LEN] = {0};
     int OCS_dome_present_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OCS_dome_present_response, OCS_get_dome_status);
     if (OCS_dome_present_error_or_fail > 0) {
-        SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK | DOME_CAN_ABS_MOVE | DOME_CAN_SYNC |
-                          DOME_HAS_BACKLASH | DOME_HAS_SHUTTER);
+        SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK | DOME_CAN_ABS_MOVE | DOME_CAN_SYNC | DOME_HAS_SHUTTER);
         LOG_DEBUG("OCS has dome");
     } else {
         LOG_DEBUG("OCS does not have dome");
@@ -1010,6 +1056,24 @@ void OCS::GetCapabilites()
         LOGF_WARN("Communication error on get roof delays %s, this update aborted, will try again...", OCS_get_timeouts);
         LOGF_DEBUG("thermostat_status_error_or_fail = %d", roof_timeout_error_or_fail);
         LOGF_DEBUG("thermostat_status_response = %s", roof_timeout_response);
+    }
+
+    // Get the Obsy Thermostat presence
+    char thermostat_status_response[RB_MAX_LEN] = {0};
+    int thermostat_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
+    if (thermostat_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+        if (strcmp(thermostat_status_response, "nan,nan") == 0) {
+            thermostat_controls_enabled = false;
+            LOG_DEBUG("OCS does not have thermostat");
+        } else {
+            thermostat_controls_enabled = true;
+            LOG_DEBUG("OCS has a thermostat");
+        }
+    }
+    else {
+        LOGF_WARN("Communication error on get Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
+        LOGF_WARN("thermostat_status_error_or_fail = %d", thermostat_status_error_or_fail);
+        LOGF_WARN("thermostat_status_response = %s", thermostat_status_response);
     }
 
     // Get power relay definitions

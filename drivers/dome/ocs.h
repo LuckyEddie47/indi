@@ -56,7 +56,7 @@ An unterminated 0 is returned from unconfigured items
 
 // Set the watchdog reset flag - forces firmware reboot
 #define OCS_set_watchdog_flag ":SW#"
-// Returns: Rebooting in 8 seconds...# or CE_SLEW_IN_MOTION# for roof/dome in motion blocking error
+// Returns: Rebooting in 8 seconds...# or 23# "CE_SLEW_IN_MOTION" for roof/shutter/dome in motion blocking error
 
 // Set the UTC Date and Time
 // ":SU[MM/DD/YYYY,HH:MM:SS]#"
@@ -160,7 +160,8 @@ An unterminated 0 is returned from unconfigured items
 // Returns: D.DDD#
 
 // Set the dome Azimuth target (0 to 360 degrees)
-// ":Dz[D.D]#"
+#define OCS_set_dome_azimuth_part ":Dz"
+// Example: ":Dz[D.D]#"
 // Returns: nothing
 
 // Get the dome Altitude (0 to 90 degrees)
@@ -400,6 +401,11 @@ private:
     char last_shutter_status[RB_MAX_LEN];
     char last_shutter_error[RB_MAX_LEN];
     IPState ControlShutter(ShutterOperation operation) override;
+
+    // Dome control
+    virtual IPState Park() override;
+    virtual IPState UnPark() override;
+    virtual IPState MoveAbs(double az) override;
 
     // Thermostat tab controls
     bool thermostat_controls_enabled = false;
