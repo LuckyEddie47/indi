@@ -56,7 +56,7 @@ An unterminated 0 is returned from unconfigured items
 
 // Set the watchdog reset flag - forces firmware reboot
 #define OCS_set_watchdog_flag ":SW#"
-// Returns: Rebooting in 8 seconds...# or 23# "CE_SLEW_IN_MOTION" for roof/shutter/dome in motion blocking error
+// Returns: Rebooting in a few seconds...# or 23# "CE_SLEW_IN_MOTION" for roof/shutter/dome in motion blocking error
 
 // Set the UTC Date and Time
 // ":SU[MM/DD/YYYY,HH:MM:SS]#"
@@ -286,6 +286,12 @@ An unterminated 0 is returned from unconfigured items
 
 // Thermostat commands
 
+// Get Thermostat relay #defines
+#define OCS_get_thermostat_definitions ":It#"
+// Returns: n,n,-1#les
+// HEAT_RELAY, COOL_RELAY, HUMIDITY_RELAY
+// -1 indicates function not defined
+
 // Get thermostat status
 #define OCS_get_thermostat_status ":GT#"
 // Returns: n.n,m.m#
@@ -309,6 +315,16 @@ An unterminated 0 is returned from unconfigured items
 #define OCS_set_thermostat_cool_setpoint_part ":SC"
 // Example: ":SC0#" turns cooling off
 // Example: ":SC30#" cool setpoint 30 deg. C
+// Returns: 1# on success
+
+// Get humidity setpoint in %
+#define OCS_get_thermostat_humidity_setpoint ":GD#"
+// Returns: n#, or 0# for invalid
+
+// Set humidity setpoint in %
+#define OCS_set_thermostat_humidity_setpoint_part ":SD"
+// Example: ":SD0#" turns dehumidifying off
+// Example: ":SD55#" humidity setpoint 55%
 // Returns: 1# on success
 
 // Power/GPIO commands
