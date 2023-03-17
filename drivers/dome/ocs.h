@@ -21,8 +21,8 @@
 #include "indidome.h"
 #include "connectionplugins/connectiontcp.h"
 #include "connectionplugins/connectionserial.h"
-
 #include "indipropertyswitch.h"
+#include "inditimer.h"
 
 #define RB_MAX_LEN 64
 #define CMD_MAX_LEN 32
@@ -394,6 +394,7 @@ class OCS : public INDI::Dome
     bool Disconnect() override;
 
     void TimerHit() override;
+    void MinuteTimerHit();
 
     bool sendOCSCommand(const char *cmd);
     bool sendOCSCommandBlind(const char *cmd);
@@ -410,6 +411,9 @@ class OCS : public INDI::Dome
 private:
     // Capability queries on connection
     void GetCapabilites();
+
+    // Timer for slow updates, once per minute
+    INDI::Timer MinuteTimer;
 
     // Roof/Shutter control
     int ROOF_TIME_PRE_MOTION = 0;

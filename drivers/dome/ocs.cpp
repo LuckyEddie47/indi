@@ -67,6 +67,8 @@ std::unique_ptr<OCS> ocs(new OCS());
 OCS::OCS()
 {
     SetDomeCapability(DOME_CAN_ABORT | DOME_HAS_SHUTTER);
+    MinuteTimer.callOnTimeout(std::bind(&OCS::MinuteTimerHit, this));
+    MinuteTimer.start(60000);
 }
 
 // Overrides
@@ -680,6 +682,55 @@ bool OCS::updateProperties()
 }
 
 /********************************************************************************************
+* Poll properties for updates per minute
+********************************************************************************************/
+void OCS::MinuteTimerHit()
+{
+    if (thermostat_controls_enabled) {
+        // Get the Obsy Thermostat readings
+        char thermostat_status_response[RB_MAX_LEN] = {0};
+        int thermostat_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
+        if (thermostat_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+            char *split;
+            split = strtok(thermostat_status_response, ",");
+            IUSaveText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], split);
+            split = strtok(NULL, ",");
+            IUSaveText(&Thermostat_StatusT[THERMOSTAT_HUMIDITY], split);
+            IDSetText(&Thermostat_StatusTP, nullptr);
+        }
+        else {
+            LOGF_WARN("Communication error on get Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
+            LOGF_WARN("thermostat_status_error_or_fail = %d", thermostat_status_error_or_fail);
+            LOGF_WARN("thermostat_status_response = %s", thermostat_status_response);
+        }
+
+        // Get the Thermostat setpoints
+        int thermostat_heat_setpoint;
+        char value[RB_MAX_LEN] = {0};
+        int hot_setpoint_error_or_fail = getCommandIntResponse(PortFD, &thermostat_heat_setpoint, value, OCS_get_thermostat_heat_setpoint);
+        if (hot_setpoint_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+            Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT].value = thermostat_heat_setpoint;
+            IDSetNumber(&Thermostat_setpointsNP, nullptr);
+        }
+        else {
+            LOGF_WARN("Communication error on get Thermostat Heat Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_heat_setpoint);
+        }
+
+        int thermostat_vent_setpoint;
+        int cool_setpoint_error_or_fail = getCommandIntResponse(PortFD, &thermostat_vent_setpoint, value, OCS_get_thermostat_cool_setpoint);
+        if (cool_setpoint_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+            Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT].value = thermostat_vent_setpoint;
+            IDSetNumber(&Thermostat_setpointsNP, nullptr);
+        }
+        else {
+            LOGF_WARN("Communication error on get Thermostat Cool Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_cool_setpoint);
+        }
+    }
+
+    // Get the Sense Inputs values
+}
+
+/********************************************************************************************
 * Poll properties for updates
 ********************************************************************************************/
 void OCS::TimerHit()
@@ -868,49 +919,6 @@ void OCS::TimerHit()
     } else if (roof_error_error_or_fail == 1) {
         LOGF_WARN("Communication error on get Roof/Shutter last error %s, this update aborted, will try again...", OCS_get_roof_last_error);
     }
-
-    if (thermostat_controls_enabled) {
-        // Get the Obsy Thermostat readings
-        char thermostat_status_response[RB_MAX_LEN] = {0};
-        int thermostat_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
-        if (thermostat_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-            char *split;
-            split = strtok(thermostat_status_response, ",");
-            IUSaveText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], split);
-            split = strtok(NULL, ",");
-            IUSaveText(&Thermostat_StatusT[THERMOSTAT_HUMIDITY], split);
-            IDSetText(&Thermostat_StatusTP, nullptr);
-        }
-        else {
-            LOGF_WARN("Communication error on get Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
-            LOGF_WARN("thermostat_status_error_or_fail = %d", thermostat_status_error_or_fail);
-            LOGF_WARN("thermostat_status_response = %s", thermostat_status_response);
-        }
-
-        // Get the Thermostat setpoints
-        int thermostat_heat_setpoint;
-        char value[RB_MAX_LEN] = {0};
-        int hot_setpoint_error_or_fail = getCommandIntResponse(PortFD, &thermostat_heat_setpoint, value, OCS_get_thermostat_heat_setpoint);
-        if (hot_setpoint_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-            Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT].value = thermostat_heat_setpoint;
-            IDSetNumber(&Thermostat_setpointsNP, nullptr);
-        }
-        else {
-            LOGF_WARN("Communication error on get Thermostat Heat Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_heat_setpoint);
-        }
-
-        int thermostat_vent_setpoint;
-        int cool_setpoint_error_or_fail = getCommandIntResponse(PortFD, &thermostat_vent_setpoint, value, OCS_get_thermostat_cool_setpoint);
-        if (cool_setpoint_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-            Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT].value = thermostat_vent_setpoint;
-            IDSetNumber(&Thermostat_setpointsNP, nullptr);
-        }
-        else {
-            LOGF_WARN("Communication error on get Thermostat Cool Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_cool_setpoint);
-        }
-    }
-
-    // Get the Sense Inputs values
 
     // Timer loop control
     if (!isConnected())
@@ -1154,6 +1162,9 @@ void OCS::GetCapabilites()
             lights_tab_enabled = true;
         }
     }
+
+    // Call the slow property update once as this is startup
+    MinuteTimerHit();
 }
 
 /**************************************************************************************
