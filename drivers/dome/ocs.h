@@ -404,6 +404,7 @@ class OCS : public INDI::Dome
     int getCommandDoubleResponse(int fd, double *value, char *data,
                                  const char *cmd); //Reimplemented from getCommandString Will return a double, and raw value.
     int getCommandIntResponse(int fd, int *value, char *data, const char *cmd);
+    int getCommandIntFromCharResponse(int fd, char *data, const char *cmd); //Calls getCommandSingleCharErrorOrLongResponse with conversion or return
 
     long int OCSTimeoutSeconds = 0;
     long int OCSTimeoutMicroSeconds = 100000;
@@ -440,6 +441,7 @@ private:
     enum {
         THERMOSTAT_HEAT_SETPOINT,
         THERMOSTAT_COOL_SETPOINT,
+        THERMOSTAT_HUMIDITY_SETPOINT,
         THERMOSTAT_SETPOINT_COUNT
     };
     INumberVectorProperty Thermostat_setpointsNP;

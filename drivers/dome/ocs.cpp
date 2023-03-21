@@ -49,6 +49,7 @@ USB and network connections supported.
 #include <ctime>
 #include <memory>
 #include <mutex>
+#include <climits>
 
 // Custom tabs
 #define THERMOSTAT_TAB "Thermostat"
@@ -338,20 +339,38 @@ bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *nam
                         char thermostat_setpoint_command[CMD_MAX_LEN];
                         sprintf(thermostat_setpoint_command, "%s%.0f%s",
                                 OCS_set_thermostat_heat_setpoint_part, values[THERMOSTAT_HEAT_SETPOINT], OCS_command_terminator);
-                        if (!sendOCSCommand(thermostat_setpoint_command)) {
-                            LOGF_INFO("Set Thermostat heat setpoint to: %.0f deg.C", values[THERMOSTAT_HEAT_SETPOINT]);
+                        char response[RB_MAX_LEN];
+                        int res = getCommandSingleCharResponse(PortFD, response, thermostat_setpoint_command);
+                        if(res < 0 || response[0] == '0') {
+                            LOGF_ERROR("Failed to set Thermostat heat setpoint %s", response);
+                            return false;
                         } else {
-                            LOG_WARN("Failed to set Thermostat heat setpoint");
+                            LOGF_INFO("Set Thermostat heat setpoint to: %.0f deg.C", values[THERMOSTAT_HEAT_SETPOINT]);
                         }
                     }
                     else if (parameter == THERMOSTAT_COOL_SETPOINT) {
                         char thermostat_setpoint_command[CMD_MAX_LEN];
                         sprintf(thermostat_setpoint_command, "%s%.0f%s",
                                 OCS_set_thermostat_cool_setpoint_part, values[THERMOSTAT_COOL_SETPOINT], OCS_command_terminator);
-                        if (!sendOCSCommand(thermostat_setpoint_command)) {
-                            LOGF_INFO("Set Thermostat cool setpoint to: %.0f deg.C", values[THERMOSTAT_COOL_SETPOINT]);
+                        char response[RB_MAX_LEN];
+                        int res = getCommandSingleCharResponse(PortFD, response, thermostat_setpoint_command);
+                        if(res < 0 || response[0] == '0') {
+                            LOGF_ERROR("Failed to set Thermostat cool setpoint %s", response);
+                            return false;
                         } else {
-                            LOG_WARN("Failed to set Thermostat heat setpoint");
+                            LOGF_INFO("Set Thermostat cool setpoint to: %.0f deg.C", values[THERMOSTAT_COOL_SETPOINT]);
+                        }
+                    } else if (parameter == THERMOSTAT_HUMIDITY_SETPOINT) {
+                        char thermostat_setpoint_command[CMD_MAX_LEN];
+                        sprintf(thermostat_setpoint_command, "%s%.0f%s",
+                                OCS_set_thermostat_humidity_setpoint_part, values[THERMOSTAT_HUMIDITY_SETPOINT], OCS_command_terminator);
+                        char response[RB_MAX_LEN];
+                        int res = getCommandSingleCharResponse(PortFD, response, thermostat_setpoint_command);
+                        if(res < 0 || response[0] == '0') {
+                            LOGF_ERROR("Failed to set Thermostat humidity setpoint %s", response);
+                            return false;
+                        } else {
+                            LOGF_INFO("Set Thermostat humidity setpoint to: %.0f %%", values[THERMOSTAT_HUMIDITY_SETPOINT]);
                         }
                     }
                 }
@@ -434,6 +453,7 @@ bool OCS::initProperties()
                        THERMOSTAT_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT], "THERMOSTAT_HEAT_SETPOINT", "Heat deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT], "THERMOSTAT_COOL_SETPOINT", "Cool deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
+    IUFillNumber(&Thermostat_setpointN[THERMOSTAT_HUMIDITY_SETPOINT], "THERMOSTAT_HUMIDITY_SETPOINT", "Dehumidify % (0=OFF)", "%.0f", 0, 80, 1, 0);
 
 
     // Sensors tab controls
@@ -705,26 +725,30 @@ void OCS::MinuteTimerHit()
         }
 
         // Get the Thermostat setpoints
-        int thermostat_heat_setpoint;
-        char value[RB_MAX_LEN] = {0};
-        int hot_setpoint_error_or_fail = getCommandIntResponse(PortFD, &thermostat_heat_setpoint, value, OCS_get_thermostat_heat_setpoint);
-        if (hot_setpoint_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-            Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT].value = thermostat_heat_setpoint;
-            IDSetNumber(&Thermostat_setpointsNP, nullptr);
-        }
-        else {
-            LOGF_WARN("Communication error on get Thermostat Heat Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_heat_setpoint);
+        char hot_response[RB_MAX_LEN] = {0};
+        int hot_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, hot_response, OCS_get_thermostat_heat_setpoint);
+        if (hot_setpoint_error_or_fail >= 0) { // errors are negative
+            Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT].value = hot_setpoint_error_or_fail;
+        } else {
+            LOGF_WARN("Communication error on get Thermostat Heat Setpoint %d, this update aborted, will try again...", hot_setpoint_error_or_fail);
         }
 
-        int thermostat_vent_setpoint;
-        int cool_setpoint_error_or_fail = getCommandIntResponse(PortFD, &thermostat_vent_setpoint, value, OCS_get_thermostat_cool_setpoint);
-        if (cool_setpoint_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-            Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT].value = thermostat_vent_setpoint;
-            IDSetNumber(&Thermostat_setpointsNP, nullptr);
+        char cool_response[RB_MAX_LEN] = {0};
+        int cool_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, cool_response, OCS_get_thermostat_cool_setpoint);
+        if (cool_setpoint_error_or_fail >= 0) { // errors are negative
+            Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT].value = cool_setpoint_error_or_fail;
+        } else {
+            LOGF_WARN("Communication error on get Thermostat Cool Setpoint %d, this update aborted, will try again...", cool_setpoint_error_or_fail);
         }
-        else {
-            LOGF_WARN("Communication error on get Thermostat Cool Setpoint %s, this update aborted, will try again...", OCS_get_thermostat_cool_setpoint);
+
+        char wet_response[RB_MAX_LEN] = {0};
+        int wet_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, wet_response, OCS_get_thermostat_humidity_setpoint);
+        if (cool_setpoint_error_or_fail >= 0) { // errors are negative
+            Thermostat_setpointN[THERMOSTAT_HUMIDITY_SETPOINT].value = wet_setpoint_error_or_fail;
+        } else {
+            LOGF_WARN("Communication error on get Thermostat Humidity Setpoint %d, this update aborted, will try again...", wet_setpoint_error_or_fail);
         }
+        IDSetNumber(&Thermostat_setpointsNP, nullptr);
     }
 
     // Get the Sense Inputs values
@@ -1423,6 +1447,39 @@ int OCS::getCommandSingleCharErrorOrLongResponse(int fd, char *data, const char 
         return error_type;
     }
     return nbytes_read;
+}
+
+int OCS::getCommandIntFromCharResponse(int fd, char *data, const char *cmd)
+{
+    int errorOrFail = getCommandSingleCharErrorOrLongResponse(fd, data, cmd);
+    if (errorOrFail < 1) {
+        return errorOrFail;
+    } else {
+        long lnum;
+        char *end;
+        errno = 0;
+        lnum = strtol(data, &end, 10);        //10 specifies base-10
+        if (end == data) { //if no characters were converted these pointers are equal
+            errorOrFail = -1;
+        }
+
+        //If sizeof(int) == sizeof(long), we have to explicitly check for overflows
+        if ((lnum == LONG_MAX || lnum == LONG_MIN) && errno == ERANGE) {
+            errorOrFail = -1;
+        }
+
+        //Because strtol produces a long, check for overflow
+        if ( (lnum > INT_MAX) || (lnum < INT_MIN) ) {
+            errorOrFail = -1;
+        }
+
+        //Finally convert the result to a plain int (if that's what you want)
+        if (errorOrFail == -1) {
+            return errorOrFail;
+        } else {
+            return (int) lnum;
+        }
+    }
 }
 
 int OCS::flushIO(int fd)
