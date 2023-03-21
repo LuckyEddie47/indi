@@ -454,7 +454,18 @@ bool OCS::initProperties()
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT], "THERMOSTAT_HEAT_SETPOINT", "Heat deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT], "THERMOSTAT_COOL_SETPOINT", "Cool deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_HUMIDITY_SETPOINT], "THERMOSTAT_HUMIDITY_SETPOINT", "Dehumidify % (0=OFF)", "%.0f", 0, 80, 1, 0);
-
+    IUFillSwitchVector(&Thermostat_hot_relaySP, Thermostat_hot_relayS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Thermo_hot_relay", "Heat Relay",
+                       THERMOSTAT_TAB, IP_RO, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Thermostat_hot_relayS[ON_SWITCH], "Hot_Relay_On", "ON", ISS_OFF);
+    IUFillSwitch(&Thermostat_hot_relayS[OFF_SWITCH], "Hot_Relay_Off", "OFF", ISS_ON);
+    IUFillSwitchVector(&Thermostat_cool_relaySP, Thermostat_cool_relayS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Thermo_cool_relay", "Cool Relay",
+                       THERMOSTAT_TAB, IP_RO, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Thermostat_cool_relayS[ON_SWITCH], "Cool_Relay_On", "ON", ISS_OFF);
+    IUFillSwitch(&Thermostat_cool_relayS[OFF_SWITCH], "Cool_Relay_Off", "OFF", ISS_ON);
+    IUFillSwitchVector(&Thermostat_wet_relaySP, Thermostat_wet_relayS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Thermo_wet_relay", "Rh Relay",
+                       THERMOSTAT_TAB, IP_RO, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Thermostat_wet_relayS[ON_SWITCH], "Wet_Relay_On", "ON", ISS_OFF);
+    IUFillSwitch(&Thermostat_wet_relayS[OFF_SWITCH], "Wet_Relay_Off", "OFF", ISS_ON);
 
     // Sensors tab controls
     //---------------------
@@ -601,6 +612,9 @@ bool OCS::updateProperties()
         if (thermostat_controls_enabled) {
             defineProperty(&Thermostat_StatusTP);
             defineProperty(&Thermostat_setpointsNP);
+            defineProperty(&Thermostat_hot_relaySP);
+            defineProperty(&Thermostat_cool_relaySP);
+            defineProperty(&Thermostat_wet_relaySP);
         }
         if (power_device_relays[0] > 0) {
             defineProperty(&Power_Device1SP);
@@ -657,6 +671,9 @@ bool OCS::updateProperties()
         if (thermostat_controls_enabled) {
             deleteProperty(Thermostat_StatusTP.name);
             deleteProperty(Thermostat_setpointsNP.name);
+            deleteProperty(Thermostat_hot_relaySP.name);
+            deleteProperty(Thermostat_cool_relaySP.name);
+            deleteProperty(Thermostat_wet_relaySP.name);
         }
         if (power_device_relays[0] > 0) {
             deleteProperty(Power_Device1SP.name);
@@ -749,6 +766,46 @@ void OCS::MinuteTimerHit()
             LOGF_WARN("Communication error on get Thermostat Humidity Setpoint %d, this update aborted, will try again...", wet_setpoint_error_or_fail);
         }
         IDSetNumber(&Thermostat_setpointsNP, nullptr);
+
+        // Get the Thermostat relay status'
+        for (int relay = 0; relay < THERMOSTAT_RELAY_COUNT; relay++) {
+            if (thermostat_relays[relay] > 0) {
+                char thermo_relay_response[RB_MAX_LEN] = {0};
+                char thermo_relay_command[RB_MAX_LEN] = {0};
+                sprintf(thermo_relay_command, "%s%d%s", OCS_get_relay_part, thermostat_relays[relay], OCS_command_terminator);
+                int thermo_relay_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, thermo_relay_response, thermo_relay_command);
+                if (thermo_relay_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+                    if (relay == THERMOSTAT_HEAT_RELAY) {
+                        if (strcmp(thermo_relay_response, "ON") == 0) {
+                            Thermostat_hot_relayS[ON_SWITCH].s = ISS_ON;
+                            Thermostat_hot_relayS[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(thermo_relay_response, "OFF") == 0) {
+                            Thermostat_hot_relayS[ON_SWITCH].s = ISS_OFF;
+                            Thermostat_hot_relayS[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&Thermostat_hot_relaySP, nullptr);
+                    } else if (relay == THERMOSTAT_COOL_RELAY) {
+                        if (strcmp(thermo_relay_response, "ON") == 0) {
+                            Thermostat_cool_relayS[ON_SWITCH].s = ISS_ON;
+                            Thermostat_cool_relayS[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(thermo_relay_response, "OFF") == 0) {
+                            Thermostat_cool_relayS[ON_SWITCH].s = ISS_OFF;
+                            Thermostat_cool_relayS[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&Thermostat_cool_relaySP, nullptr);
+                    } else if (relay == THERMOSTAT_HUMIDITY_RELAY) {
+                        if (strcmp(thermo_relay_response, "ON") == 0) {
+                            Thermostat_wet_relayS[ON_SWITCH].s = ISS_ON;
+                            Thermostat_wet_relayS[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(thermo_relay_response, "OFF") == 0) {
+                            Thermostat_wet_relayS[ON_SWITCH].s = ISS_OFF;
+                            Thermostat_wet_relayS[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&Thermostat_wet_relaySP, nullptr);
+                    }
+                }
+            }
+        }
     }
 
     // Get the Sense Inputs values
@@ -1100,9 +1157,20 @@ void OCS::GetCapabilites()
         } else {
             thermostat_controls_enabled = true;
             LOG_DEBUG("OCS has a thermostat");
+
+            // Get thermostat relay definitions
+            char thermostat_relay_definitions_response[RB_MAX_LEN] = {0};
+            int thermostat_relay_definitions_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_relay_definitions_response, OCS_get_thermostat_definitions);
+            if (thermostat_relay_definitions_error_or_fail > 1) {
+                char *split;
+                split = strtok(thermostat_relay_definitions_response, ",");
+                for (int relayNo = 0; relayNo < THERMOSTAT_RELAY_COUNT; relayNo ++) {
+                    thermostat_relays[relayNo] = atoi (split);
+                    split = strtok(NULL, ",");
+                }
+            }
         }
-    }
-    else {
+    } else {
         LOGF_WARN("Communication error on get Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
         LOGF_WARN("thermostat_status_error_or_fail = %d", thermostat_status_error_or_fail);
         LOGF_WARN("thermostat_status_response = %s", thermostat_status_response);

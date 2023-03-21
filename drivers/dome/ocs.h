@@ -428,8 +428,15 @@ private:
     virtual IPState UnPark() override;
     virtual IPState MoveAbs(double az) override;
 
+    enum {
+        ON_SWITCH,
+        OFF_SWITCH,
+        SWITCH_TOGGLE_COUNT
+    };
+
     // Thermostat tab controls
     bool thermostat_controls_enabled = false;
+
     enum {
         THERMOSTAT_TEMERATURE,
         THERMOSTAT_HUMIDITY,
@@ -446,6 +453,21 @@ private:
     };
     INumberVectorProperty Thermostat_setpointsNP;
     INumber Thermostat_setpointN[THERMOSTAT_SETPOINT_COUNT];
+
+    ISwitchVectorProperty Thermostat_hot_relaySP;
+    ISwitch Thermostat_hot_relayS[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty Thermostat_cool_relaySP;
+    ISwitch Thermostat_cool_relayS[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty Thermostat_wet_relaySP;
+    ISwitch Thermostat_wet_relayS[SWITCH_TOGGLE_COUNT];
+
+    enum {
+        THERMOSTAT_HEAT_RELAY,
+        THERMOSTAT_COOL_RELAY,
+        THERMOSTAT_HUMIDITY_RELAY,
+        THERMOSTAT_RELAY_COUNT
+    };
+    int thermostat_relays[THERMOSTAT_RELAY_COUNT];
 
     // Sensors tab controls
     bool sensors_tab_enabled = false;
@@ -466,12 +488,6 @@ private:
 
     // Power tab controls
     bool power_tab_enabled = false;
-
-    enum {
-        ON_SWITCH,
-        OFF_SWITCH,
-        SWITCH_TOGGLE_COUNT
-    };
 
     enum {
         POWER_DEVICE1,
