@@ -454,12 +454,12 @@ private:
     INumberVectorProperty Thermostat_setpointsNP;
     INumber Thermostat_setpointN[THERMOSTAT_SETPOINT_COUNT];
 
-    ISwitchVectorProperty Thermostat_hot_relaySP;
-    ISwitch Thermostat_hot_relayS[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty Thermostat_heat_relaySP;
+    ISwitch Thermostat_heat_relayS[SWITCH_TOGGLE_COUNT];
     ISwitchVectorProperty Thermostat_cool_relaySP;
     ISwitch Thermostat_cool_relayS[SWITCH_TOGGLE_COUNT];
-    ISwitchVectorProperty Thermostat_wet_relaySP;
-    ISwitch Thermostat_wet_relayS[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty Thermostat_humidity_relaySP;
+    ISwitch Thermostat_humidity_relayS[SWITCH_TOGGLE_COUNT];
 
     enum {
         THERMOSTAT_HEAT_RELAY,
@@ -577,6 +577,10 @@ private:
     ISwitch LIGHT_ORRS[SWITCH_TOGGLE_COUNT];
     ISwitchVectorProperty LIGHT_OUTSIDESP;
     ISwitch LIGHT_OUTSIDES[SWITCH_TOGGLE_COUNT];
+
+    // Weater tab controls
+    bool weather_tab_enabled = false;
+
 
     // Manual tab controls
     enum {

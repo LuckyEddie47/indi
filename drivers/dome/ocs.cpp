@@ -31,8 +31,7 @@ USB and network connections supported.
 *******************************************************************************/
 
 // To do:
-// Move temperature polling to 1 minute timer
-// Query relay status + sensors on timer, update controls
+// Query sensors
 // Test Power / Lights
 // Sensor handlers
 // Dome handlers
@@ -67,6 +66,7 @@ std::unique_ptr<OCS> ocs(new OCS());
 
 OCS::OCS()
 {
+    setVersion(0, 1);
     SetDomeCapability(DOME_CAN_ABORT | DOME_HAS_SHUTTER);
     MinuteTimer.callOnTimeout(std::bind(&OCS::MinuteTimerHit, this));
     MinuteTimer.start(60000);
@@ -454,18 +454,18 @@ bool OCS::initProperties()
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT], "THERMOSTAT_HEAT_SETPOINT", "Heat deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT], "THERMOSTAT_COOL_SETPOINT", "Cool deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_HUMIDITY_SETPOINT], "THERMOSTAT_HUMIDITY_SETPOINT", "Dehumidify % (0=OFF)", "%.0f", 0, 80, 1, 0);
-    IUFillSwitchVector(&Thermostat_hot_relaySP, Thermostat_hot_relayS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Thermo_hot_relay", "Heat Relay",
+    IUFillSwitchVector(&Thermostat_heat_relaySP, Thermostat_heat_relayS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Thermo_heat_relay", "Heat Relay",
                        THERMOSTAT_TAB, IP_RO, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Thermostat_hot_relayS[ON_SWITCH], "Hot_Relay_On", "ON", ISS_OFF);
-    IUFillSwitch(&Thermostat_hot_relayS[OFF_SWITCH], "Hot_Relay_Off", "OFF", ISS_ON);
+    IUFillSwitch(&Thermostat_heat_relayS[ON_SWITCH], "Heat_Relay_On", "ON", ISS_OFF);
+    IUFillSwitch(&Thermostat_heat_relayS[OFF_SWITCH], "Heat_Relay_Off", "OFF", ISS_ON);
     IUFillSwitchVector(&Thermostat_cool_relaySP, Thermostat_cool_relayS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Thermo_cool_relay", "Cool Relay",
                        THERMOSTAT_TAB, IP_RO, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Thermostat_cool_relayS[ON_SWITCH], "Cool_Relay_On", "ON", ISS_OFF);
     IUFillSwitch(&Thermostat_cool_relayS[OFF_SWITCH], "Cool_Relay_Off", "OFF", ISS_ON);
-    IUFillSwitchVector(&Thermostat_wet_relaySP, Thermostat_wet_relayS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Thermo_wet_relay", "Rh Relay",
+    IUFillSwitchVector(&Thermostat_humidity_relaySP, Thermostat_humidity_relayS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Thermo_humidity_relay", "Rh Relay",
                        THERMOSTAT_TAB, IP_RO, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Thermostat_wet_relayS[ON_SWITCH], "Wet_Relay_On", "ON", ISS_OFF);
-    IUFillSwitch(&Thermostat_wet_relayS[OFF_SWITCH], "Wet_Relay_Off", "OFF", ISS_ON);
+    IUFillSwitch(&Thermostat_humidity_relayS[ON_SWITCH], "Humidity_Relay_On", "ON", ISS_OFF);
+    IUFillSwitch(&Thermostat_humidity_relayS[OFF_SWITCH], "Humidity_Relay_Off", "OFF", ISS_ON);
 
     // Sensors tab controls
     //---------------------
@@ -612,9 +612,9 @@ bool OCS::updateProperties()
         if (thermostat_controls_enabled) {
             defineProperty(&Thermostat_StatusTP);
             defineProperty(&Thermostat_setpointsNP);
-            defineProperty(&Thermostat_hot_relaySP);
+            defineProperty(&Thermostat_heat_relaySP);
             defineProperty(&Thermostat_cool_relaySP);
-            defineProperty(&Thermostat_wet_relaySP);
+            defineProperty(&Thermostat_humidity_relaySP);
         }
         if (power_device_relays[0] > 0) {
             defineProperty(&Power_Device1SP);
@@ -671,9 +671,9 @@ bool OCS::updateProperties()
         if (thermostat_controls_enabled) {
             deleteProperty(Thermostat_StatusTP.name);
             deleteProperty(Thermostat_setpointsNP.name);
-            deleteProperty(Thermostat_hot_relaySP.name);
+            deleteProperty(Thermostat_heat_relaySP.name);
             deleteProperty(Thermostat_cool_relaySP.name);
-            deleteProperty(Thermostat_wet_relaySP.name);
+            deleteProperty(Thermostat_humidity_relaySP.name);
         }
         if (power_device_relays[0] > 0) {
             deleteProperty(Power_Device1SP.name);
@@ -742,12 +742,12 @@ void OCS::MinuteTimerHit()
         }
 
         // Get the Thermostat setpoints
-        char hot_response[RB_MAX_LEN] = {0};
-        int hot_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, hot_response, OCS_get_thermostat_heat_setpoint);
-        if (hot_setpoint_error_or_fail >= 0) { // errors are negative
-            Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT].value = hot_setpoint_error_or_fail;
+        char heat_response[RB_MAX_LEN] = {0};
+        int heat_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, heat_response, OCS_get_thermostat_heat_setpoint);
+        if (heat_setpoint_error_or_fail >= 0) { // errors are negative
+            Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT].value = heat_setpoint_error_or_fail;
         } else {
-            LOGF_WARN("Communication error on get Thermostat Heat Setpoint %d, this update aborted, will try again...", hot_setpoint_error_or_fail);
+            LOGF_WARN("Communication error on get Thermostat Heat Setpoint %d, this update aborted, will try again...", heat_setpoint_error_or_fail);
         }
 
         char cool_response[RB_MAX_LEN] = {0};
@@ -758,12 +758,12 @@ void OCS::MinuteTimerHit()
             LOGF_WARN("Communication error on get Thermostat Cool Setpoint %d, this update aborted, will try again...", cool_setpoint_error_or_fail);
         }
 
-        char wet_response[RB_MAX_LEN] = {0};
-        int wet_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, wet_response, OCS_get_thermostat_humidity_setpoint);
+        char humidity_response[RB_MAX_LEN] = {0};
+        int humidity_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, humidity_response, OCS_get_thermostat_humidity_setpoint);
         if (cool_setpoint_error_or_fail >= 0) { // errors are negative
-            Thermostat_setpointN[THERMOSTAT_HUMIDITY_SETPOINT].value = wet_setpoint_error_or_fail;
+            Thermostat_setpointN[THERMOSTAT_HUMIDITY_SETPOINT].value = humidity_setpoint_error_or_fail;
         } else {
-            LOGF_WARN("Communication error on get Thermostat Humidity Setpoint %d, this update aborted, will try again...", wet_setpoint_error_or_fail);
+            LOGF_WARN("Communication error on get Thermostat Humidity Setpoint %d, this update aborted, will try again...", humidity_setpoint_error_or_fail);
         }
         IDSetNumber(&Thermostat_setpointsNP, nullptr);
 
@@ -777,13 +777,13 @@ void OCS::MinuteTimerHit()
                 if (thermo_relay_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
                     if (relay == THERMOSTAT_HEAT_RELAY) {
                         if (strcmp(thermo_relay_response, "ON") == 0) {
-                            Thermostat_hot_relayS[ON_SWITCH].s = ISS_ON;
-                            Thermostat_hot_relayS[OFF_SWITCH].s = ISS_OFF;
+                            Thermostat_heat_relayS[ON_SWITCH].s = ISS_ON;
+                            Thermostat_heat_relayS[OFF_SWITCH].s = ISS_OFF;
                         } else if (strcmp(thermo_relay_response, "OFF") == 0) {
-                            Thermostat_hot_relayS[ON_SWITCH].s = ISS_OFF;
-                            Thermostat_hot_relayS[OFF_SWITCH].s = ISS_ON;
+                            Thermostat_heat_relayS[ON_SWITCH].s = ISS_OFF;
+                            Thermostat_heat_relayS[OFF_SWITCH].s = ISS_ON;
                         }
-                        IDSetSwitch(&Thermostat_hot_relaySP, nullptr);
+                        IDSetSwitch(&Thermostat_heat_relaySP, nullptr);
                     } else if (relay == THERMOSTAT_COOL_RELAY) {
                         if (strcmp(thermo_relay_response, "ON") == 0) {
                             Thermostat_cool_relayS[ON_SWITCH].s = ISS_ON;
@@ -795,13 +795,144 @@ void OCS::MinuteTimerHit()
                         IDSetSwitch(&Thermostat_cool_relaySP, nullptr);
                     } else if (relay == THERMOSTAT_HUMIDITY_RELAY) {
                         if (strcmp(thermo_relay_response, "ON") == 0) {
-                            Thermostat_wet_relayS[ON_SWITCH].s = ISS_ON;
-                            Thermostat_wet_relayS[OFF_SWITCH].s = ISS_OFF;
+                            Thermostat_humidity_relayS[ON_SWITCH].s = ISS_ON;
+                            Thermostat_humidity_relayS[OFF_SWITCH].s = ISS_OFF;
                         } else if (strcmp(thermo_relay_response, "OFF") == 0) {
-                            Thermostat_wet_relayS[ON_SWITCH].s = ISS_OFF;
-                            Thermostat_wet_relayS[OFF_SWITCH].s = ISS_ON;
+                            Thermostat_humidity_relayS[ON_SWITCH].s = ISS_OFF;
+                            Thermostat_humidity_relayS[OFF_SWITCH].s = ISS_ON;
                         }
-                        IDSetSwitch(&Thermostat_wet_relaySP, nullptr);
+                        IDSetSwitch(&Thermostat_humidity_relaySP, nullptr);
+                    }
+                }
+            }
+        }
+    }
+
+    // Power tab
+    if (power_tab_enabled) {
+        // Get the Power relay status'
+        for (int relay = 0; relay < POWER_DEVICE_COUNT; relay++) {
+            if (power_device_relays[relay] > 0) {
+                char power_relay_response[RB_MAX_LEN] = {0};
+                char power_relay_command[RB_MAX_LEN] = {0};
+                sprintf(power_relay_command, "%s%d%s", OCS_get_relay_part, power_device_relays[relay], OCS_command_terminator);
+                int power_relay_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, power_relay_response, power_relay_command);
+                if (power_relay_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+                    if (relay == POWER_DEVICE1) {
+                        if (strcmp(power_relay_response, "ON") == 0) {
+                            Power_Device1S[ON_SWITCH].s = ISS_ON;
+                            Power_Device1S[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(power_relay_response, "OFF") == 0) {
+                            Power_Device1S[ON_SWITCH].s = ISS_OFF;
+                            Power_Device1S[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&Power_Device1SP, nullptr);
+                    } else if (relay == POWER_DEVICE2) {
+                        if (strcmp(power_relay_response, "ON") == 0) {
+                            Power_Device2S[ON_SWITCH].s = ISS_ON;
+                            Power_Device2S[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(power_relay_response, "OFF") == 0) {
+                            Power_Device2S[ON_SWITCH].s = ISS_OFF;
+                            Power_Device2S[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&Power_Device2SP, nullptr);
+                    } else if (relay == POWER_DEVICE3) {
+                        if (strcmp(power_relay_response, "ON") == 0) {
+                            Power_Device3S[ON_SWITCH].s = ISS_ON;
+                            Power_Device3S[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(power_relay_response, "OFF") == 0) {
+                            Power_Device3S[ON_SWITCH].s = ISS_OFF;
+                            Power_Device3S[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&Power_Device3SP, nullptr);
+                    } else if (relay == POWER_DEVICE4) {
+                        if (strcmp(power_relay_response, "ON") == 0) {
+                            Power_Device4S[ON_SWITCH].s = ISS_ON;
+                            Power_Device4S[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(power_relay_response, "OFF") == 0) {
+                            Power_Device4S[ON_SWITCH].s = ISS_OFF;
+                            Power_Device4S[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&Power_Device4SP, nullptr);
+                    } else if (relay == POWER_DEVICE5) {
+                        if (strcmp(power_relay_response, "ON") == 0) {
+                            Power_Device5S[ON_SWITCH].s = ISS_ON;
+                            Power_Device5S[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(power_relay_response, "OFF") == 0) {
+                            Power_Device5S[ON_SWITCH].s = ISS_OFF;
+                            Power_Device5S[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&Power_Device5SP, nullptr);
+                    } else if (relay == POWER_DEVICE6) {
+                        if (strcmp(power_relay_response, "ON") == 0) {
+                            Power_Device6S[ON_SWITCH].s = ISS_ON;
+                            Power_Device6S[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(power_relay_response, "OFF") == 0) {
+                            Power_Device6S[ON_SWITCH].s = ISS_OFF;
+                            Power_Device6S[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&Power_Device6SP, nullptr);
+                    }
+                }
+            }
+        }
+    }
+
+    // Lights tab
+    if (lights_tab_enabled) {
+        // Get the Lights relay status'
+        for (int relay = 0; relay < LIGHT_COUNT; relay++) {
+            if (light_relays[relay] > 0) {
+                char light_relay_response[RB_MAX_LEN] = {0};
+                char light_relay_command[RB_MAX_LEN] = {0};
+                sprintf(light_relay_command, "%s%d%s", OCS_get_relay_part, light_relays[relay], OCS_command_terminator);
+                int light_relay_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, light_relay_response, light_relay_command);
+                if (light_relay_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+                    if (relay == LIGHT_WRW_RELAY) {
+                        if (strcmp(light_relay_response, "ON") == 0) {
+                            LIGHT_WRWS[ON_SWITCH].s = ISS_ON;
+                            LIGHT_WRWS[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(light_relay_response, "OFF") == 0) {
+                            LIGHT_WRWS[ON_SWITCH].s = ISS_OFF;
+                            LIGHT_WRWS[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&LIGHT_WRWSP, nullptr);
+                    } else if (relay == LIGHT_WRR_RELAY) {
+                        if (strcmp(light_relay_response, "ON") == 0) {
+                            LIGHT_WRRS[ON_SWITCH].s = ISS_ON;
+                            LIGHT_WRRS[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(light_relay_response, "OFF") == 0) {
+                            LIGHT_WRRS[ON_SWITCH].s = ISS_OFF;
+                            LIGHT_WRRS[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&LIGHT_WRRSP, nullptr);
+                    } else if (relay == LIGHT_ORW_RELAY) {
+                        if (strcmp(light_relay_response, "ON") == 0) {
+                            LIGHT_ORWS[ON_SWITCH].s = ISS_ON;
+                            LIGHT_ORWS[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(light_relay_response, "OFF") == 0) {
+                            LIGHT_ORWS[ON_SWITCH].s = ISS_OFF;
+                            LIGHT_ORWS[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&LIGHT_ORWSP, nullptr);
+                    } else if (relay == LIGHT_ORR_RELAY) {
+                        if (strcmp(light_relay_response, "ON") == 0) {
+                            LIGHT_ORRS[ON_SWITCH].s = ISS_ON;
+                            LIGHT_ORRS[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(light_relay_response, "OFF") == 0) {
+                            LIGHT_ORRS[ON_SWITCH].s = ISS_OFF;
+                            LIGHT_ORRS[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&LIGHT_ORRSP, nullptr);
+                    } else if (relay == LIGHT_OUTSIDE_RELAY) {
+                        if (strcmp(light_relay_response, "ON") == 0) {
+                            LIGHT_OUTSIDES[ON_SWITCH].s = ISS_ON;
+                            LIGHT_OUTSIDES[OFF_SWITCH].s = ISS_OFF;
+                        } else if (strcmp(light_relay_response, "OFF") == 0) {
+                            LIGHT_OUTSIDES[ON_SWITCH].s = ISS_OFF;
+                            LIGHT_OUTSIDES[OFF_SWITCH].s = ISS_ON;
+                        }
+                        IDSetSwitch(&LIGHT_OUTSIDESP, nullptr);
                     }
                 }
             }
