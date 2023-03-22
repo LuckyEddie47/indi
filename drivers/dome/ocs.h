@@ -581,6 +581,20 @@ private:
     // Weater tab controls
     bool weather_tab_enabled = false;
 
+    enum {
+        WEATHER_TEMPERATURE,
+        WEATHER_SKY_TEMP,
+        WEATHER_DIFF_SKY_TEMP,
+        WEATHER_PRESSURE,
+        WEATHER_HUMIDITY,
+        WEATHER_WIND,
+        WEATHER_RAIN,
+        WEATHER_CLOUD,
+        WEATHER_SKY,
+        WEATHER_MEASUREMENTS_COUNT
+    };
+
+    bool weather_enabled[WEATHER_MEASUREMENTS_COUNT];
 
     // Manual tab controls
     enum {

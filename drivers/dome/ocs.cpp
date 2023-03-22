@@ -939,6 +939,9 @@ void OCS::MinuteTimerHit()
         }
     }
 
+    // Weather tab
+
+
     // Get the Sense Inputs values
 }
 
@@ -1320,12 +1323,12 @@ void OCS::GetCapabilites()
         // Defined devices have a positive integer relay definition, undefined return -1
         // so we can sum these to check if any are defined, if not then keep tab hidden
         int powerDisabled = 0;
-        for (int deviceNo = 1; deviceNo <= POWER_DEVICE_COUNT; deviceNo ++) {
+        for (int deviceNo = 1; deviceNo < POWER_DEVICE_COUNT; deviceNo ++) {
             powerDisabled += power_device_relays[deviceNo];
         }
         if (powerDisabled != (-1 * POWER_DEVICE_COUNT)) {
             power_tab_enabled = true;
-            for (int deviceNo = 1; deviceNo <= POWER_DEVICE_COUNT; deviceNo ++) {
+            for (int deviceNo = 1; deviceNo < POWER_DEVICE_COUNT; deviceNo ++) {
                 if (power_device_relays[(deviceNo - 1)] != -1)
                 {
                     char power_relay_name_response[RB_MAX_LEN] = {0};
@@ -1378,11 +1381,51 @@ void OCS::GetCapabilites()
         // Defined lights have a positive integer relay definition, undefined return -1
         // so we can sum these to check if any are defined, if not then keep tab hidden
         int lightsDisabled = 0;
-        for (int lrelay = 1; lrelay <= LIGHT_COUNT; lrelay ++) {
-            lightsDisabled += power_device_relays[lrelay];
+        for (int lrelay = 1; lrelay < LIGHT_COUNT; lrelay ++) {
+            lightsDisabled += light_relays[lrelay];
         }
         if (lightsDisabled != (-1 * LIGHT_COUNT)) {
             lights_tab_enabled = true;
+        }
+    }
+
+    // Get available weather measurements
+    for (int measurement = 0; measurement < WEATHER_MEASUREMENTS_COUNT; measurement ++) {
+        char measurement_reponse[RB_MAX_LEN];
+        char measurement_command[CMD_MAX_LEN];
+        if (measurement == WEATHER_TEMPERATURE) {
+            strncpy(measurement_command, OCS_get_outside_temperature, sizeof(OCS_get_outside_temperature));
+        } else if (measurement == WEATHER_SKY_TEMP) {
+            strncpy(measurement_command, OCS_get_sky_IR_temperature, sizeof(OCS_get_sky_IR_temperature));
+        } else if (measurement == WEATHER_DIFF_SKY_TEMP) {
+            strncpy(measurement_command, OCS_get_sky_diff_temperature, sizeof(OCS_get_sky_diff_temperature));
+        } else if (measurement == WEATHER_PRESSURE) {
+            strncpy(measurement_command, OCS_get_pressure, sizeof(OCS_get_pressure));
+        } else if (measurement == WEATHER_HUMIDITY) {
+            strncpy(measurement_command, OCS_get_humidity, sizeof(OCS_get_humidity));
+        } else if (measurement == WEATHER_WIND) {
+            strncpy(measurement_command, OCS_get_wind_status, sizeof(OCS_get_wind_status));
+        } else if (measurement == WEATHER_RAIN) {
+            strncpy(measurement_command, OCS_get_rain_sensor_status, sizeof(OCS_get_rain_sensor_status));
+        } else if (measurement == WEATHER_CLOUD) {
+            strncpy(measurement_command, OCS_get_cloud_description, sizeof(OCS_get_cloud_description));
+        } else if (measurement == WEATHER_SKY) {
+            strncpy(measurement_command, OCS_get_sky_quality, sizeof(OCS_get_sky_quality));
+        }
+        int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse, measurement_command);
+        if (measurement_error_or_fail == 0) {
+            weather_enabled[measurement] = 0;
+        } else {
+            weather_enabled[measurement] = 1;
+        }
+        // Available weather measurement are now defined as = 1, unavailable as = 0
+        // so we can sum these to check if any are defined, if not then keep tab hidden
+        int weatherDisabled = 0;
+        for (int wmeasure = 1; wmeasure < WEATHER_MEASUREMENTS_COUNT; wmeasure ++) {
+            weatherDisabled += weather_enabled[wmeasure];
+        }
+        if (weatherDisabled > 0) {
+            weather_tab_enabled = true;
         }
     }
 
