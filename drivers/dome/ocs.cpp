@@ -560,6 +560,18 @@ bool OCS::initProperties()
     IUFillSwitch(&LIGHT_OUTSIDES[OFF_SWITCH], "OUTSIDE_OFF", "OFF", ISS_ON);
 
 
+    // Weather tab controls
+    IUFillTextVector(&Weather_MeasurementsTP, Weather_MeasurementsT, WEATHER_MEASUREMENTS_COUNT, getDeviceName(), "WEATHER_MEASUREMENTS", "Weather",
+                     WEATHER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Weather_MeasurementsT[WEATHER_TEMPERATURE], "WEATHER_TEMPERATURE", "Temperature deg.C","");
+    IUFillText(&Weather_MeasurementsT[WEATHER_SKY_TEMP], "WEATHER_SKY_TEMP", "Sky Temp deg.C","");
+    IUFillText(&Weather_MeasurementsT[WEATHER_DIFF_SKY_TEMP], "WEATHER_DIFF_SKY_TEMP", "Diff Sky Temp deg.C","");
+    IUFillText(&Weather_MeasurementsT[WEATHER_PRESSURE], "WEATHER_PRESSURE", "Pressure mbar","");
+    IUFillText(&Weather_MeasurementsT[WEATHER_HUMIDITY], "WEATHER_HUMIDITY", "Humidity %","");
+    IUFillText(&Weather_MeasurementsT[WEATHER_WIND], "WEATHER_WIND", "Wind","");
+    IUFillText(&Weather_MeasurementsT[WEATHER_RAIN], "WEATHER_RAIN", "Rain","");
+    IUFillText(&Weather_MeasurementsT[WEATHER_CLOUD], "WEATHER_CLOUD", "Cloud","");
+    IUFillText(&Weather_MeasurementsT[WEATHER_SKY], "WEATHER_SKY", "Sky Qual mag/arc-sec^2","");
 
     // Manual tab controls
     //--------------------
@@ -655,6 +667,9 @@ bool OCS::updateProperties()
         if (light_relays[LIGHT_OUTSIDE_RELAY] > 0) {
             defineProperty(&LIGHT_OUTSIDESP);
         }
+        if (weather_tab_enabled) {
+            defineProperty(&Weather_MeasurementsTP);
+        }
     }
     else
     {
@@ -713,6 +728,9 @@ bool OCS::updateProperties()
         }
         if (light_relays[LIGHT_OUTSIDE_RELAY] > 0) {
             deleteProperty(LIGHT_OUTSIDESP.name);
+        }
+        if (weather_tab_enabled) {
+            deleteProperty(Weather_MeasurementsTP.name);
         }
     }
     return true;
@@ -940,7 +958,38 @@ void OCS::MinuteTimerHit()
     }
 
     // Weather tab
-
+    if (weather_tab_enabled) {
+        for (int measurement = 0; measurement < WEATHER_MEASUREMENTS_COUNT; measurement ++) {
+            if (weather_enabled[measure] == 1) {
+                char measurement_reponse[RB_MAX_LEN];
+                char measurement_command[CMD_MAX_LEN];
+                if (measurement == WEATHER_TEMPERATURE) {
+                    strncpy(measurement_command, OCS_get_outside_temperature, sizeof(OCS_get_outside_temperature));
+                } else if (measurement == WEATHER_SKY_TEMP) {
+                    strncpy(measurement_command, OCS_get_sky_IR_temperature, sizeof(OCS_get_sky_IR_temperature));
+                } else if (measurement == WEATHER_DIFF_SKY_TEMP) {
+                    strncpy(measurement_command, OCS_get_sky_diff_temperature, sizeof(OCS_get_sky_diff_temperature));
+                } else if (measurement == WEATHER_PRESSURE) {
+                    strncpy(measurement_command, OCS_get_pressure, sizeof(OCS_get_pressure));
+                } else if (measurement == WEATHER_HUMIDITY) {
+                    strncpy(measurement_command, OCS_get_humidity, sizeof(OCS_get_humidity));
+                } else if (measurement == WEATHER_WIND) {
+                    strncpy(measurement_command, OCS_get_wind_status, sizeof(OCS_get_wind_status));
+                } else if (measurement == WEATHER_RAIN) {
+                    strncpy(measurement_command, OCS_get_rain_sensor_status, sizeof(OCS_get_rain_sensor_status));
+                } else if (measurement == WEATHER_CLOUD) {
+                    strncpy(measurement_command, OCS_get_cloud_description, sizeof(OCS_get_cloud_description));
+                } else if (measurement == WEATHER_SKY) {
+                    strncpy(measurement_command, OCS_get_sky_quality, sizeof(OCS_get_sky_quality));
+                }
+                int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse, measurement_command);
+                if (measurement_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+                    Weather_MeasurementsT[measurement].text = measurement_reponse;
+                }
+            }
+        }
+        IDSetText(&Weather_MeasurementsTP, nullptr);
+    }
 
     // Get the Sense Inputs values
 }

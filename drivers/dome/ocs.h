@@ -594,7 +594,10 @@ private:
         WEATHER_MEASUREMENTS_COUNT
     };
 
-    bool weather_enabled[WEATHER_MEASUREMENTS_COUNT];
+    int weather_enabled[WEATHER_MEASUREMENTS_COUNT];
+
+    ITextVectorProperty Weather_MeasurementsTP;
+    IText Weather_MeasurementsT[WEATHER_MEASUREMENTS_COUNT];
 
     // Manual tab controls
     enum {
