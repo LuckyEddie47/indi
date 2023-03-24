@@ -19,6 +19,7 @@
 #pragma once
 
 #include "indidome.h"
+#include "indiweather.h"
 #include "connectionplugins/connectiontcp.h"
 #include "connectionplugins/connectionserial.h"
 #include "indipropertyswitch.h"
@@ -372,7 +373,7 @@ An unterminated 0 is returned from unconfigured items
 OnCue OCS lexicon end
 *******************************************************************************/
 
-class OCS : public INDI::Dome
+class OCS : public INDI::Dome, public INDI::WeatherInterface
 {
   public:
     OCS();
@@ -433,6 +434,16 @@ private:
         OFF_SWITCH,
         SWITCH_TOGGLE_COUNT
     };
+
+    // Status tab controls
+    enum {
+        STATUS_FIRMWARE,
+        STATUS_MAINS,
+        STATUS_MCU_TEMPERATURE,
+        STATUS_ITEMS_COUNT
+    };
+    ITextVectorProperty Status_ItemsTP;
+    IText Status_ItemsT[STATUS_ITEMS_COUNT] {};
 
     // Thermostat tab controls
     bool thermostat_controls_enabled = false;

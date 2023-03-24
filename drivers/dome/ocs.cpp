@@ -51,6 +51,7 @@ USB and network connections supported.
 #include <climits>
 
 // Custom tabs
+#define STATUS_TAB "Status"
 #define THERMOSTAT_TAB "Thermostat"
 #define POWER_TAB "Power"
 #define LIGHTS_TAB "Lights"
@@ -64,7 +65,7 @@ std::mutex ocsCommsLock;
 // We declare an auto pointer to OCS.
 std::unique_ptr<OCS> ocs(new OCS());
 
-OCS::OCS()
+OCS::OCS() : INDI::Dome(), WI(this)
 {
     setVersion(0, 1);
     SetDomeCapability(DOME_CAN_ABORT | DOME_HAS_SHUTTER);
@@ -345,7 +346,7 @@ bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *nam
                             LOGF_ERROR("Failed to set Thermostat heat setpoint %s", response);
                             return false;
                         } else {
-                            LOGF_INFO("Set Thermostat heat setpoint to: %.0f deg.C", values[THERMOSTAT_HEAT_SETPOINT]);
+                            LOGF_INFO("Set Thermostat heat setpoint to: %.0f °C", values[THERMOSTAT_HEAT_SETPOINT]);
                         }
                     }
                     else if (parameter == THERMOSTAT_COOL_SETPOINT) {
@@ -358,7 +359,7 @@ bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *nam
                             LOGF_ERROR("Failed to set Thermostat cool setpoint %s", response);
                             return false;
                         } else {
-                            LOGF_INFO("Set Thermostat cool setpoint to: %.0f deg.C", values[THERMOSTAT_COOL_SETPOINT]);
+                            LOGF_INFO("Set Thermostat cool setpoint to: %.0f °C", values[THERMOSTAT_COOL_SETPOINT]);
                         }
                     } else if (parameter == THERMOSTAT_HUMIDITY_SETPOINT) {
                         char thermostat_setpoint_command[CMD_MAX_LEN];
@@ -440,19 +441,56 @@ const char *OCS::getDefaultName()
 bool OCS::initProperties()
 {
     INDI::Dome::initProperties();
+    WI::initProperties(WEATHER_TAB, WEATHER_TAB);
+
+//    INDI::Weather::initProperties();
+//
+//    addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -10, 30, 15);
+//    addParameter("WEATHER_BAROMETER", "Barometer (mbar)", 20, 32.5, 15);
+//    addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
+//    addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 100, 15);
+//
+//    setCriticalParameter("WEATHER_TEMPERATURE");
+//
+//    // Reset Calibration
+//    IUFillSwitch(&ResetS[0], "RESET", "Reset", ISS_OFF);
+//    IUFillSwitchVector(&ResetSP, ResetS, 1, getDeviceName(), "CALIBRATION_RESET", "Reset", MAIN_CONTROL_TAB, IP_RW, ISR_1OFMANY,
+//                       0, IPS_IDLE);
+//
+//    // Calibration Properties
+//    IUFillNumber(&CalibrationN[CAL_TEMPERATURE], "CAL_TEMPERATURE", "Temperature", "%.f", -50, 50, 1, 0);
+//    IUFillNumber(&CalibrationN[CAL_PRESSURE], "CAL_PRESSURE", "Pressure", "%.f", -100, 100, 10, 0);
+//    IUFillNumber(&CalibrationN[CAL_HUMIDITY], "CAL_HUMIDITY", "Humidity", "%.f", -50, 50, 1, 0);
+//    IUFillNumberVector(&CalibrationNP, CalibrationN, 3, getDeviceName(), "CALIBRATION", "Calibration", MAIN_CONTROL_TAB, IP_RW,
+//                       0, IPS_IDLE);
+//
+//    // Firmware Information
+//    IUFillText(&FirmwareT[0], "VERSION", "Version", "--");
+//    IUFillTextVector(&FirmwareTP, FirmwareT, 1, getDeviceName(), "DEVICE_FIRMWARE", "Firmware", MAIN_CONTROL_TAB, IP_RO, 0,
+//                     IPS_IDLE);
+
+
+    // Status tab controls
+    //--------------------
+
+    IUFillTextVector(&Status_ItemsTP, Status_ItemsT, STATUS_ITEMS_COUNT, getDeviceName(), "Status", "OCS Status",
+                     STATUS_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Status_ItemsT[STATUS_FIRMWARE], "FIRMWARE_VERSION", "Firmware version", "---");
+    IUFillText(&Status_ItemsT[STATUS_MAINS], "MAINS_STATUS", "Mains status", "---");
+    IUFillText(&Status_ItemsT[STATUS_MCU_TEMPERATURE], "MCU_TEMPERATURE", "MCU temperature °C", "---");
 
 
     // Thermostat tab controls
     //------------------------
     IUFillTextVector(&Thermostat_StatusTP, Thermostat_StatusT, THERMOSTAT_COUNT, getDeviceName(), "THERMOSTAT_STATUS", "Obsy Status",
                      THERMOSTAT_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], "THERMOSTAT_TEMPERATURE", "Temperature deg.C", "NA");
-    IUFillText(&Thermostat_StatusT[THERMOSTAT_HUMIDITY], "THERMOSTAT_HUMIDITY", "Humidity %", "NA");
+    IUFillText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], "THERMOSTAT_TEMPERATURE", "Temperature °C", "---");
+    IUFillText(&Thermostat_StatusT[THERMOSTAT_HUMIDITY], "THERMOSTAT_HUMIDITY", "Humidity %", "---");
 
     IUFillNumberVector(&Thermostat_setpointsNP, Thermostat_setpointN, THERMOSTAT_SETPOINT_COUNT, getDeviceName(), "THERMOSTAT_SETPOINTS", "Setpoints",
                        THERMOSTAT_TAB, IP_RW, 60, IPS_OK);
-    IUFillNumber(&Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT], "THERMOSTAT_HEAT_SETPOINT", "Heat deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
-    IUFillNumber(&Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT], "THERMOSTAT_COOL_SETPOINT", "Cool deg.C (0=OFF)", "%.0f", 0, 40, 1, 0);
+    IUFillNumber(&Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT], "THERMOSTAT_HEAT_SETPOINT", "Heat °C (0=OFF)", "%.0f", 0, 40, 1, 0);
+    IUFillNumber(&Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT], "THERMOSTAT_COOL_SETPOINT", "Cool °C (0=OFF)", "%.0f", 0, 40, 1, 0);
     IUFillNumber(&Thermostat_setpointN[THERMOSTAT_HUMIDITY_SETPOINT], "THERMOSTAT_HUMIDITY_SETPOINT", "Dehumidify % (0=OFF)", "%.0f", 0, 80, 1, 0);
     IUFillSwitchVector(&Thermostat_heat_relaySP, Thermostat_heat_relayS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Thermo_heat_relay", "Heat Relay",
                        THERMOSTAT_TAB, IP_RO, ISR_1OFMANY, 60, IPS_OK);
@@ -563,15 +601,15 @@ bool OCS::initProperties()
     // Weather tab controls
     IUFillTextVector(&Weather_MeasurementsTP, Weather_MeasurementsT, WEATHER_MEASUREMENTS_COUNT, getDeviceName(), "WEATHER_MEASUREMENTS", "Weather",
                      WEATHER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Weather_MeasurementsT[WEATHER_TEMPERATURE], "WEATHER_TEMPERATURE", "Temperature deg.C","");
-    IUFillText(&Weather_MeasurementsT[WEATHER_SKY_TEMP], "WEATHER_SKY_TEMP", "Sky Temp deg.C","");
-    IUFillText(&Weather_MeasurementsT[WEATHER_DIFF_SKY_TEMP], "WEATHER_DIFF_SKY_TEMP", "Diff Sky Temp deg.C","");
-    IUFillText(&Weather_MeasurementsT[WEATHER_PRESSURE], "WEATHER_PRESSURE", "Pressure mbar","");
-    IUFillText(&Weather_MeasurementsT[WEATHER_HUMIDITY], "WEATHER_HUMIDITY", "Humidity %","");
-    IUFillText(&Weather_MeasurementsT[WEATHER_WIND], "WEATHER_WIND", "Wind","");
-    IUFillText(&Weather_MeasurementsT[WEATHER_RAIN], "WEATHER_RAIN", "Rain","");
-    IUFillText(&Weather_MeasurementsT[WEATHER_CLOUD], "WEATHER_CLOUD", "Cloud","");
-    IUFillText(&Weather_MeasurementsT[WEATHER_SKY], "WEATHER_SKY", "Sky Qual mag/arc-sec^2","");
+    IUFillText(&Weather_MeasurementsT[WEATHER_TEMPERATURE], "WEATHER_TEMPERATURE", "Temperature °C","---");
+    IUFillText(&Weather_MeasurementsT[WEATHER_SKY_TEMP], "WEATHER_SKY_TEMP", "Sky Temp °C","---");
+    IUFillText(&Weather_MeasurementsT[WEATHER_DIFF_SKY_TEMP], "WEATHER_DIFF_SKY_TEMP", "Diff Sky Temp °C","---");
+    IUFillText(&Weather_MeasurementsT[WEATHER_PRESSURE], "WEATHER_PRESSURE", "Pressure mbar","---");
+    IUFillText(&Weather_MeasurementsT[WEATHER_HUMIDITY], "WEATHER_HUMIDITY", "Humidity %","---");
+    IUFillText(&Weather_MeasurementsT[WEATHER_WIND], "WEATHER_WIND", "Wind","---");
+    IUFillText(&Weather_MeasurementsT[WEATHER_RAIN], "WEATHER_RAIN", "Rain","---");
+    IUFillText(&Weather_MeasurementsT[WEATHER_CLOUD], "WEATHER_CLOUD", "Cloud","---");
+    IUFillText(&Weather_MeasurementsT[WEATHER_SKY], "WEATHER_SKY", "Sky Quality m/\"\u00b2","---");
 
     // Manual tab controls
     //--------------------
@@ -613,14 +651,11 @@ bool OCS::updateProperties()
     INDI::Dome::updateProperties();
     if (isConnected())
     {
+        defineProperty(&Status_ItemsTP);
         defineProperty(&SenseNP);
-        defineProperty(&Manual_WarningTP);
-        defineProperty(&Safety_Interlock_OverrideSP);
-        defineProperty(&Roof_High_PowerSP);
-        defineProperty(&Watchdog_ResetSP);
-        defineProperty(&Arbitary_CommandTP);
 
         // Dynamically defined properties
+        //-------------------------------
         if (thermostat_controls_enabled) {
             defineProperty(&Thermostat_StatusTP);
             defineProperty(&Thermostat_setpointsNP);
@@ -670,19 +705,20 @@ bool OCS::updateProperties()
         if (weather_tab_enabled) {
             defineProperty(&Weather_MeasurementsTP);
         }
+        //------------------------------------------
+        defineProperty(&Manual_WarningTP);
+        defineProperty(&Safety_Interlock_OverrideSP);
+        defineProperty(&Roof_High_PowerSP);
+        defineProperty(&Watchdog_ResetSP);
+        defineProperty(&Arbitary_CommandTP);
     }
     else
     {
-        deleteProperty(Thermostat_StatusTP.name);
-        deleteProperty(Thermostat_setpointsNP.name);
+        deleteProperty(Status_ItemsTP.name);
         deleteProperty(SenseNP.name);
-        deleteProperty(Manual_WarningTP.name);
-        deleteProperty(Safety_Interlock_OverrideSP.name);
-        deleteProperty(Roof_High_PowerSP.name);
-        deleteProperty(Watchdog_ResetSP.name);
-        deleteProperty(Arbitary_CommandTP.name);
 
         // Dynamically defined properties
+        //-------------------------------
         if (thermostat_controls_enabled) {
             deleteProperty(Thermostat_StatusTP.name);
             deleteProperty(Thermostat_setpointsNP.name);
@@ -732,6 +768,12 @@ bool OCS::updateProperties()
         if (weather_tab_enabled) {
             deleteProperty(Weather_MeasurementsTP.name);
         }
+        //----------------------------------------------
+        deleteProperty(Manual_WarningTP.name);
+        deleteProperty(Safety_Interlock_OverrideSP.name);
+        deleteProperty(Roof_High_PowerSP.name);
+        deleteProperty(Watchdog_ResetSP.name);
+        deleteProperty(Arbitary_CommandTP.name);
     }
     return true;
 }
@@ -741,6 +783,28 @@ bool OCS::updateProperties()
 ********************************************************************************************/
 void OCS::MinuteTimerHit()
 {
+    // Status tab
+    char power_status_response[RB_MAX_LEN] = {0};
+    int power_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, power_status_response, OCS_get_power_status);
+    if (power_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+        IUSaveText(&Status_ItemsT[STATUS_MAINS], power_status_response);
+        IDSetText(&Status_ItemsTP, nullptr);
+    }
+    else {
+        LOGF_WARN("Communication error on get Power Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
+    }
+
+    char MCU_temp_response[RB_MAX_LEN] = {0};
+    int MCU_temp_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, MCU_temp_response, OCS_get_MCU_temperature);
+    if (MCU_temp_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+        IUSaveText(&Status_ItemsT[STATUS_MCU_TEMPERATURE], MCU_temp_response);
+        IDSetText(&Status_ItemsTP, nullptr);
+    }
+    else {
+        LOGF_WARN("Communication error on get MCU temperature %s, this update aborted, will try again...", OCS_get_thermostat_status);
+    }
+
+    // Thermostat tab
     if (thermostat_controls_enabled) {
         // Get the Obsy Thermostat readings
         char thermostat_status_response[RB_MAX_LEN] = {0};
@@ -755,8 +819,6 @@ void OCS::MinuteTimerHit()
         }
         else {
             LOGF_WARN("Communication error on get Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
-            LOGF_WARN("thermostat_status_error_or_fail = %d", thermostat_status_error_or_fail);
-            LOGF_WARN("thermostat_status_response = %s", thermostat_status_response);
         }
 
         // Get the Thermostat setpoints
@@ -960,27 +1022,27 @@ void OCS::MinuteTimerHit()
     // Weather tab
     if (weather_tab_enabled) {
         for (int measurement = 0; measurement < WEATHER_MEASUREMENTS_COUNT; measurement ++) {
-            if (weather_enabled[measure] == 1) {
+            if (weather_enabled[measurement] == 1) {
                 char measurement_reponse[RB_MAX_LEN];
                 char measurement_command[CMD_MAX_LEN];
                 if (measurement == WEATHER_TEMPERATURE) {
-                    strncpy(measurement_command, OCS_get_outside_temperature, sizeof(OCS_get_outside_temperature));
+                    strncpy(measurement_command, OCS_get_outside_temperature, sizeof(measurement_command));
                 } else if (measurement == WEATHER_SKY_TEMP) {
-                    strncpy(measurement_command, OCS_get_sky_IR_temperature, sizeof(OCS_get_sky_IR_temperature));
+                    strncpy(measurement_command, OCS_get_sky_IR_temperature, sizeof(measurement_command));
                 } else if (measurement == WEATHER_DIFF_SKY_TEMP) {
-                    strncpy(measurement_command, OCS_get_sky_diff_temperature, sizeof(OCS_get_sky_diff_temperature));
+                    strncpy(measurement_command, OCS_get_sky_diff_temperature, sizeof(measurement_command));
                 } else if (measurement == WEATHER_PRESSURE) {
-                    strncpy(measurement_command, OCS_get_pressure, sizeof(OCS_get_pressure));
+                    strncpy(measurement_command, OCS_get_pressure, sizeof(measurement_command));
                 } else if (measurement == WEATHER_HUMIDITY) {
-                    strncpy(measurement_command, OCS_get_humidity, sizeof(OCS_get_humidity));
+                    strncpy(measurement_command, OCS_get_humidity, sizeof(measurement_command));
                 } else if (measurement == WEATHER_WIND) {
-                    strncpy(measurement_command, OCS_get_wind_status, sizeof(OCS_get_wind_status));
+                    strncpy(measurement_command, OCS_get_wind_status, sizeof(measurement_command));
                 } else if (measurement == WEATHER_RAIN) {
-                    strncpy(measurement_command, OCS_get_rain_sensor_status, sizeof(OCS_get_rain_sensor_status));
+                    strncpy(measurement_command, OCS_get_rain_sensor_status, sizeof(measurement_command));
                 } else if (measurement == WEATHER_CLOUD) {
-                    strncpy(measurement_command, OCS_get_cloud_description, sizeof(OCS_get_cloud_description));
+                    strncpy(measurement_command, OCS_get_cloud_description, sizeof(measurement_command));
                 } else if (measurement == WEATHER_SKY) {
-                    strncpy(measurement_command, OCS_get_sky_quality, sizeof(OCS_get_sky_quality));
+                    strncpy(measurement_command, OCS_get_sky_quality, sizeof(measurement_command));
                 }
                 int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse, measurement_command);
                 if (measurement_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
@@ -1304,6 +1366,17 @@ bool OCS::Handshake()
 
 void OCS::GetCapabilites()
 {
+    // Get firmware version
+    char OCS_firmware_response[RB_MAX_LEN] = {0};
+    int OCS_firmware_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OCS_firmware_response, OCS_get_firmware);
+    if (OCS_firmware_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+        IUSaveText(&Status_ItemsT[STATUS_FIRMWARE], OCS_firmware_response);
+        IDSetText(&Status_ItemsTP, nullptr);
+        LOGF_DEBUG("OCS version: %s", OCS_firmware_response);
+    } else {
+        LOG_DEBUG("OCS version not retrieved");
+    }
+
     // Get dome presence
     char OCS_dome_present_response[RB_MAX_LEN] = {0};
     int OCS_dome_present_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OCS_dome_present_response, OCS_get_dome_status);
@@ -1443,23 +1516,23 @@ void OCS::GetCapabilites()
         char measurement_reponse[RB_MAX_LEN];
         char measurement_command[CMD_MAX_LEN];
         if (measurement == WEATHER_TEMPERATURE) {
-            strncpy(measurement_command, OCS_get_outside_temperature, sizeof(OCS_get_outside_temperature));
+            strncpy(measurement_command, OCS_get_outside_temperature, sizeof(measurement_command));
         } else if (measurement == WEATHER_SKY_TEMP) {
-            strncpy(measurement_command, OCS_get_sky_IR_temperature, sizeof(OCS_get_sky_IR_temperature));
+            strncpy(measurement_command, OCS_get_sky_IR_temperature, sizeof(measurement_command));
         } else if (measurement == WEATHER_DIFF_SKY_TEMP) {
-            strncpy(measurement_command, OCS_get_sky_diff_temperature, sizeof(OCS_get_sky_diff_temperature));
+            strncpy(measurement_command, OCS_get_sky_diff_temperature, sizeof(measurement_command));
         } else if (measurement == WEATHER_PRESSURE) {
-            strncpy(measurement_command, OCS_get_pressure, sizeof(OCS_get_pressure));
+            strncpy(measurement_command, OCS_get_pressure, sizeof(measurement_command));
         } else if (measurement == WEATHER_HUMIDITY) {
-            strncpy(measurement_command, OCS_get_humidity, sizeof(OCS_get_humidity));
+            strncpy(measurement_command, OCS_get_humidity, sizeof(measurement_command));
         } else if (measurement == WEATHER_WIND) {
-            strncpy(measurement_command, OCS_get_wind_status, sizeof(OCS_get_wind_status));
+            strncpy(measurement_command, OCS_get_wind_status, sizeof(measurement_command));
         } else if (measurement == WEATHER_RAIN) {
-            strncpy(measurement_command, OCS_get_rain_sensor_status, sizeof(OCS_get_rain_sensor_status));
+            strncpy(measurement_command, OCS_get_rain_sensor_status, sizeof(measurement_command));
         } else if (measurement == WEATHER_CLOUD) {
-            strncpy(measurement_command, OCS_get_cloud_description, sizeof(OCS_get_cloud_description));
+            strncpy(measurement_command, OCS_get_cloud_description, sizeof(measurement_command));
         } else if (measurement == WEATHER_SKY) {
-            strncpy(measurement_command, OCS_get_sky_quality, sizeof(OCS_get_sky_quality));
+            strncpy(measurement_command, OCS_get_sky_quality, sizeof(measurement_command));
         }
         int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse, measurement_command);
         if (measurement_error_or_fail == 0) {
