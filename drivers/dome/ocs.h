@@ -61,6 +61,7 @@ An unterminated 0 is returned from unconfigured items
 
 // Set the UTC Date and Time
 // ":SU[MM/DD/YYYY,HH:MM:SS]#"
+// Example: SU03/31/2023,13:22:00#
 // Returns: 0# on failure, 1# on success
 
 // Get the power status
@@ -103,7 +104,7 @@ An unterminated 0 is returned from unconfigured items
 #define OCS_get_roof_status ":RS#"
 // Returns:
 // OPEN#, CLOSED#, c,Travel: n%# (for closing), o,Travel: n%# for opening,
-// i,No Error# for idle
+// i,No Error# for idle or i,Waiting for mount to park#
 
 // Get the roof/shutter last status error
 #define OCS_get_roof_last_error ":RSL#"
@@ -128,6 +129,7 @@ An unterminated 0 is returned from unconfigured items
 // Warning: Already open#
 // Error: Open location unknown#
 // Error: Open already in motion#
+// Error: Close mount not parked#
 // or nothing if never errored
 
 //Dome commands

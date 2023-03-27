@@ -1046,7 +1046,7 @@ void OCS::MinuteTimerHit()
                 }
                 int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse, measurement_command);
                 if (measurement_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-                    Weather_MeasurementsT[measurement].text = measurement_reponse;
+                    IUSaveText(&Weather_MeasurementsT[measurement], measurement_reponse);
                 }
             }
         }
@@ -1093,6 +1093,8 @@ void OCS::TimerHit()
                 LOG_DEBUG("Roof/shutter is closed");
             } else if (strcmp(split, "No Error") == 0) {
                 LOG_DEBUG("Roof/shutter is idle");
+            } else if (strcmp(split, "Waiting for mount to park") == 0) {
+                LOG_DEBUG("Roof/shutter is waiting for mount to park before closing");
             }
         }
     }
@@ -1241,6 +1243,13 @@ void OCS::TimerHit()
                    setShutterState(SHUTTER_ERROR);
                }
                LOG_WARN("Roof/shutter error - Open already in motion");
+        } else if (strcmp(roof_error_response, "Error: Close mount not parked") == 0 &&
+                   strcmp(roof_error_response, last_shutter_error) != 0) {
+               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               if (getShutterState() != SHUTTER_ERROR) {
+                   setShutterState(SHUTTER_ERROR);
+               }
+               LOG_WARN("Roof/shutter error - Timeout waiting for mount to park before closing");
         }
     } else if (roof_error_error_or_fail == 1) {
         LOGF_WARN("Communication error on get Roof/Shutter last error %s, this update aborted, will try again...", OCS_get_roof_last_error);
@@ -1426,10 +1435,6 @@ void OCS::GetCapabilites()
                 }
             }
         }
-    } else {
-        LOGF_WARN("Communication error on get Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
-        LOGF_WARN("thermostat_status_error_or_fail = %d", thermostat_status_error_or_fail);
-        LOGF_WARN("thermostat_status_response = %s", thermostat_status_response);
     }
 
     // Get power relay definitions
