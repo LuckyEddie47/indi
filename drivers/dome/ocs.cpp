@@ -443,33 +443,6 @@ bool OCS::initProperties()
     INDI::Dome::initProperties();
     WI::initProperties(WEATHER_TAB, WEATHER_TAB);
 
-//    INDI::Weather::initProperties();
-//
-//    addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -10, 30, 15);
-//    addParameter("WEATHER_BAROMETER", "Barometer (mbar)", 20, 32.5, 15);
-//    addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
-//    addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 100, 15);
-//
-//    setCriticalParameter("WEATHER_TEMPERATURE");
-//
-//    // Reset Calibration
-//    IUFillSwitch(&ResetS[0], "RESET", "Reset", ISS_OFF);
-//    IUFillSwitchVector(&ResetSP, ResetS, 1, getDeviceName(), "CALIBRATION_RESET", "Reset", MAIN_CONTROL_TAB, IP_RW, ISR_1OFMANY,
-//                       0, IPS_IDLE);
-//
-//    // Calibration Properties
-//    IUFillNumber(&CalibrationN[CAL_TEMPERATURE], "CAL_TEMPERATURE", "Temperature", "%.f", -50, 50, 1, 0);
-//    IUFillNumber(&CalibrationN[CAL_PRESSURE], "CAL_PRESSURE", "Pressure", "%.f", -100, 100, 10, 0);
-//    IUFillNumber(&CalibrationN[CAL_HUMIDITY], "CAL_HUMIDITY", "Humidity", "%.f", -50, 50, 1, 0);
-//    IUFillNumberVector(&CalibrationNP, CalibrationN, 3, getDeviceName(), "CALIBRATION", "Calibration", MAIN_CONTROL_TAB, IP_RW,
-//                       0, IPS_IDLE);
-//
-//    // Firmware Information
-//    IUFillText(&FirmwareT[0], "VERSION", "Version", "--");
-//    IUFillTextVector(&FirmwareTP, FirmwareT, 1, getDeviceName(), "DEVICE_FIRMWARE", "Firmware", MAIN_CONTROL_TAB, IP_RO, 0,
-//                     IPS_IDLE);
-
-
     // Status tab controls
     //--------------------
 
@@ -1056,8 +1029,16 @@ IPState OCS::updateWeather() {
                 int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse, measurement_command);
                 if (measurement_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
                     IUSaveText(&Weather_MeasurementsT[measurement], measurement_reponse);
-                    if (measurement == WEATHER_TEMPERATURE) {
+                    if (measurement == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
                         setParameterValue("WI_TEMPERATURE", std::stod(measurement_reponse));
+                    } else if (measurement == WEATHER_PRESSURE && weather_enabled[WEATHER_PRESSURE] == 1) {
+                        setParameterValue("WI_PRESSURE", std::stod(measurement_reponse));
+                    } else if (measurement == WEATHER_HUMIDITY && weather_enabled[WEATHER_HUMIDITY] == 1) {
+                        setParameterValue("WI_HUMIDITY", std::stod(measurement_reponse));
+                    } else if (measurement == WEATHER_WIND && weather_enabled[WEATHER_WIND] == 1) {
+                        setParameterValue("WI_WIND", std::stod(measurement_reponse));
+                    } else if (measurement == WEATHER_DIFF_SKY_TEMP && weather_enabled[WEATHER_DIFF_SKY_TEMP] == 1) {
+                        setParameterValue("WI_SKY_DIFF_TEMP", std::stod(measurement_reponse));
                     }
                 }
             }
@@ -1068,7 +1049,7 @@ IPState OCS::updateWeather() {
 }
 
 /********************************************************************************************
-* Poll properties for updates - period set by Options poll
+* Poll properties for updates - period set by Options polling
 ********************************************************************************************/
 void OCS::TimerHit()
 {
@@ -1551,10 +1532,10 @@ void OCS::GetCapabilites()
             strncpy(measurement_command, OCS_get_sky_quality, sizeof(measurement_command));
         }
         int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse, measurement_command);
-        if (measurement_error_or_fail == 0) {
-            weather_enabled[measurement] = 0;
-        } else {
+        if (measurement_error_or_fail > 1 && strcmp(measurement_reponse, "N/A") != 0) {
             weather_enabled[measurement] = 1;
+        } else {
+            weather_enabled[measurement] = 0;
         }
         // Available weather measurement are now defined as = 1, unavailable as = 0
         // so we can sum these to check if any are defined, if not then keep tab hidden
@@ -1567,10 +1548,24 @@ void OCS::GetCapabilites()
         }
     }
 
-    for (int measurements = 0; measurements < 7; measurements ++) {
+    // We loop through only the first 6 measurement rather than WEATHER_MEASUREMENTS_COUNT
+    // as only these have limits available
+    for (int measurements = 0; measurements < 6; measurements ++) {
         if (measurements == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
             addParameter("WI_TEMPERATURE", "Temperature °C", -10, 30, 15);
             setCriticalParameter("WI_TEMPERATURE");
+        } else if (measurements == WEATHER_PRESSURE && weather_enabled[WEATHER_PRESSURE] == 1) {
+            addParameter("WI_PRESSURE", "Pressure mbar", 980, 1050, 15);
+            setCriticalParameter("WI_PRESSURE");
+        } else if (measurements == WEATHER_HUMIDITY && weather_enabled[WEATHER_HUMIDITY] == 1) {
+            addParameter("WI_HUMIDITY", "Humidity %", 0, 95, 15);
+            setCriticalParameter("WI_HUMIDITY");
+        } else if (measurements == WEATHER_WIND && weather_enabled[WEATHER_WIND] == 1) {
+            addParameter("WI_WIND", "Wind kph", 0, 20, 15);
+            setCriticalParameter("WI_WIND");
+        } else if (measurements == WEATHER_DIFF_SKY_TEMP && weather_enabled[WEATHER_DIFF_SKY_TEMP] == 1) {
+            addParameter("WI_SKY_DIFF_TEMP", "Sky vs Cloud °C", 21, 50, 15);
+            setCriticalParameter("WI_SKY_DIFF_TEMP");
         }
     }
 

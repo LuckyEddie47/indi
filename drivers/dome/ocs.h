@@ -256,6 +256,7 @@ An unterminated 0 is returned from unconfigured items
 // Returns: nnn.n#
 // where <= 21 is cloudy
 
+// TBC?
 // Get averaged sky differential temperature
 #define OCS_get_av_sky_diff_temperature ":GS#"
 // Returns: nnn.n#
@@ -603,10 +604,10 @@ private:
         WEATHER_HUMIDITY,
         WEATHER_WIND,
         WEATHER_RAIN,
+        WEATHER_DIFF_SKY_TEMP,
         WEATHER_CLOUD,
         WEATHER_SKY,
         WEATHER_SKY_TEMP,
-        WEATHER_DIFF_SKY_TEMP,
         WEATHER_MEASUREMENTS_COUNT
     };
 
