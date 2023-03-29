@@ -398,6 +398,7 @@ class OCS : public INDI::Dome, public INDI::WeatherInterface
 
     void TimerHit() override;
     void MinuteTimerHit();
+    virtual IPState updateWeather() override;
 
     bool sendOCSCommand(const char *cmd);
     bool sendOCSCommandBlind(const char *cmd);
@@ -411,6 +412,8 @@ class OCS : public INDI::Dome, public INDI::WeatherInterface
 
     long int OCSTimeoutSeconds = 0;
     long int OCSTimeoutMicroSeconds = 100000;
+
+
 
 private:
     // Capability queries on connection
@@ -596,14 +599,14 @@ private:
 
     enum {
         WEATHER_TEMPERATURE,
-        WEATHER_SKY_TEMP,
-        WEATHER_DIFF_SKY_TEMP,
         WEATHER_PRESSURE,
         WEATHER_HUMIDITY,
         WEATHER_WIND,
         WEATHER_RAIN,
         WEATHER_CLOUD,
         WEATHER_SKY,
+        WEATHER_SKY_TEMP,
+        WEATHER_DIFF_SKY_TEMP,
         WEATHER_MEASUREMENTS_COUNT
     };
 

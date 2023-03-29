@@ -599,7 +599,7 @@ bool OCS::initProperties()
 
 
     // Weather tab controls
-    IUFillTextVector(&Weather_MeasurementsTP, Weather_MeasurementsT, WEATHER_MEASUREMENTS_COUNT, getDeviceName(), "WEATHER_MEASUREMENTS", "Weather",
+    IUFillTextVector(&Weather_MeasurementsTP, Weather_MeasurementsT, WEATHER_MEASUREMENTS_COUNT, getDeviceName(), "WEATHER_MEASUREMENTS", "Sensors",
                      WEATHER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Weather_MeasurementsT[WEATHER_TEMPERATURE], "WEATHER_TEMPERATURE", "Temperature °C","---");
     IUFillText(&Weather_MeasurementsT[WEATHER_SKY_TEMP], "WEATHER_SKY_TEMP", "Sky Temp °C","---");
@@ -649,6 +649,9 @@ bool OCS::initProperties()
 bool OCS::updateProperties()
 {
     INDI::Dome::updateProperties();
+    if (weather_tab_enabled) {
+        WI::updateProperties();
+    }
     if (isConnected())
     {
         defineProperty(&Status_ItemsTP);
@@ -1019,7 +1022,13 @@ void OCS::MinuteTimerHit()
         }
     }
 
-    // Weather tab
+    // Get the Sense Inputs values
+}
+
+/********************************************************************************************
+* Poll Weather properties for updates - period set by Weather poll
+********************************************************************************************/
+IPState OCS::updateWeather() {
     if (weather_tab_enabled) {
         for (int measurement = 0; measurement < WEATHER_MEASUREMENTS_COUNT; measurement ++) {
             if (weather_enabled[measurement] == 1) {
@@ -1047,17 +1056,19 @@ void OCS::MinuteTimerHit()
                 int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse, measurement_command);
                 if (measurement_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
                     IUSaveText(&Weather_MeasurementsT[measurement], measurement_reponse);
+                    if (measurement == WEATHER_TEMPERATURE) {
+                        setParameterValue("WI_TEMPERATURE", std::stod(measurement_reponse));
+                    }
                 }
             }
         }
         IDSetText(&Weather_MeasurementsTP, nullptr);
     }
-
-    // Get the Sense Inputs values
+    return IPS_OK;
 }
 
 /********************************************************************************************
-* Poll properties for updates
+* Poll properties for updates - period set by Options poll
 ********************************************************************************************/
 void OCS::TimerHit()
 {
@@ -1340,13 +1351,13 @@ bool OCS::Handshake()
     if (PortFD > 0) {
         Connection::Interface *activeConnection = getActiveConnection();
         if (!activeConnection->name().compare("CONNECTION_TCP")) {
-            LOG_INFO("Network based connection, detection timeouts set to 2 seconds");
+            LOG_INFO("Network based connection, detection timeouts set to 1 seconds");
             OCSTimeoutMicroSeconds = 0;
-            OCSTimeoutSeconds = 2;
+            OCSTimeoutSeconds = 1;
         }
         else {
-            LOG_INFO("Non-Network based connection, detection timeouts set to 0.2 seconds");
-            OCSTimeoutMicroSeconds = 200000;
+            LOG_INFO("Non-Network based connection, detection timeouts set to 0.1 seconds");
+            OCSTimeoutMicroSeconds = 100000;
             OCSTimeoutSeconds = 0;
         }
 
@@ -1553,6 +1564,13 @@ void OCS::GetCapabilites()
         }
         if (weatherDisabled > 0) {
             weather_tab_enabled = true;
+        }
+    }
+
+    for (int measurements = 0; measurements < 7; measurements ++) {
+        if (measurements == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
+            addParameter("WI_TEMPERATURE", "Temperature °C", -10, 30, 15);
+            setCriticalParameter("WI_TEMPERATURE");
         }
     }
 
