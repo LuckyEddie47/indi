@@ -29,14 +29,16 @@
 #define CMD_MAX_LEN 32
 enum ResponseErrors {RES_ERR_FORMAT = -1001};
 
-/*******************************************************************************
+/**********************************************************************
 OCS lexicon
 Extracted from OCS 3.03i
 Note all commands sent and responses returned terminate with a # symbol
 These are stripped from returned char* by their retrieving functions
 An unterminated 0 is returned from unconfigured items
-*******************************************************************************/
+**********************************************************************/
+
 // General commands
+//-----------------
 
 // Get Product (compatibility)
 #define OCS_handshake ":IP#"
@@ -78,7 +80,8 @@ An unterminated 0 is returned from unconfigured items
 // Returns: 1# (at the current baud rate and then changes to the new rate for further communication)
 
 // Roof/shutter commands
-// Roll off roof style observatory or shutter control for dome style observatory
+//----------------------
+// note: Roll off roof style observatory or shutter control for dome style observatory
 
 // Command the roof/shutter to close
 #define OCS_roof_close ":RC#"
@@ -133,6 +136,7 @@ An unterminated 0 is returned from unconfigured items
 // or nothing if never errored
 
 //Dome commands
+//-------------
 
 // Command the dome to goto the home position
 #define OCS_dome_home ":DC#"
@@ -242,6 +246,7 @@ An unterminated 0 is returned from unconfigured items
 // parameter [3] = maximum limit
 
 // Weather commands
+//-----------------
 
 // Get the outside temperature in deg. C
 #define OCS_get_outside_temperature ":G1#"
@@ -292,7 +297,12 @@ An unterminated 0 is returned from unconfigured items
 #define OCS_get_wind_speed ":Gw#"
 // Returns: n# kph, Invalid#, or N/A#
 
+// Get the weather threshold #defines
+#define OCS_get_weather_thresholds ":Iw#"
+// Returns: 20,-14#, WEATHER_WIND_SPD_THRESHOLD,WEATHER_SAFE_THRESHOLD, N/A if sensor == OFF
+
 // Thermostat commands
+//--------------------
 
 // Get Thermostat relay #defines
 #define OCS_get_thermostat_definitions ":It#"
@@ -336,6 +346,7 @@ An unterminated 0 is returned from unconfigured items
 // Returns: 1# on success
 
 // Power/GPIO commands
+//--------------------
 
 // Get Light relay #defines
 #define OCS_get_light_definitions ":IL#"
@@ -374,11 +385,12 @@ An unterminated 0 is returned from unconfigured items
 // Returns: ON#, OFF#
 
 // For dynamically assembled commands
+//-----------------------------------
 #define OCS_command_terminator "#"
 
-/*******************************************************************************
+/********************
 OnCue OCS lexicon end
-*******************************************************************************/
+*********************/
 
 class OCS : public INDI::Dome, public INDI::WeatherInterface
 {
@@ -392,7 +404,7 @@ class OCS : public INDI::Dome, public INDI::WeatherInterface
     virtual bool ISNewText(const char *dev, const char *name, char *texts[], char *names[], int n) override;
     bool updateProperties() override;
     virtual bool ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n) override;
-//    virtual bool saveConfigItems(FILE *fp);
+//    virtual bool saveConfigItems(FILE *fp) override;
     virtual bool ISSnoopDevice(XMLEle *root) override;
     virtual bool Handshake() override;
     virtual bool Abort() override;
@@ -418,8 +430,6 @@ class OCS : public INDI::Dome, public INDI::WeatherInterface
     long int OCSTimeoutSeconds = 0;
     long int OCSTimeoutMicroSeconds = 100000;
 
-
-
 private:
     // Capability queries on connection
     void GetCapabilites();
@@ -428,6 +438,7 @@ private:
     INDI::Timer MinuteTimer;
 
     // Roof/Shutter control
+    //---------------------
     int ROOF_TIME_PRE_MOTION = 0;
     int ROOF_TIME_POST_MOTION = 0;
     char last_shutter_status[RB_MAX_LEN];
@@ -435,6 +446,7 @@ private:
     IPState ControlShutter(ShutterOperation operation) override;
 
     // Dome control
+    //-------------
     virtual IPState Park() override;
     virtual IPState UnPark() override;
     virtual IPState MoveAbs(double az) override;
@@ -446,6 +458,7 @@ private:
     };
 
     // Status tab controls
+    //--------------------
     enum {
         STATUS_FIRMWARE,
         STATUS_MAINS,
@@ -456,6 +469,7 @@ private:
     IText Status_ItemsT[STATUS_ITEMS_COUNT] {};
 
     // Thermostat tab controls
+    //------------------------
     bool thermostat_controls_enabled = false;
 
     enum {
@@ -490,24 +504,8 @@ private:
     };
     int thermostat_relays[THERMOSTAT_RELAY_COUNT];
 
-    // Sensors tab controls
-    bool sensors_tab_enabled = false;
-
-    enum {
-        SENSE_1,
-        SENSE_2,
-        SENSE_3,
-        SENSE_4,
-        SENSE_5,
-        SENSE_6,
-        SENSE_7,
-        SENSE_8,
-        SENSE_COUNT
-    };
-    INumberVectorProperty SenseNP;
-    INumber SenseN[SENSE_COUNT];
-
     // Power tab controls
+    //-------------------
     bool power_tab_enabled = false;
 
     enum {
@@ -575,6 +573,7 @@ private:
     IText Power_Device_Name6T[1] {};
 
     // Lights tab controls
+    //--------------------
     bool lights_tab_enabled = false;
 
     enum {
@@ -600,7 +599,10 @@ private:
     ISwitch LIGHT_OUTSIDES[SWITCH_TOGGLE_COUNT];
 
     // Weater tab controls
+    //--------------------
     bool weather_tab_enabled = false;
+    int wind_speed_threshold = 0;
+    int diff_temp_threshold = 0;
 
     enum {
         WEATHER_TEMPERATURE,
@@ -621,6 +623,7 @@ private:
     IText Weather_MeasurementsT[WEATHER_MEASUREMENTS_COUNT];
 
     // Manual tab controls
+    //--------------------
     enum {
         SAFETY_INTERLOCK_OVERRIDE,
         ROOF_HIGH_POWER,
