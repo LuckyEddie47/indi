@@ -298,7 +298,7 @@ An unterminated 0 is returned from unconfigured items
 // Returns: n# kph, Invalid#, or N/A#
 
 // Get the weather threshold #defines
-#define OCS_get_weather_thresholds ":Iw#"
+#define OCS_get_weather_thresholds ":IW#"
 // Returns: 20,-14#, WEATHER_WIND_SPD_THRESHOLD,WEATHER_SAFE_THRESHOLD, N/A if sensor == OFF
 
 // Thermostat commands

@@ -302,11 +302,29 @@ void OCS::GetCapabilites()
         }
     }
 
+    if (weather_enabled[WEATHER_WIND] || weather_enabled[WEATHER_DIFF_SKY_TEMP]) {
+        char threshold_reponse[RB_MAX_LEN];
+        int threshold_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, threshold_reponse, OCS_get_weather_thresholds);
+        if (threshold_error_or_fail > 1 ) { //> 1 as an OnStep error would be 1 char in response
+            char *split;
+            split = strtok(threshold_reponse, ",");
+            if (strcmp(split, "N/A") != 0) {
+                wind_speed_threshold = atoi(split);
+            }
+            split = strtok(NULL, ",");
+            if (strcmp(split, "N/A") != 0) {
+                diff_temp_threshold = atoi(split);
+            }
+        } else {
+            LOGF_WARN("Communication error on get Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
+        }
+    }
+
     // We loop through only the first 6 measurement rather than WEATHER_MEASUREMENTS_COUNT
     // as only these are usable for safety status with limits
     for (int measurements = 0; measurements < 6; measurements ++) {
         if (measurements == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
-            addParameter("WI_TEMPERATURE", "Temperature °C", -10, 30, 15);
+            addParameter("WI_TEMPERATURE", "Temperature °C", -10, 40, 15);
             setCriticalParameter("WI_TEMPERATURE");
         } else if (measurements == WEATHER_PRESSURE && weather_enabled[WEATHER_PRESSURE] == 1) {
             addParameter("WI_PRESSURE", "Pressure mbar", 970, 1050, 10);
@@ -315,10 +333,10 @@ void OCS::GetCapabilites()
             addParameter("WI_HUMIDITY", "Humidity %", 0, 95, 15);
             setCriticalParameter("WI_HUMIDITY");
         } else if (measurements == WEATHER_WIND && weather_enabled[WEATHER_WIND] == 1) {
-            addParameter("WI_WIND", "Wind kph", 0, 20, 15);
+            addParameter("WI_WIND", "Wind kph", 0, wind_speed_threshold, 15);
             setCriticalParameter("WI_WIND");
         } else if (measurements == WEATHER_DIFF_SKY_TEMP && weather_enabled[WEATHER_DIFF_SKY_TEMP] == 1) {
-            addParameter("WI_SKY_DIFF_TEMP", "Sky vs Cloud °C", 21, 50, 15);
+            addParameter("WI_SKY_DIFF_TEMP", "Sky vs Cloud °C", -50, diff_temp_threshold, 15);
             setCriticalParameter("WI_SKY_DIFF_TEMP");
         }
     }
@@ -1504,6 +1522,8 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
 
     return INDI::Dome::ISNewSwitch(dev, name, states, names, n);
 }
+
+// To do - nubmers from Weather - limits change
 
 /*************************************
  * Client has changed a number, update
