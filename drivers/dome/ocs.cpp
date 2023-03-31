@@ -994,8 +994,6 @@ void OCS::MinuteTimerHit()
             }
         }
     }
-
-    // Get the Sense Inputs values
 }
 
 /********************************************************************************************
@@ -1018,7 +1016,7 @@ IPState OCS::updateWeather() {
                 } else if (measurement == WEATHER_HUMIDITY) {
                     strncpy(measurement_command, OCS_get_humidity, sizeof(measurement_command));
                 } else if (measurement == WEATHER_WIND) {
-                    strncpy(measurement_command, OCS_get_wind_status, sizeof(measurement_command));
+                    strncpy(measurement_command, OCS_get_wind_speed, sizeof(measurement_command));
                 } else if (measurement == WEATHER_RAIN) {
                     strncpy(measurement_command, OCS_get_rain_sensor_status, sizeof(measurement_command));
                 } else if (measurement == WEATHER_CLOUD) {
@@ -1028,17 +1026,27 @@ IPState OCS::updateWeather() {
                 }
                 int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse, measurement_command);
                 if (measurement_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-                    IUSaveText(&Weather_MeasurementsT[measurement], measurement_reponse);
-                    if (measurement == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
-                        setParameterValue("WI_TEMPERATURE", std::stod(measurement_reponse));
-                    } else if (measurement == WEATHER_PRESSURE && weather_enabled[WEATHER_PRESSURE] == 1) {
-                        setParameterValue("WI_PRESSURE", std::stod(measurement_reponse));
-                    } else if (measurement == WEATHER_HUMIDITY && weather_enabled[WEATHER_HUMIDITY] == 1) {
-                        setParameterValue("WI_HUMIDITY", std::stod(measurement_reponse));
-                    } else if (measurement == WEATHER_WIND && weather_enabled[WEATHER_WIND] == 1) {
-                        setParameterValue("WI_WIND", std::stod(measurement_reponse));
-                    } else if (measurement == WEATHER_DIFF_SKY_TEMP && weather_enabled[WEATHER_DIFF_SKY_TEMP] == 1) {
-                        setParameterValue("WI_SKY_DIFF_TEMP", std::stod(measurement_reponse));
+                    double value = -10000;
+                    try {
+                        value = std::stod(measurement_reponse);
+                    } catch (const std::invalid_argument&) {
+                        LOGF_WARN("Invalid response to %s: %s", measurement_command, measurement_reponse);
+                    } catch (const std::out_of_range&) {
+                        LOGF_WARN("Invalid response to %s: %s", measurement_command, measurement_reponse);
+                    }
+                    if (value != -10000) {
+                        IUSaveText(&Weather_MeasurementsT[measurement], measurement_reponse);
+                        if (measurement == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
+                            setParameterValue("WI_TEMPERATURE", value);
+                        } else if (measurement == WEATHER_PRESSURE && weather_enabled[WEATHER_PRESSURE] == 1) {
+                            setParameterValue("WI_PRESSURE", value);
+                        } else if (measurement == WEATHER_HUMIDITY && weather_enabled[WEATHER_HUMIDITY] == 1) {
+                            setParameterValue("WI_HUMIDITY", value);
+                        } else if (measurement == WEATHER_WIND && weather_enabled[WEATHER_WIND] == 1) {
+                            setParameterValue("WI_WIND", value);
+                        } else if (measurement == WEATHER_DIFF_SKY_TEMP && weather_enabled[WEATHER_DIFF_SKY_TEMP] == 1) {
+                            setParameterValue("WI_SKY_DIFF_TEMP", value);
+                        }
                     }
                 }
             }
@@ -1523,7 +1531,7 @@ void OCS::GetCapabilites()
         } else if (measurement == WEATHER_HUMIDITY) {
             strncpy(measurement_command, OCS_get_humidity, sizeof(measurement_command));
         } else if (measurement == WEATHER_WIND) {
-            strncpy(measurement_command, OCS_get_wind_status, sizeof(measurement_command));
+            strncpy(measurement_command, OCS_get_wind_speed, sizeof(measurement_command));
         } else if (measurement == WEATHER_RAIN) {
             strncpy(measurement_command, OCS_get_rain_sensor_status, sizeof(measurement_command));
         } else if (measurement == WEATHER_CLOUD) {
@@ -1538,7 +1546,7 @@ void OCS::GetCapabilites()
             weather_enabled[measurement] = 0;
         }
         // Available weather measurement are now defined as = 1, unavailable as = 0
-        // so we can sum these to check if any are defined, if not then keep tab hidden
+        // so we can sum these to check if any are defined, if not then keep tab disabled
         int weatherDisabled = 0;
         for (int wmeasure = 1; wmeasure < WEATHER_MEASUREMENTS_COUNT; wmeasure ++) {
             weatherDisabled += weather_enabled[wmeasure];
@@ -1555,7 +1563,7 @@ void OCS::GetCapabilites()
             addParameter("WI_TEMPERATURE", "Temperature °C", -10, 30, 15);
             setCriticalParameter("WI_TEMPERATURE");
         } else if (measurements == WEATHER_PRESSURE && weather_enabled[WEATHER_PRESSURE] == 1) {
-            addParameter("WI_PRESSURE", "Pressure mbar", 980, 1050, 15);
+            addParameter("WI_PRESSURE", "Pressure mbar", 970, 1050, 10);
             setCriticalParameter("WI_PRESSURE");
         } else if (measurements == WEATHER_HUMIDITY && weather_enabled[WEATHER_HUMIDITY] == 1) {
             addParameter("WI_HUMIDITY", "Humidity %", 0, 95, 15);

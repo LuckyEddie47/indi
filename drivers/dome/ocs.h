@@ -288,6 +288,10 @@ An unterminated 0 is returned from unconfigured items
 #define OCS_get_wind_status ":GW#"
 // Returns: OK#, HIGH#, or N/A#
 
+// Get wind speed
+#define OCS_get_wind_speed ":Gw#"
+// Returns: n# kph, Invalid#, or N/A#
+
 // Thermostat commands
 
 // Get Thermostat relay #defines
