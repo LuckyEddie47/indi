@@ -336,6 +336,9 @@ void OCS::GetCapabilites()
         } else if (measurements == WEATHER_WIND && weather_enabled[WEATHER_WIND] == 1) {
             addParameter("WI_WIND", "Wind kph", 0, wind_speed_threshold, 15);
             setCriticalParameter("WI_WIND");
+        } else if (measurements == WEATHER_RAIN && weather_enabled[WEATHER_RAIN] == 1) {
+            addParameter("WI_RAIN", "Rain state", 3, 3, 67);
+            setCriticalParameter("WI_RAIN");
         } else if (measurements == WEATHER_DIFF_SKY_TEMP && weather_enabled[WEATHER_DIFF_SKY_TEMP] == 1) {
             addParameter("WI_SKY_DIFF_TEMP", "Sky vs Cloud °C", -50, diff_temp_threshold, 15);
             setCriticalParameter("WI_SKY_DIFF_TEMP");
@@ -364,7 +367,7 @@ bool OCS::initProperties()
     IUFillText(&Status_ItemsT[STATUS_MCU_TEMPERATURE], "MCU_TEMPERATURE", "MCU temperature °C", "---");
 
     // To do
-    // Add roof status && dome/axis status
+    // Add roof status + last error & dome status /axis status
 
 
     // Thermostat tab controls
