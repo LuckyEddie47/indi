@@ -36,7 +36,7 @@ USB and network connections supported.
 // Test, test, test
 
 #include "ocs.h"
-#include "indicom.h"
+//#include "indicom.h"
 #include "termios.h"
 
 #include <cmath>
@@ -302,6 +302,7 @@ void OCS::GetCapabilites()
         }
     }
 
+    // If a weather measurement that has a safety limit set in OCS is active then get that limit
     if (weather_enabled[WEATHER_WIND] || weather_enabled[WEATHER_DIFF_SKY_TEMP]) {
         char threshold_reponse[RB_MAX_LEN];
         int threshold_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, threshold_reponse, OCS_get_weather_thresholds);
@@ -316,11 +317,11 @@ void OCS::GetCapabilites()
                 diff_temp_threshold = atoi(split);
             }
         } else {
-            LOGF_WARN("Communication error on get Thermostat Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
+            LOGF_WARN("Communication error on get Weather thresholds %s", OCS_get_weather_thresholds);
         }
     }
 
-    // We loop through only the first 6 measurement rather than WEATHER_MEASUREMENTS_COUNT
+    // Loop through only the first 6 measurements rather than WEATHER_MEASUREMENTS_COUNT
     // as only these are usable for safety status with limits
     for (int measurements = 0; measurements < 6; measurements ++) {
         if (measurements == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
@@ -361,6 +362,9 @@ bool OCS::initProperties()
     IUFillText(&Status_ItemsT[STATUS_FIRMWARE], "FIRMWARE_VERSION", "Firmware version", "---");
     IUFillText(&Status_ItemsT[STATUS_MAINS], "MAINS_STATUS", "Mains status", "---");
     IUFillText(&Status_ItemsT[STATUS_MCU_TEMPERATURE], "MCU_TEMPERATURE", "MCU temperature °C", "---");
+
+    // To do
+    // Add roof status && dome/axis status
 
 
     // Thermostat tab controls
@@ -467,18 +471,16 @@ bool OCS::initProperties()
     IUFillSwitch(&LIGHT_OUTSIDES[OFF_SWITCH], "OUTSIDE_OFF", "OFF", ISS_ON);
 
 
-    // Weather tab controls
-    IUFillTextVector(&Weather_MeasurementsTP, Weather_MeasurementsT, WEATHER_MEASUREMENTS_COUNT, getDeviceName(), "WEATHER_MEASUREMENTS", "Sensors",
+    // Weather tab controls - in addition to the WI managed controls - these are for display only
+    IUFillTextVector(&Weather_CloudTP, Weather_CloudT, 1, getDeviceName(), "WEATHER_CLOUD", "Cloud",
                      WEATHER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Weather_MeasurementsT[WEATHER_TEMPERATURE], "WEATHER_TEMPERATURE", "Temperature °C","---");
-    IUFillText(&Weather_MeasurementsT[WEATHER_SKY_TEMP], "WEATHER_SKY_TEMP", "Sky Temp °C","---");
-    IUFillText(&Weather_MeasurementsT[WEATHER_DIFF_SKY_TEMP], "WEATHER_DIFF_SKY_TEMP", "Diff Sky Temp °C","---");
-    IUFillText(&Weather_MeasurementsT[WEATHER_PRESSURE], "WEATHER_PRESSURE", "Pressure mbar","---");
-    IUFillText(&Weather_MeasurementsT[WEATHER_HUMIDITY], "WEATHER_HUMIDITY", "Humidity %","---");
-    IUFillText(&Weather_MeasurementsT[WEATHER_WIND], "WEATHER_WIND", "Wind","---");
-    IUFillText(&Weather_MeasurementsT[WEATHER_RAIN], "WEATHER_RAIN", "Rain","---");
-    IUFillText(&Weather_MeasurementsT[WEATHER_CLOUD], "WEATHER_CLOUD", "Cloud","---");
-    IUFillText(&Weather_MeasurementsT[WEATHER_SKY], "WEATHER_SKY", "Sky Quality m/\"\u00b2","---");
+    IUFillText(&Weather_CloudT[0], "WEATHER_CLOUD", "Desciption","---");
+    IUFillTextVector(&Weather_SkyTP, Weather_SkyT, 1, getDeviceName(), "WEATHER_SKY", "Sky quality",
+                     WEATHER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Weather_SkyT[0], "WEATHER_SKY", "mag/arcsec\u00b2","---");
+    IUFillTextVector(&Weather_Sky_TempTP, Weather_Sky_TempT, 1, getDeviceName(), "WEATHER_SKY_TEMP", "Sky temp",
+                     WEATHER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Weather_Sky_TempT[0], "WEATHER_SKY_TEMP", "°C","---");
 
     // Manual tab controls
     //--------------------
@@ -572,8 +574,14 @@ bool OCS::updateProperties()
         if (light_relays[LIGHT_OUTSIDE_RELAY] > 0) {
             defineProperty(&LIGHT_OUTSIDESP);
         }
-        if (weather_tab_enabled) {
-            defineProperty(&Weather_MeasurementsTP);
+        if (weather_enabled[WEATHER_CLOUD]) {
+            defineProperty(&Weather_CloudTP);
+        }
+        if (weather_enabled[WEATHER_SKY]) {
+            defineProperty(&Weather_SkyTP);
+        }
+        if (weather_enabled[WEATHER_SKY_TEMP]) {
+            defineProperty(&Weather_Sky_TempTP);
         }
         //------------------------------------------
         defineProperty(&Manual_WarningTP);
@@ -633,8 +641,14 @@ bool OCS::updateProperties()
         if (light_relays[LIGHT_OUTSIDE_RELAY] > 0) {
             deleteProperty(LIGHT_OUTSIDESP.name);
         }
-        if (weather_tab_enabled) {
-            deleteProperty(Weather_MeasurementsTP.name);
+        if (weather_enabled[WEATHER_CLOUD]) {
+            deleteProperty(Weather_CloudTP.name);
+        }
+        if (weather_enabled[WEATHER_SKY]) {
+            deleteProperty(Weather_SkyTP.name);
+        }
+        if (weather_enabled[WEATHER_SKY_TEMP]) {
+            deleteProperty(Weather_Sky_TempTP.name);
         }
         //----------------------------------------------
         deleteProperty(Manual_WarningTP.name);
@@ -1131,8 +1145,7 @@ IPState OCS::updateWeather() {
                         LOGF_WARN("Invalid response to %s: %s", measurement_command, measurement_reponse);
                     }
                     if (value != -10000) {
-                        IUSaveText(&Weather_MeasurementsT[measurement], measurement_reponse);
-                        if (measurement == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
+                         if (measurement == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
                             setParameterValue("WI_TEMPERATURE", value);
                         } else if (measurement == WEATHER_PRESSURE && weather_enabled[WEATHER_PRESSURE] == 1) {
                             setParameterValue("WI_PRESSURE", value);
@@ -1142,12 +1155,20 @@ IPState OCS::updateWeather() {
                             setParameterValue("WI_WIND", value);
                         } else if (measurement == WEATHER_DIFF_SKY_TEMP && weather_enabled[WEATHER_DIFF_SKY_TEMP] == 1) {
                             setParameterValue("WI_SKY_DIFF_TEMP", value);
+                        } else if (measurement == WEATHER_CLOUD && weather_enabled[WEATHER_CLOUD] ==1) {
+                            IUSaveText(&Weather_CloudT[0], measurement_reponse);
+                            IDSetText(&Weather_CloudTP, nullptr);
+                        } else if (measurement == WEATHER_SKY && weather_enabled[WEATHER_SKY] ==1) {
+                            IUSaveText(&Weather_SkyT[0], measurement_reponse);
+                            IDSetText(&Weather_SkyTP, nullptr);
+                        } else if (measurement == WEATHER_SKY_TEMP && weather_enabled[WEATHER_SKY_TEMP] ==1) {
+                            IUSaveText(&Weather_Sky_TempT[0], measurement_reponse);
+                            IDSetText(&Weather_Sky_TempTP, nullptr);
                         }
                     }
                 }
             }
         }
-        IDSetText(&Weather_MeasurementsTP, nullptr);
     }
 
     return IPS_OK;

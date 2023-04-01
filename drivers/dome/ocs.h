@@ -619,8 +619,12 @@ private:
 
     int weather_enabled[WEATHER_MEASUREMENTS_COUNT];
 
-    ITextVectorProperty Weather_MeasurementsTP;
-    IText Weather_MeasurementsT[WEATHER_MEASUREMENTS_COUNT];
+    ITextVectorProperty Weather_CloudTP;
+    IText Weather_CloudT[1];
+    ITextVectorProperty Weather_SkyTP;
+    IText Weather_SkyT[1];
+    ITextVectorProperty Weather_Sky_TempTP;
+    IText Weather_Sky_TempT[1];
 
     // Manual tab controls
     //--------------------
