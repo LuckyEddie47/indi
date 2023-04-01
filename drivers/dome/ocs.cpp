@@ -65,7 +65,6 @@ OCS::OCS() : INDI::Dome(), WI(this)
     setVersion(0, 1);
     SetDomeCapability(DOME_CAN_ABORT | DOME_HAS_SHUTTER);
     MinuteTimer.callOnTimeout(std::bind(&OCS::MinuteTimerHit, this));
-    MinuteTimer.start(60000);
 }
 
 /*******************************************************
@@ -104,6 +103,7 @@ bool OCS::Handshake()
             LOG_DEBUG("OCS handshake established");
             handshake_status = true;
             GetCapabilites();
+            MinuteTimer.start(60000);
         }
         else {
             LOGF_DEBUG("OCS handshake error, reponse was: %s", handshake_response);
@@ -659,6 +659,7 @@ bool OCS::updateProperties()
         deleteProperty(Watchdog_ResetSP.name);
         deleteProperty(Arbitary_CommandTP.name);
     }
+    MinuteTimer.stop();
 
     return true;
 }
