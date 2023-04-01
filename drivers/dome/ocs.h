@@ -461,6 +461,9 @@ private:
     //--------------------
     enum {
         STATUS_FIRMWARE,
+        STATUS_ROOF,
+        STATUS_ROOF_LAST_ERROR,
+        STATUS_DOME,
         STATUS_MAINS,
         STATUS_MCU_TEMPERATURE,
         STATUS_ITEMS_COUNT

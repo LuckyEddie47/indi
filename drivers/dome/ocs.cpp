@@ -363,12 +363,11 @@ bool OCS::initProperties()
     IUFillTextVector(&Status_ItemsTP, Status_ItemsT, STATUS_ITEMS_COUNT, getDeviceName(), "Status", "OCS Status",
                      STATUS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Status_ItemsT[STATUS_FIRMWARE], "FIRMWARE_VERSION", "Firmware version", "---");
+    IUFillText(&Status_ItemsT[STATUS_ROOF], "ROOF_STATUS", "Roof status", "---");
+    IUFillText(&Status_ItemsT[STATUS_ROOF_LAST_ERROR], "ROOF_LAST_ERROR", "Roof error", "---");
+    IUFillText(&Status_ItemsT[STATUS_DOME], "DOME_STATUS", "Dome status", "---");
     IUFillText(&Status_ItemsT[STATUS_MAINS], "MAINS_STATUS", "Mains status", "---");
     IUFillText(&Status_ItemsT[STATUS_MCU_TEMPERATURE], "MCU_TEMPERATURE", "MCU temperature °C", "---");
-
-    // To do
-    // Add roof status + last error & dome status /axis status
-
 
     // Thermostat tab controls
     //------------------------
@@ -480,7 +479,7 @@ bool OCS::initProperties()
     IUFillText(&Weather_CloudT[0], "WEATHER_CLOUD", "Desciption","---");
     IUFillTextVector(&Weather_SkyTP, Weather_SkyT, 1, getDeviceName(), "WEATHER_SKY", "Sky quality",
                      WEATHER_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Weather_SkyT[0], "WEATHER_SKY", "mag/arcsec\u00b2","---");
+    IUFillText(&Weather_SkyT[0], "WEATHER_SKY", "mag/arc-sec\u00b2","---");
     IUFillTextVector(&Weather_Sky_TempTP, Weather_Sky_TempT, 1, getDeviceName(), "WEATHER_SKY_TEMP", "Sky temp",
                      WEATHER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Weather_Sky_TempT[0], "WEATHER_SKY_TEMP", "°C","---");
@@ -674,36 +673,44 @@ void OCS::TimerHit()
     int roof_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_status_response, OCS_get_roof_status);
     if (roof_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
         char *split;
+        char roof_message[30];
         split = strtok(roof_status_response, ",");
         if (strcmp(split, "o") == 0) {
             if (getShutterState() != SHUTTER_MOVING) {
                 setShutterState(SHUTTER_MOVING);
             }
             split = strtok(NULL, ",");
-            LOGF_DEBUG("Roof/shutter is opening. %s", split);
+            sprintf(roof_message, "Opening, travel %s%%", split);
+            LOGF_DEBUG("Roof/shutter is %s", roof_message);
         } else if (strcmp(split, "c") == 0) {
             if (getShutterState() != SHUTTER_MOVING) {
                 setShutterState(SHUTTER_MOVING);
             }
             split = strtok(NULL, ",");
-            LOGF_DEBUG("Roof/shutter is closing. %s", split);
+            sprintf(roof_message, "Closing, travel %s%%", split);
+            LOGF_DEBUG("Roof/shutter is  %s", roof_message);
         } else if (strcmp(split, "i") == 0) {
             split = strtok(NULL, ",");
             if (strcmp(split, "OPEN") == 0) {
                 if (getShutterState() != SHUTTER_OPENED) {
                     setShutterState(SHUTTER_OPENED);
                 }
-                LOG_DEBUG("Roof/shutter is open");
+                sprintf(roof_message, "Idle - Open");
+                LOGF_DEBUG("Roof/shutter is %s", roof_message);
             } else if (strcmp(split, "CLOSED") == 0) {
                 if (getShutterState() != SHUTTER_CLOSED) {
                     setShutterState(SHUTTER_CLOSED);
                 }
-                LOG_DEBUG("Roof/shutter is closed");
+                sprintf(roof_message, "Idle - Closed");
+                LOGF_DEBUG("Roof/shutter is %s", roof_message);
             } else if (strcmp(split, "No Error") == 0) {
-                LOG_DEBUG("Roof/shutter is idle");
+                sprintf(roof_message, "Idle - No Error");
+                LOGF_DEBUG("Roof/shutter is %s", roof_message);
             } else if (strcmp(split, "Waiting for mount to park") == 0) {
-                LOG_DEBUG("Roof/shutter is waiting for mount to park before closing");
+                sprintf(roof_message, "Waiting for mount to park");
+                LOGF_DEBUG("Roof/shutter is %s", roof_message);
             }
+            IUSaveText(&Status_ItemsT[STATUS_ROOF], roof_message);
         }
     }
 
@@ -711,12 +718,6 @@ void OCS::TimerHit()
     char roof_error_response[RB_MAX_LEN] = {0};
     int roof_error_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_error_response, OCS_get_roof_last_error);
     if (roof_error_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-
-        if (strcmp(roof_error_response, last_shutter_error) != 0) {
-            LOGF_DEBUG("roof_error_error_or_fail = %d", roof_error_error_or_fail);
-            LOGF_DEBUG("roof_error_response = %s", roof_error_response);
-        }
-
         if (strcmp(roof_error_response, "Error: Open safety interlock") == 0 &&
                 strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
@@ -859,9 +860,25 @@ void OCS::TimerHit()
                }
                LOG_WARN("Roof/shutter error - Timeout waiting for mount to park before closing");
         }
+        IUSaveText(&Status_ItemsT[STATUS_ROOF_LAST_ERROR], last_shutter_error);
     } else if (roof_error_error_or_fail == 1) {
         LOGF_WARN("Communication error on get Roof/Shutter last error %s, this update aborted, will try again...", OCS_get_roof_last_error);
     }
+
+    // Get the dome status
+    char dome_message[10];
+    char dome_status_response[RB_MAX_LEN] = {0};
+    int dome_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, dome_status_response, OCS_get_dome_status);
+    if (dome_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+        if (strcmp(dome_status_response, "H") == 0) {
+            sprintf(dome_message, "Home");
+        } else if (strcmp(dome_status_response, "P") == 0) {
+            sprintf(dome_message, "Parked");
+        }
+        IUSaveText(&Status_ItemsT[STATUS_DOME], dome_message);
+    }
+
+    IDSetText(&Status_ItemsTP, nullptr);
 
     // Timer loop control
     if (!isConnected())
