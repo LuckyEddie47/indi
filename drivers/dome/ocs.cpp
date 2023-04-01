@@ -1544,8 +1544,6 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
     return INDI::Dome::ISNewSwitch(dev, name, states, names, n);
 }
 
-// To do - nubmers from Weather - limits change
-
 /*************************************
  * Client has changed a number, update
  *************************************/
@@ -1602,7 +1600,13 @@ bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *nam
         }
     }
 
-    return INDI::Dome::ISNewNumber(dev,name,values,names,n);
+    // To do - nubmers from Weather - limits change - does this work
+
+    if (INDI::Dome::ISNewNumber(dev, name, values, names, n)) {
+        return true;
+    } else {
+        return WI::processNumber(dev, name, values, names, n);
+    }
 }
 
 /*****************************************
