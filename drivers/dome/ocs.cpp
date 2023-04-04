@@ -86,9 +86,9 @@ bool OCS::Handshake()
     if (PortFD > 0) {
         Connection::Interface *activeConnection = getActiveConnection();
         if (!activeConnection->name().compare("CONNECTION_TCP")) {
-            LOG_INFO("Network based connection, detection timeouts set to 1 seconds");
-            OCSTimeoutMicroSeconds = 0;
-            OCSTimeoutSeconds = 1;
+            LOG_INFO("Network based connection, detection timeouts set to 0.5 seconds");
+            OCSTimeoutMicroSeconds = 50000;
+            OCSTimeoutSeconds = 0;
         }
         else {
             LOG_INFO("Non-Network based connection, detection timeouts set to 0.1 seconds");
@@ -140,6 +140,7 @@ void OCS::GetCapabilites()
     int OCS_dome_present_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OCS_dome_present_response, OCS_get_dome_status);
     if (OCS_dome_present_error_or_fail > 0) {
         SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK | DOME_CAN_ABS_MOVE | DOME_CAN_SYNC | DOME_HAS_SHUTTER);
+        hasDome = true;
         LOG_DEBUG("OCS has dome");
     } else {
         LOG_DEBUG("OCS does not have dome");
@@ -870,19 +871,43 @@ void OCS::TimerHit()
         LOGF_WARN("Communication error on get Roof/Shutter last error %s, this update aborted, will try again...", OCS_get_roof_last_error);
     }
 
-    // Get the dome status
-    char dome_message[10];
-    char dome_status_response[RB_MAX_LEN] = {0};
-    int dome_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, dome_status_response, OCS_get_dome_status);
-    if (dome_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
-        if (strcmp(dome_status_response, "H") == 0) {
-            setDomeState(DOME_IDLE);
-            sprintf(dome_message, "Home");
-        } else if (strcmp(dome_status_response, "P") == 0) {
-            setDomeState(DOME_PARKED);
-            sprintf(dome_message, "Parked");
+    // Dome updates
+    if (hasDome) {
+
+        // Get the dome status
+        char dome_message[10];
+        char dome_status_response[RB_MAX_LEN] = {0};
+        int dome_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, dome_status_response, OCS_get_dome_status);
+        if (dome_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
+            if (strcmp(dome_status_response, "H") == 0) {
+                setDomeState(DOME_IDLE);
+                sprintf(dome_message, "Home");
+            } else if (strcmp(dome_status_response, "P") == 0) {
+                setDomeState(DOME_PARKED);
+                sprintf(dome_message, "Parked");
+            } else if (strcmp(dome_status_response, "K") == 0) {
+                setDomeState(DOME_PARKING);
+                sprintf(dome_message, "Parking");
+            } else if (strcmp(dome_status_response, "S") == 0) {
+                setDomeState(DOME_MOVING);
+                sprintf(dome_message, "Slewing");
+            } else if (strcmp(dome_status_response, "I") == 0) {
+                setDomeState(DOME_IDLE);
+                sprintf(dome_message, "Stopped");
+            }
+            IUSaveText(&Status_ItemsT[STATUS_DOME], dome_message);
         }
-        IUSaveText(&Status_ItemsT[STATUS_DOME], dome_message);
+
+        // Get the dome position
+        char dome_position_response[RB_MAX_LEN] = {0};
+        double position = 0;
+        int dome_position_error_or_fail = getCommandDoubleFromCharResponse(PortFD, dome_position_response, &position, OCS_get_dome_azimuth);
+        if (dome_position_error_or_fail > 1 && position != conversion_error) {
+            DomeAbsPosN->value = position;
+            IDSetNumber(&DomeAbsPosNP, nullptr);
+        } else {
+            LOGF_WARN("Communication error on get Dome position %s, this update aborted, will try again...", OCS_get_dome_azimuth);
+        }
     }
 
     IDSetText(&Status_ItemsTP, nullptr);
@@ -2058,7 +2083,7 @@ int OCS::getCommandDoubleFromCharResponse(int fd, char *data, double *response, 
     if (errorOrFail < 1) {
         return errorOrFail;
     } else {
-        int value = conversion_error;
+        double value = conversion_error;
         try {
             value = std::stod(data);
         } catch (const std::invalid_argument&) {

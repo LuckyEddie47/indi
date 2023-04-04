@@ -213,7 +213,7 @@ enum {
 
 // Get dome status
 #define OCS_get_dome_status ":DU#"
-// Returns: P# if parked, H# if at Home
+// Returns: P# if parked, K#, if parking, H# if at Home, I# if idle
 
 // Axis commands
 
@@ -446,11 +446,12 @@ class OCS : public INDI::Dome, public INDI::WeatherInterface
     long int OCSTimeoutMicroSeconds = 100000;
 
 private:
-    float minimum_OCS_fw = 3.4;
+    float minimum_OCS_fw = 3.04;
     int conversion_error = -10000;
 
     // Capability queries on connection
     void GetCapabilites();
+    bool hasDome = false;
 
     // Timer for slow updates, once per minute
     INDI::Timer MinuteTimer;
