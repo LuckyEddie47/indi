@@ -124,12 +124,15 @@ void OCS::GetCapabilites()
     // Get firmware version
     char OCS_firmware_response[RB_MAX_LEN] = {0};
     int OCS_firmware_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OCS_firmware_response, OCS_get_firmware);
-    if (OCS_firmware_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+    if (OCS_firmware_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
         IUSaveText(&Status_ItemsT[STATUS_FIRMWARE], OCS_firmware_response);
         IDSetText(&Status_ItemsTP, nullptr);
         LOGF_DEBUG("OCS version: %s", OCS_firmware_response);
     } else {
         LOG_DEBUG("OCS version not retrieved");
+    }
+    if (std::stof(OCS_firmware_response) < minimum_OCS_fw) {
+        LOGF_WARN("OCS version %s is lower than this driver expects (%1.1f). Behaviour is unknown.", OCS_firmware_response, minimum_OCS_fw);
     }
 
     // Get dome presence
@@ -145,7 +148,7 @@ void OCS::GetCapabilites()
     // Get roof delays
     char roof_timeout_response[RB_MAX_LEN] = {0};
     int roof_timeout_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_timeout_response, OCS_get_timeouts);
-    if (roof_timeout_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+    if (roof_timeout_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
         char *split;
         split = strtok(roof_timeout_response, ",");
         ROOF_TIME_PRE_MOTION = atoi(split);
@@ -161,7 +164,7 @@ void OCS::GetCapabilites()
     // Get the Obsy Thermostat presence
     char thermostat_status_response[RB_MAX_LEN] = {0};
     int thermostat_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
-    if (thermostat_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+    if (thermostat_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
         if (strcmp(thermostat_status_response, "nan,nan") == 0) {
             thermostat_controls_enabled = false;
             LOG_DEBUG("OCS does not have thermostat");
@@ -306,7 +309,7 @@ void OCS::GetCapabilites()
     if (weather_enabled[WEATHER_WIND] || weather_enabled[WEATHER_DIFF_SKY_TEMP]) {
         char threshold_reponse[RB_MAX_LEN];
         int threshold_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, threshold_reponse, OCS_get_weather_thresholds);
-        if (threshold_error_or_fail > 1 ) { //> 1 as an OnStep error would be 1 char in response
+        if (threshold_error_or_fail > 1 ) { //> 1 as an OCS error would be 1 char in response
             char *split;
             split = strtok(threshold_reponse, ",");
             if (strcmp(split, "N/A") != 0) {
@@ -355,7 +358,6 @@ void OCS::GetCapabilites()
 bool OCS::initProperties()
 {
     INDI::Dome::initProperties();
-    WI::initProperties(WEATHER_TAB, WEATHER_TAB);
 
     // Status tab controls
     //--------------------
@@ -444,7 +446,6 @@ bool OCS::initProperties()
                POWER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Power_Device_Name6T[0], "DEVICE_6_NAME", "Name", "");
 
-
     // Lights tab controls
     //--------------------
     IUFillSwitchVector(&LIGHT_WRWSP, LIGHT_WRWS, SWITCH_TOGGLE_COUNT, getDeviceName(), "LIGHT_WRW", "Warm Room White",
@@ -472,8 +473,9 @@ bool OCS::initProperties()
     IUFillSwitch(&LIGHT_OUTSIDES[ON_SWITCH], "OUTSIDE_ON", "ON", ISS_OFF);
     IUFillSwitch(&LIGHT_OUTSIDES[OFF_SWITCH], "OUTSIDE_OFF", "OFF", ISS_ON);
 
-
     // Weather tab controls - in addition to the WI managed controls - these are for display only
+    WI::initProperties(WEATHER_TAB, WEATHER_TAB);
+
     IUFillTextVector(&Weather_CloudTP, Weather_CloudT, 1, getDeviceName(), "WEATHER_CLOUD", "Cloud",
                      WEATHER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Weather_CloudT[0], "WEATHER_CLOUD", "Desciption","---");
@@ -658,8 +660,10 @@ bool OCS::updateProperties()
         deleteProperty(Roof_High_PowerSP.name);
         deleteProperty(Watchdog_ResetSP.name);
         deleteProperty(Arbitary_CommandTP.name);
+
+        // As we're disconnected, stop calling one minute updates
+        MinuteTimer.stop();
     }
-    MinuteTimer.stop();
 
     return true;
 }
@@ -672,7 +676,7 @@ void OCS::TimerHit()
     // Get the roof/shutter status
     char roof_status_response[RB_MAX_LEN] = {0};
     int roof_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_status_response, OCS_get_roof_status);
-    if (roof_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+    if (roof_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
         char *split;
         char roof_message[30];
         split = strtok(roof_status_response, ",");
@@ -718,7 +722,7 @@ void OCS::TimerHit()
     // Get the last roof error (if any)
     char roof_error_response[RB_MAX_LEN] = {0};
     int roof_error_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_error_response, OCS_get_roof_last_error);
-    if (roof_error_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+    if (roof_error_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
         if (strcmp(roof_error_response, "Error: Open safety interlock") == 0 &&
                 strcmp(roof_error_response, last_shutter_error) != 0) {
             strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
@@ -870,10 +874,12 @@ void OCS::TimerHit()
     char dome_message[10];
     char dome_status_response[RB_MAX_LEN] = {0};
     int dome_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, dome_status_response, OCS_get_dome_status);
-    if (dome_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+    if (dome_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
         if (strcmp(dome_status_response, "H") == 0) {
+            setDomeState(DOME_IDLE);
             sprintf(dome_message, "Home");
         } else if (strcmp(dome_status_response, "P") == 0) {
+            setDomeState(DOME_PARKED);
             sprintf(dome_message, "Parked");
         }
         IUSaveText(&Status_ItemsT[STATUS_DOME], dome_message);
@@ -896,7 +902,7 @@ void OCS::MinuteTimerHit()
     // Status tab
     char power_status_response[RB_MAX_LEN] = {0};
     int power_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, power_status_response, OCS_get_power_status);
-    if (power_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+    if (power_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
         IUSaveText(&Status_ItemsT[STATUS_MAINS], power_status_response);
         IDSetText(&Status_ItemsTP, nullptr);
     } else {
@@ -905,7 +911,7 @@ void OCS::MinuteTimerHit()
 
     char MCU_temp_response[RB_MAX_LEN] = {0};
     int MCU_temp_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, MCU_temp_response, OCS_get_MCU_temperature);
-    if (MCU_temp_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+    if (MCU_temp_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
         IUSaveText(&Status_ItemsT[STATUS_MCU_TEMPERATURE], MCU_temp_response);
         IDSetText(&Status_ItemsTP, nullptr);
     } else {
@@ -917,7 +923,7 @@ void OCS::MinuteTimerHit()
         // Get the Obsy Thermostat readings
         char thermostat_status_response[RB_MAX_LEN] = {0};
         int thermostat_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, thermostat_status_response, OCS_get_thermostat_status);
-        if (thermostat_status_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+        if (thermostat_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
             char *split;
             split = strtok(thermostat_status_response, ",");
             IUSaveText(&Thermostat_StatusT[THERMOSTAT_TEMERATURE], split);
@@ -930,27 +936,30 @@ void OCS::MinuteTimerHit()
 
         // Get the Thermostat setpoints
         char heat_response[RB_MAX_LEN] = {0};
-        int heat_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, heat_response, OCS_get_thermostat_heat_setpoint);
-        if (heat_setpoint_error_or_fail >= 0) { // errors are negative
-            Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT].value = heat_setpoint_error_or_fail;
+        int heat_int_response = 0;
+        int heat_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, heat_response, &heat_int_response, OCS_get_thermostat_heat_setpoint);
+        if (heat_setpoint_error_or_fail >= 0 && heat_int_response != conversion_error) { // errors are negative
+            Thermostat_setpointN[THERMOSTAT_HEAT_SETPOINT].value = heat_int_response;
         } else {
-            LOGF_WARN("Communication error on get Thermostat Heat Setpoint %d, this update aborted, will try again...", heat_setpoint_error_or_fail);
+            LOGF_WARN("Communication error on get Thermostat Heat Setpoint %d, this update aborted, will try again...", heat_int_response);
         }
 
         char cool_response[RB_MAX_LEN] = {0};
-        int cool_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, cool_response, OCS_get_thermostat_cool_setpoint);
-        if (cool_setpoint_error_or_fail >= 0) { // errors are negative
-            Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT].value = cool_setpoint_error_or_fail;
+        int cool_int_response = 0;
+        int cool_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, cool_response, &cool_int_response, OCS_get_thermostat_cool_setpoint);
+        if (cool_setpoint_error_or_fail >= 0 && cool_int_response != conversion_error) { // errors are negative
+            Thermostat_setpointN[THERMOSTAT_COOL_SETPOINT].value = cool_int_response;
         } else {
-            LOGF_WARN("Communication error on get Thermostat Cool Setpoint %d, this update aborted, will try again...", cool_setpoint_error_or_fail);
+            LOGF_WARN("Communication error on get Thermostat Cool Setpoint %d, this update aborted, will try again...", cool_int_response);
         }
 
         char humidity_response[RB_MAX_LEN] = {0};
-        int humidity_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, humidity_response, OCS_get_thermostat_humidity_setpoint);
-        if (cool_setpoint_error_or_fail >= 0) { // errors are negative
-            Thermostat_setpointN[THERMOSTAT_HUMIDITY_SETPOINT].value = humidity_setpoint_error_or_fail;
+        int humidity_int_response = 0;
+        int humidity_setpoint_error_or_fail = getCommandIntFromCharResponse(PortFD, humidity_response, &humidity_int_response, OCS_get_thermostat_humidity_setpoint);
+        if (humidity_setpoint_error_or_fail >= 0 && humidity_int_response != conversion_error) { // errors are negative
+            Thermostat_setpointN[THERMOSTAT_HUMIDITY_SETPOINT].value = humidity_int_response;
         } else {
-            LOGF_WARN("Communication error on get Thermostat Humidity Setpoint %d, this update aborted, will try again...", humidity_setpoint_error_or_fail);
+            LOGF_WARN("Communication error on get Thermostat Humidity Setpoint %d, this update aborted, will try again...", humidity_int_response);
         }
         IDSetNumber(&Thermostat_setpointsNP, nullptr);
 
@@ -961,7 +970,7 @@ void OCS::MinuteTimerHit()
                 char thermo_relay_command[RB_MAX_LEN] = {0};
                 sprintf(thermo_relay_command, "%s%d%s", OCS_get_relay_part, thermostat_relays[relay], OCS_command_terminator);
                 int thermo_relay_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, thermo_relay_response, thermo_relay_command);
-                if (thermo_relay_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+                if (thermo_relay_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
                     if (relay == THERMOSTAT_HEAT_RELAY) {
                         if (strcmp(thermo_relay_response, "ON") == 0) {
                             Thermostat_heat_relayS[ON_SWITCH].s = ISS_ON;
@@ -1004,7 +1013,7 @@ void OCS::MinuteTimerHit()
                 char power_relay_command[RB_MAX_LEN] = {0};
                 sprintf(power_relay_command, "%s%d%s", OCS_get_relay_part, power_device_relays[relay], OCS_command_terminator);
                 int power_relay_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, power_relay_response, power_relay_command);
-                if (power_relay_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+                if (power_relay_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
                     if (relay == POWER_DEVICE1) {
                         if (strcmp(power_relay_response, "ON") == 0) {
                             Power_Device1S[ON_SWITCH].s = ISS_ON;
@@ -1074,7 +1083,7 @@ void OCS::MinuteTimerHit()
                 char light_relay_command[RB_MAX_LEN] = {0};
                 sprintf(light_relay_command, "%s%d%s", OCS_get_relay_part, light_relays[relay], OCS_command_terminator);
                 int light_relay_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, light_relay_response, light_relay_command);
-                if (light_relay_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
+                if (light_relay_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
                     if (relay == LIGHT_WRW_RELAY) {
                         if (strcmp(light_relay_response, "ON") == 0) {
                             LIGHT_WRWS[ON_SWITCH].s = ISS_ON;
@@ -1155,37 +1164,28 @@ IPState OCS::updateWeather() {
                 } else if (measurement == WEATHER_SKY) {
                     strncpy(measurement_command, OCS_get_sky_quality, sizeof(measurement_command));
                 }
-                int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse, measurement_command);
-                if (measurement_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-                    double value = -10000;
-                    try {
-                        value = std::stod(measurement_reponse);
-                    } catch (const std::invalid_argument&) {
-                        LOGF_WARN("Invalid response to %s: %s", measurement_command, measurement_reponse);
-                    } catch (const std::out_of_range&) {
-                        LOGF_WARN("Invalid response to %s: %s", measurement_command, measurement_reponse);
-                    }
-                    if (value != -10000) {
-                         if (measurement == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
-                            setParameterValue("WI_TEMPERATURE", value);
-                        } else if (measurement == WEATHER_PRESSURE && weather_enabled[WEATHER_PRESSURE] == 1) {
-                            setParameterValue("WI_PRESSURE", value);
-                        } else if (measurement == WEATHER_HUMIDITY && weather_enabled[WEATHER_HUMIDITY] == 1) {
-                            setParameterValue("WI_HUMIDITY", value);
-                        } else if (measurement == WEATHER_WIND && weather_enabled[WEATHER_WIND] == 1) {
-                            setParameterValue("WI_WIND", value);
-                        } else if (measurement == WEATHER_DIFF_SKY_TEMP && weather_enabled[WEATHER_DIFF_SKY_TEMP] == 1) {
-                            setParameterValue("WI_SKY_DIFF_TEMP", value);
-                        } else if (measurement == WEATHER_CLOUD && weather_enabled[WEATHER_CLOUD] ==1) {
-                            IUSaveText(&Weather_CloudT[0], measurement_reponse);
-                            IDSetText(&Weather_CloudTP, nullptr);
-                        } else if (measurement == WEATHER_SKY && weather_enabled[WEATHER_SKY] ==1) {
-                            IUSaveText(&Weather_SkyT[0], measurement_reponse);
-                            IDSetText(&Weather_SkyTP, nullptr);
-                        } else if (measurement == WEATHER_SKY_TEMP && weather_enabled[WEATHER_SKY_TEMP] ==1) {
-                            IUSaveText(&Weather_Sky_TempT[0], measurement_reponse);
-                            IDSetText(&Weather_Sky_TempTP, nullptr);
-                        }
+                double value = 0;
+                int measurement_error_or_fail = getCommandDoubleFromCharResponse(PortFD, measurement_reponse, &value, measurement_command);
+                if (measurement_error_or_fail >= 0 && value != conversion_error) {
+                     if (measurement == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
+                        setParameterValue("WI_TEMPERATURE", value);
+                    } else if (measurement == WEATHER_PRESSURE && weather_enabled[WEATHER_PRESSURE] == 1) {
+                        setParameterValue("WI_PRESSURE", value);
+                    } else if (measurement == WEATHER_HUMIDITY && weather_enabled[WEATHER_HUMIDITY] == 1) {
+                        setParameterValue("WI_HUMIDITY", value);
+                    } else if (measurement == WEATHER_WIND && weather_enabled[WEATHER_WIND] == 1) {
+                        setParameterValue("WI_WIND", value);
+                    } else if (measurement == WEATHER_DIFF_SKY_TEMP && weather_enabled[WEATHER_DIFF_SKY_TEMP] == 1) {
+                        setParameterValue("WI_SKY_DIFF_TEMP", value);
+                    } else if (measurement == WEATHER_CLOUD && weather_enabled[WEATHER_CLOUD] ==1) {
+                        IUSaveText(&Weather_CloudT[0], measurement_reponse);
+                        IDSetText(&Weather_CloudTP, nullptr);
+                    } else if (measurement == WEATHER_SKY && weather_enabled[WEATHER_SKY] ==1) {
+                        IUSaveText(&Weather_SkyT[0], measurement_reponse);
+                        IDSetText(&Weather_SkyTP, nullptr);
+                    } else if (measurement == WEATHER_SKY_TEMP && weather_enabled[WEATHER_SKY_TEMP] ==1) {
+                        IUSaveText(&Weather_Sky_TempT[0], measurement_reponse);
+                        IDSetText(&Weather_Sky_TempTP, nullptr);
                     }
                 }
             }
@@ -1241,8 +1241,10 @@ IPState OCS::ControlShutter(ShutterOperation operation)
 IPState OCS::Park()
 {
     if (sendOCSCommand(OCS_dome_park)) {
-        return IPS_OK;
+        setDomeState(DOME_PARKING);
+        return IPS_BUSY;
     } else {
+        setDomeState(DOME_ERROR);
         return IPS_ALERT;
     }
 }
@@ -1253,14 +1255,13 @@ IPState OCS::Park()
 IPState OCS::UnPark()
 {
     if (sendOCSCommand(OCS_restore_dome_park)) {
-        return IPS_OK;
+        setDomeState(DOME_UNPARKING);
+        return IPS_BUSY;
     } else {
+        setDomeState(DOME_ERROR);
         return IPS_ALERT;
     }
 }
-
-
-//To do
 
 /**********************************
  * Move dome to an absoute position
@@ -1272,17 +1273,127 @@ IPState OCS::MoveAbs(double az)
             OCS_set_dome_azimuth_part, az, OCS_command_terminator);
     sendOCSCommandBlind(set_dome_azimuth_command);
     char dome_goto_target_response[RB_MAX_LEN] = {0};
-    int dome_goto_target_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, dome_goto_target_response, OCS_dome_goto_taget);
-    if (dome_goto_target_error_or_fail > 1) { //> 1 as an OnStep error would be 1 char in response
-
-
+    int dome_goto_target_int_response = 0;
+    int dome_goto_target_error_or_fail = getCommandIntFromCharResponse(PortFD, dome_goto_target_response, &dome_goto_target_int_response,
+                                                                       OCS_dome_goto_taget);
+    if (dome_goto_target_error_or_fail >= 0) {
+        switch (dome_goto_target_int_response) {
+        case GOTO_IS_POSSIBLE:
+            LOGF_INFO("Begin dome move to %1.1f", az);
+            return IPS_BUSY;
+            break;
+        case BELOW_HORIZON_LIMIT:
+            // Should never get here - Indi doesn't support dome Alt
+            LOGF_ERROR("Dome target (%1.1f) is below the horizon limit", az);
+            return IPS_ALERT;
+            break;
+        case ABOVE_OVERHEAD_LIMIT:
+            // Should never get here - Indi doesn't support dome Alt
+            LOGF_ERROR("Dome target (%1.1f) is above the overhead limit", az);
+            return IPS_ALERT;
+            break;
+        case CONTROLLER_IN_STANDBY:
+            LOG_ERROR("Dome can not move, controller in standby");
+            return IPS_ALERT;
+            break;
+        case DOME_IS_PARKED:
+            LOG_ERROR("Dome can not move, dome is parked");
+            return IPS_ALERT;
+            break;
+        case GOTO_IN_PROGRESS:
+            LOG_ERROR("Can not ask dome to move, dome is already moving");
+            return IPS_ALERT;
+            break;
+        case OUTSIDE_LIMITS:
+            LOGF_ERROR("Dome target (%1.1f) is outside safe limits", az);
+            return IPS_ALERT;
+            break;
+        case HARDWARE_FAULT:
+            LOG_ERROR("Dome can not move, hardware fault");
+            return IPS_ALERT;
+            break;
+        case ALREADY_IN_MOTION:
+            LOG_ERROR("Can not ask dome to move, dome is already moving");
+            return IPS_ALERT;
+            break;
+        case UNSPECIFIED_ERROR:
+            LOG_ERROR("Dome returned an unspecified error");
+            return IPS_ALERT;
+            break;
+        default:
+            return IPS_IDLE;
+            break;
+        }
+    } else {
+        LOGF_ERROR("Dome goto produced error %s", dome_goto_target_error_or_fail);
+        return IPS_ALERT;
     }
+}
 
-//    if (gototarget :DS(set_dome_azimuth_command)) {
-        return IPS_OK;
-//    } else {
-//        return IPS_ALERT;
-//    }
+/****************************************************
+ * Sync domes actual position to supplied co-ordinate
+ * **************************************************/
+bool OCS::Sync(double az) {
+    char set_dome_azimuth_command[CMD_MAX_LEN] = {0};
+    sprintf(set_dome_azimuth_command, "%s%f%s",
+            OCS_set_dome_azimuth_part, az, OCS_command_terminator);
+    sendOCSCommandBlind(set_dome_azimuth_command);
+    char dome_sync_target_response[RB_MAX_LEN] = {0};
+    int dome_sync_target_int_response = 0;
+    int dome_sync_target_error_or_fail  = getCommandIntFromCharResponse(PortFD, dome_sync_target_response, &dome_sync_target_int_response,
+                                                                        OCS_dome_sync_target);
+    if (dome_sync_target_error_or_fail >= 0){
+        switch (dome_sync_target_int_response) {
+        case GOTO_IS_POSSIBLE:
+            LOGF_INFO("Dome syncronised to %1.1f", az);
+            return true;
+            break;
+        case BELOW_HORIZON_LIMIT:
+            // Should never get here - Indi doesn't support dome Alt
+            LOGF_ERROR("Dome target (%1.1f) is below the horizon limit", az);
+            return false;
+            break;
+        case ABOVE_OVERHEAD_LIMIT:
+            // Should never get here - Indi doesn't support dome Alt
+            LOGF_ERROR("Dome target (%1.1f) is above the overhead limit", az);
+            return false;
+            break;
+        case CONTROLLER_IN_STANDBY:
+            LOG_ERROR("Dome can not sync, controller in standby");
+            return false;
+            break;
+        case DOME_IS_PARKED:
+            LOG_ERROR("Dome can not sync, dome is parked");
+            return false;
+            break;
+        case GOTO_IN_PROGRESS:
+            LOG_ERROR("Can not ask dome to sync, dome is already moving");
+            return false;
+            break;
+        case OUTSIDE_LIMITS:
+            LOGF_ERROR("Dome sync target (%1.1f) is outside safe limits", az);
+            return false;
+            break;
+        case HARDWARE_FAULT:
+            LOG_ERROR("Dome can not sync, hardware fault");
+            return false;
+            break;
+        case ALREADY_IN_MOTION:
+            LOG_ERROR("Can not ask dome to sync, dome is already moving");
+            return false;
+            break;
+        case UNSPECIFIED_ERROR:
+            LOG_ERROR("Dome returned an unspecified error");
+            return false;
+            break;
+        default:
+            return false;
+            break;
+        }
+    } else {
+        LOGF_ERROR("Dome sync to target errored %S", dome_sync_target_response);
+        return false;
+    }
 }
 
 /***********************************************************
@@ -1621,8 +1732,6 @@ bool OCS::ISNewNumber(const char *dev,const char *name,double values[],char *nam
         }
     }
 
-    // To do - nubmers from Weather - limits change - does this work
-
     if (INDI::Dome::ISNewNumber(dev, name, values, names, n)) {
         return true;
     } else {
@@ -1733,7 +1842,7 @@ bool OCS::sendOCSCommand(const char *cmd)
         return false;
     }
 
-    return (response[0] == '0'); //OnStep uses 0 for success and non zero for failure, in *most* cases;
+    return (response[0] == '0'); //OCS uses 0 for success and non zero for failure, in *most* cases;
 }
 
 /************************************************************
@@ -1921,36 +2030,44 @@ int OCS::getCommandSingleCharErrorOrLongResponse(int fd, char *data, const char 
 /********************************************************
  * Converts an OCS char[] return of a numeric into an int
  * ******************************************************/
-int OCS::getCommandIntFromCharResponse(int fd, char *data, const char *cmd)
+int OCS::getCommandIntFromCharResponse(int fd, char *data, int *response, const char *cmd)
 {
     int errorOrFail = getCommandSingleCharErrorOrLongResponse(fd, data, cmd);
     if (errorOrFail < 1) {
         return errorOrFail;
     } else {
-        long lnum;
-        char *end;
-        errno = 0;
-        lnum = strtol(data, &end, 10);        //10 specifies base-10
-        if (end == data) { //if no characters were converted these pointers are equal
-            errorOrFail = -1;
+        int value = conversion_error;
+        try {
+            value = std::stoi(data);
+        } catch (const std::invalid_argument&) {
+            LOGF_WARN("Invalid response to %s: %s", cmd, data);
+        } catch (const std::out_of_range&) {
+            LOGF_WARN("Invalid response to %s: %s", cmd, data);
         }
+        *response = value;
+        return errorOrFail;
+    }
+}
 
-        //If sizeof(int) == sizeof(long), we have to explicitly check for overflows
-        if ((lnum == LONG_MAX || lnum == LONG_MIN) && errno == ERANGE) {
-            errorOrFail = -1;
+/********************************************************
+ * Converts an OCS char[] return of a numeric into an int
+ * ******************************************************/
+int OCS::getCommandDoubleFromCharResponse(int fd, char *data, double *response, const char *cmd)
+{
+    int errorOrFail = getCommandSingleCharErrorOrLongResponse(fd, data, cmd);
+    if (errorOrFail < 1) {
+        return errorOrFail;
+    } else {
+        int value = conversion_error;
+        try {
+            value = std::stod(data);
+        } catch (const std::invalid_argument&) {
+            LOGF_WARN("Invalid response to %s: %s", cmd, data);
+        } catch (const std::out_of_range&) {
+            LOGF_WARN("Invalid response to %s: %s", cmd, data);
         }
-
-        //Because strtol produces a long, check for overflow
-        if ( (lnum > INT_MAX) || (lnum < INT_MIN) ) {
-            errorOrFail = -1;
-        }
-
-        //Finally convert the result to a plain int (if that's what you want)
-        if (errorOrFail == -1) {
-            return errorOrFail;
-        } else {
-            return (int) lnum;
-        }
+        *response = value;
+        return errorOrFail;
     }
 }
 

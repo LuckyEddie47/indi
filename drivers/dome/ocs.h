@@ -186,6 +186,20 @@ An unterminated 0 is returned from unconfigured items
 // Command the dome to goto target
 #define OCS_dome_goto_taget ":DS#"
 // Returns:
+enum {
+    GOTO_IS_POSSIBLE,
+    BELOW_HORIZON_LIMIT,
+    ABOVE_OVERHEAD_LIMIT,
+    CONTROLLER_IN_STANDBY,
+    DOME_IS_PARKED,
+    GOTO_IN_PROGRESS,
+    OUTSIDE_LIMITS,
+    HARDWARE_FAULT,
+    ALREADY_IN_MOTION,
+    UNSPECIFIED_ERROR,
+    COUNT_DOME_GOTO_RETURNS
+};
+
 //  0# = Goto is possible
 //  1# = below the horizon limit
 //  2# = above overhead limit
@@ -425,12 +439,16 @@ class OCS : public INDI::Dome, public INDI::WeatherInterface
     int getCommandDoubleResponse(int fd, double *value, char *data,
                                  const char *cmd); //Reimplemented from getCommandString Will return a double, and raw value.
     int getCommandIntResponse(int fd, int *value, char *data, const char *cmd);
-    int getCommandIntFromCharResponse(int fd, char *data, const char *cmd); //Calls getCommandSingleCharErrorOrLongResponse with conversion or return
+    int getCommandIntFromCharResponse(int fd, char *data, int *response, const char *cmd); //Calls getCommandSingleCharErrorOrLongResponse with conversion of return
+    int getCommandDoubleFromCharResponse(int fd, char *data, double *response, const char *cmd); //Calls getCommandSingleCharErrorOrLongResponse with conversion of return
 
     long int OCSTimeoutSeconds = 0;
     long int OCSTimeoutMicroSeconds = 100000;
 
 private:
+    float minimum_OCS_fw = 3.4;
+    int conversion_error = -10000;
+
     // Capability queries on connection
     void GetCapabilites();
 
@@ -450,6 +468,7 @@ private:
     virtual IPState Park() override;
     virtual IPState UnPark() override;
     virtual IPState MoveAbs(double az) override;
+    virtual bool Sync (double az) override;
 
     enum {
         ON_SWITCH,
