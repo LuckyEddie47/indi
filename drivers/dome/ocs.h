@@ -430,7 +430,7 @@ class OCS : public INDI::Dome, public INDI::WeatherInterface
     bool Disconnect() override;
 
     void TimerHit() override;
-    void MinuteTimerHit();
+    void SlowTimerHit();
     virtual IPState updateWeather() override;
 
     bool sendOCSCommand(const char *cmd);
@@ -456,7 +456,7 @@ private:
     bool hasDome = false;
 
     // Timer for slow updates, once per minute
-    INDI::Timer MinuteTimer;
+    INDI::Timer SlowTimer;
 
     // Roof/Shutter control
     //---------------------
@@ -469,6 +469,7 @@ private:
     //-------------
     virtual IPState Park() override;
     virtual IPState UnPark() override;
+    virtual bool SetCurrentPark() override;
     virtual IPState MoveAbs(double az) override;
     virtual bool Sync (double az) override;
 
@@ -477,6 +478,11 @@ private:
         OFF_SWITCH,
         SWITCH_TOGGLE_COUNT
     };
+
+    // Main control tab controls
+    //--------------------------
+    ISwitchVectorProperty SetParkSP;
+    ISwitch SetParkS[1];
 
     // Status tab controls
     //--------------------

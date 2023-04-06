@@ -32,8 +32,6 @@ USB and network connections supported.
 
 // To do:
 
-// Only poll roof last error on roof status = error (+ once per minute for transients?)
-
 // Dome handlers
 // MountLockingPolicy, set park, return home, reset home
 
@@ -71,7 +69,7 @@ OCS::OCS() : INDI::Dome(), WI(this)
 {
     setVersion(0, 1);
     SetDomeCapability(DOME_CAN_ABORT | DOME_HAS_SHUTTER);
-    MinuteTimer.callOnTimeout(std::bind(&OCS::MinuteTimerHit, this));
+    SlowTimer.callOnTimeout(std::bind(&OCS::SlowTimerHit, this));
 }
 
 /*******************************************************
@@ -110,7 +108,7 @@ bool OCS::Handshake()
             LOG_DEBUG("OCS handshake established");
             handshake_status = true;
             GetCapabilites();
-            MinuteTimer.start(60000);
+            SlowTimer.start(60000);
         }
         else {
             LOGF_DEBUG("OCS handshake error, reponse was: %s", handshake_response);
@@ -136,7 +134,7 @@ void OCS::GetCapabilites()
         IDSetText(&Status_ItemsTP, nullptr);
         LOGF_DEBUG("OCS version: %s", OCS_firmware_response);
     } else {
-        LOG_DEBUG("OCS version not retrieved");
+        LOG_ERROR("OCS version not retrieved");
     }
     if (std::stof(OCS_firmware_response) < minimum_OCS_fw) {
         LOGF_WARN("OCS version %s is lower than this driver expects (%1.1f). Behaviour is unknown.", OCS_firmware_response, minimum_OCS_fw);
@@ -147,10 +145,11 @@ void OCS::GetCapabilites()
     int OCS_dome_present_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OCS_dome_present_response, OCS_get_dome_status);
     if (OCS_dome_present_error_or_fail > 0) {
         SetDomeCapability(DOME_CAN_ABORT | DOME_CAN_PARK | DOME_CAN_ABS_MOVE | DOME_CAN_SYNC | DOME_HAS_SHUTTER);
+        setDomeState(DOME_UNKNOWN);
         hasDome = true;
-        LOG_DEBUG("OCS has dome");
+        LOG_INFO("OCS has dome");
     } else {
-        LOG_DEBUG("OCS does not have dome");
+        LOG_INFO("OCS does not have dome");
     }
 
     // Get roof delays
@@ -164,9 +163,7 @@ void OCS::GetCapabilites()
         ROOF_TIME_POST_MOTION = atoi(split);
     }
     else {
-        LOGF_WARN("Communication error on get roof delays %s, this update aborted, will try again...", OCS_get_timeouts);
-        LOGF_DEBUG("thermostat_status_error_or_fail = %d", roof_timeout_error_or_fail);
-        LOGF_DEBUG("thermostat_status_response = %s", roof_timeout_response);
+        LOGF_WARN("Communication error on get roof delays %s", OCS_get_timeouts);
     }
 
     // Get the Obsy Thermostat presence
@@ -175,10 +172,10 @@ void OCS::GetCapabilites()
     if (thermostat_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
         if (strcmp(thermostat_status_response, "nan,nan") == 0) {
             thermostat_controls_enabled = false;
-            LOG_DEBUG("OCS does not have thermostat");
+            LOG_INFO("OCS does not have a thermostat, disabling tab");
         } else {
             thermostat_controls_enabled = true;
-            LOG_DEBUG("OCS has a thermostat");
+            LOG_WARN("OCS has a thermostat, enabling tab");
 
             // Get thermostat relay definitions
             char thermostat_relay_definitions_response[RB_MAX_LEN] = {0};
@@ -192,6 +189,8 @@ void OCS::GetCapabilites()
                 }
             }
         }
+    } else if (strcmp(thermostat_status_response, "0") == 0) {
+        LOG_INFO("OCS does not have a thermostat, disabling tab");
     }
 
     // Get power relay definitions
@@ -212,6 +211,7 @@ void OCS::GetCapabilites()
         }
         if (powerDisabled != (-1 * POWER_DEVICE_COUNT)) {
             power_tab_enabled = true;
+            LOG_INFO("OCS has power device(s), enabling tab");
             for (int deviceNo = 1; deviceNo < POWER_DEVICE_COUNT; deviceNo ++) {
                 if (power_device_relays[(deviceNo - 1)] != -1)
                 {
@@ -249,7 +249,11 @@ void OCS::GetCapabilites()
                     }
                 }
             }
+        } else {
+            LOG_INFO("OCS does not have power device(s), disabling tab");
         }
+    } else if (strcmp(power_relay_definitions_response, "0") == 0) {
+        LOG_INFO("OCS does not have power device(s), disabling tab");
     }
 
     // Get light relay definitions
@@ -270,7 +274,12 @@ void OCS::GetCapabilites()
         }
         if (lightsDisabled != (-1 * LIGHT_COUNT)) {
             lights_tab_enabled = true;
+            LOG_INFO("OCS has light(s), enabling tab");
+        } else {
+            LOG_INFO("OCS does not have light(s), disabling tab");
         }
+    } else if (strcmp(light_relay_definitions_response, "0") == 0) {
+        LOG_INFO("OCS does not have light(s), disabling tab");
     }
 
     // Get available weather measurements
@@ -302,62 +311,67 @@ void OCS::GetCapabilites()
         } else {
             weather_enabled[measurement] = 0;
         }
-        // Available weather measurement are now defined as = 1, unavailable as = 0
-        // so we can sum these to check if any are defined, if not then keep tab disabled
-        int weatherDisabled = 0;
-        for (int wmeasure = 1; wmeasure < WEATHER_MEASUREMENTS_COUNT; wmeasure ++) {
-            weatherDisabled += weather_enabled[wmeasure];
-        }
-        if (weatherDisabled > 0) {
-            weather_tab_enabled = true;
-        }
     }
 
-    // If a weather measurement that has a safety limit set in OCS is active then get that limit
-    if (weather_enabled[WEATHER_WIND] || weather_enabled[WEATHER_DIFF_SKY_TEMP]) {
-        char threshold_reponse[RB_MAX_LEN];
-        int threshold_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, threshold_reponse, OCS_get_weather_thresholds);
-        if (threshold_error_or_fail > 1 ) { //> 1 as an OCS error would be 1 char in response
-            char *split;
-            split = strtok(threshold_reponse, ",");
-            if (strcmp(split, "N/A") != 0) {
-                wind_speed_threshold = atoi(split);
-            }
-            split = strtok(NULL, ",");
-            if (strcmp(split, "N/A") != 0) {
-                diff_temp_threshold = atoi(split);
-            }
-        } else {
-            LOGF_WARN("Communication error on get Weather thresholds %s", OCS_get_weather_thresholds);
-        }
-    }
+    // Available weather measurement are now defined as = 1, unavailable as = 0
+       // so we can sum these to check if any are defined, if not then keep tab disabled
+       int weatherDisabled = 0;
+       for (int wmeasure = 1; wmeasure < WEATHER_MEASUREMENTS_COUNT; wmeasure ++) {
+           weatherDisabled += weather_enabled[wmeasure];
+       }
+       if (weatherDisabled > 0) {
+           weather_tab_enabled = true;
+           LOG_INFO("OCS has weather sensor(s), enabling tab");
 
-    // Loop through only the first 6 measurements rather than WEATHER_MEASUREMENTS_COUNT
-    // as only these are usable for safety status with limits
-    for (int measurements = 0; measurements < 6; measurements ++) {
-        if (measurements == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
-            addParameter("WI_TEMPERATURE", "Temperature °C", -10, 40, 15);
-            setCriticalParameter("WI_TEMPERATURE");
-        } else if (measurements == WEATHER_PRESSURE && weather_enabled[WEATHER_PRESSURE] == 1) {
-            addParameter("WI_PRESSURE", "Pressure mbar", 970, 1050, 10);
-            setCriticalParameter("WI_PRESSURE");
-        } else if (measurements == WEATHER_HUMIDITY && weather_enabled[WEATHER_HUMIDITY] == 1) {
-            addParameter("WI_HUMIDITY", "Humidity %", 0, 95, 15);
-            setCriticalParameter("WI_HUMIDITY");
-        } else if (measurements == WEATHER_WIND && weather_enabled[WEATHER_WIND] == 1) {
-            addParameter("WI_WIND", "Wind kph", 0, wind_speed_threshold, 15);
-            setCriticalParameter("WI_WIND");
-        } else if (measurements == WEATHER_RAIN && weather_enabled[WEATHER_RAIN] == 1) {
-            addParameter("WI_RAIN", "Rain state", 3, 3, 67);
-            setCriticalParameter("WI_RAIN");
-        } else if (measurements == WEATHER_DIFF_SKY_TEMP && weather_enabled[WEATHER_DIFF_SKY_TEMP] == 1) {
-            addParameter("WI_SKY_DIFF_TEMP", "Sky vs Cloud °C", -50, diff_temp_threshold, 15);
-            setCriticalParameter("WI_SKY_DIFF_TEMP");
-        }
-    }
+           // If a weather measurement that has a safety limit set in OCS is active then get that limit
+           if (weather_enabled[WEATHER_WIND] || weather_enabled[WEATHER_DIFF_SKY_TEMP]) {
+               char threshold_reponse[RB_MAX_LEN];
+               int threshold_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, threshold_reponse, OCS_get_weather_thresholds);
+               if (threshold_error_or_fail > 1 ) { //> 1 as an OCS error would be 1 char in response
+                   char *split;
+                   split = strtok(threshold_reponse, ",");
+                   if (strcmp(split, "N/A") != 0) {
+                       wind_speed_threshold = atoi(split);
+                   }
+                   split = strtok(NULL, ",");
+                   if (strcmp(split, "N/A") != 0) {
+                       diff_temp_threshold = atoi(split);
+                   }
+               } else {
+                   LOGF_WARN("Communication error on get Weather thresholds %s", OCS_get_weather_thresholds);
+               }
+           }
+
+           // Loop through only the first 6 measurements rather than WEATHER_MEASUREMENTS_COUNT
+           // as only these are usable for safety status with limits
+           for (int measurements = 0; measurements < 6; measurements ++) {
+               if (measurements == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
+                   addParameter("WI_TEMPERATURE", "Temperature °C", -10, 40, 15);
+                   setCriticalParameter("WI_TEMPERATURE");
+               } else if (measurements == WEATHER_PRESSURE && weather_enabled[WEATHER_PRESSURE] == 1) {
+                   addParameter("WI_PRESSURE", "Pressure mbar", 970, 1050, 10);
+                   setCriticalParameter("WI_PRESSURE");
+               } else if (measurements == WEATHER_HUMIDITY && weather_enabled[WEATHER_HUMIDITY] == 1) {
+                   addParameter("WI_HUMIDITY", "Humidity %", 0, 95, 15);
+                   setCriticalParameter("WI_HUMIDITY");
+               } else if (measurements == WEATHER_WIND && weather_enabled[WEATHER_WIND] == 1) {
+                   addParameter("WI_WIND", "Wind kph", 0, wind_speed_threshold, 15);
+                   setCriticalParameter("WI_WIND");
+               } else if (measurements == WEATHER_RAIN && weather_enabled[WEATHER_RAIN] == 1) {
+                   addParameter("WI_RAIN", "Rain state", 3, 3, 67);
+                   setCriticalParameter("WI_RAIN");
+               } else if (measurements == WEATHER_DIFF_SKY_TEMP && weather_enabled[WEATHER_DIFF_SKY_TEMP] == 1) {
+                   addParameter("WI_SKY_DIFF_TEMP", "Sky vs Cloud °C", -50, diff_temp_threshold, 15);
+                   setCriticalParameter("WI_SKY_DIFF_TEMP");
+               }
+           }
+       } else
+       {
+           LOG_INFO("OCS does not have weather sensor(s), disabling tab");
+       }
 
     // Call the slow property update once as this is startup
-    MinuteTimerHit();
+    SlowTimerHit();
 }
 
 /**********************************************************************
@@ -367,9 +381,14 @@ bool OCS::initProperties()
 {
     INDI::Dome::initProperties();
 
+    // Main control tab controls
+    //--------------------------
+    IUFillSwitchVector(&SetParkSP, SetParkS, 1, getDeviceName(), "SET_PARK", "Current > Park",
+                       MAIN_CONTROL_TAB, IP_WO, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&SetParkS[0], "SET_PARK_SW", "Set Park", ISS_OFF);
+
     // Status tab controls
     //--------------------
-
     IUFillTextVector(&Status_ItemsTP, Status_ItemsT, STATUS_ITEMS_COUNT, getDeviceName(), "Status", "OCS Status",
                      STATUS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Status_ItemsT[STATUS_FIRMWARE], "FIRMWARE_VERSION", "Firmware version", "---");
@@ -536,6 +555,7 @@ bool OCS::updateProperties()
         WI::updateProperties();
     }
     if (isConnected()) {
+        defineProperty(&SetParkSP);
         defineProperty(&Status_ItemsTP);
 
         // Dynamically defined properties
@@ -603,6 +623,7 @@ bool OCS::updateProperties()
         defineProperty(&Arbitary_CommandTP);
     }
     else {
+        deleteProperty(SetParkSP.name);
         deleteProperty(Status_ItemsTP.name);
 
         // Dynamically defined properties
@@ -670,7 +691,7 @@ bool OCS::updateProperties()
         deleteProperty(Arbitary_CommandTP.name);
 
         // As we're disconnected, stop calling one minute updates
-        MinuteTimer.stop();
+        SlowTimer.stop();
     }
 
     return true;
@@ -743,19 +764,49 @@ void OCS::TimerHit()
         int dome_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, dome_status_response, OCS_get_dome_status);
         if (dome_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
             if (strcmp(dome_status_response, "H") == 0) {
-                setDomeState(DOME_IDLE);
+                if (getDomeState() != DOME_IDLE) {
+                    setDomeState(DOME_IDLE);
+                    ParkS[0].s = ISS_OFF;
+                    ParkS[1].s = ISS_ON;
+                    ParkSP.s = IPS_OK;
+                    IDSetSwitch(&ParkSP, nullptr);
+                }
                 sprintf(dome_message, "Home");
             } else if (strcmp(dome_status_response, "P") == 0) {
-                setDomeState(DOME_PARKED);
+                if (getDomeState() != DOME_PARKED) {
+                    setDomeState(DOME_PARKED);
+                    ParkS[0].s = ISS_ON;
+                    ParkS[1].s = ISS_OFF;
+                    ParkSP.s = IPS_OK;
+                    IDSetSwitch(&ParkSP, nullptr);
+                }
                 sprintf(dome_message, "Parked");
             } else if (strcmp(dome_status_response, "K") == 0) {
-                setDomeState(DOME_PARKING);
+                if (getDomeState() != DOME_PARKING) {
+                    setDomeState(DOME_PARKING);
+                    ParkS[0].s = ISS_OFF;
+                    ParkS[1].s = ISS_OFF;
+                    ParkSP.s = IPS_BUSY;
+                    IDSetSwitch(&ParkSP, nullptr);
+                }
                 sprintf(dome_message, "Parking");
             } else if (strcmp(dome_status_response, "S") == 0) {
-                setDomeState(DOME_MOVING);
+                if (getDomeState() != DOME_MOVING) {
+                    setDomeState(DOME_MOVING);
+                    ParkS[0].s = ISS_OFF;
+                    ParkS[1].s = ISS_ON;
+                    ParkSP.s = IPS_OK;
+                    IDSetSwitch(&ParkSP, nullptr);
+                }
                 sprintf(dome_message, "Slewing");
             } else if (strcmp(dome_status_response, "I") == 0) {
-                setDomeState(DOME_IDLE);
+                if (getDomeState() != DOME_IDLE) {
+                    setDomeState(DOME_IDLE);
+                    ParkS[0].s = ISS_OFF;
+                    ParkS[1].s = ISS_ON;
+                    ParkSP.s = IPS_OK;
+                    IDSetSwitch(&ParkSP, nullptr);
+                }
                 sprintf(dome_message, "Stopped");
             }
             IUSaveText(&Status_ItemsT[STATUS_DOME], dome_message);
@@ -787,7 +838,7 @@ void OCS::TimerHit()
 /***************************************
 * Poll properties for updates per minute
 ****************************************/
-void OCS::MinuteTimerHit()
+void OCS::SlowTimerHit()
 {
     // Status tab
     char power_status_response[RB_MAX_LEN] = {0};
@@ -1300,10 +1351,24 @@ IPState OCS::UnPark()
 {
     if (sendOCSCommand(OCS_restore_dome_park)) {
         setDomeState(DOME_UNPARKING);
-        return IPS_BUSY;
+        return IPS_OK;
     } else {
         setDomeState(DOME_ERROR);
         return IPS_ALERT;
+    }
+}
+
+/************************************************************
+ * Set the current dome Azimuth position as the park position
+ * **********************************************************/
+bool OCS::SetCurrentPark()
+{
+    if (sendOCSCommand(OCS_set_dome_park)) {
+        return true;
+    } else {
+        setDomeState(DOME_ERROR);
+        LOG_ERROR("Failed to set park position");
+        return false;
     }
 }
 
@@ -1714,6 +1779,10 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
                 IDSetSwitch(&Safety_Interlock_OverrideSP, nullptr);
                 return false;
             }
+
+        // Set park
+        } else if (strcmp(SetParkSP.name, name) == 0) {
+            return SetCurrentPark();
         }
     }
 
