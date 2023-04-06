@@ -32,6 +32,7 @@ USB and network connections supported.
 
 // To do:
 
+// Roof opening status
 // Dome handlers
 // MountLockingPolicy, set park, return home, reset home
 
@@ -41,7 +42,6 @@ USB and network connections supported.
 // Test, test, test
 
 #include "ocs.h"
-//#include "indicom.h"
 #include "termios.h"
 
 #include <cmath>
@@ -158,9 +158,13 @@ void OCS::GetCapabilites()
     if (roof_timeout_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
         char *split;
         split = strtok(roof_timeout_response, ",");
-        ROOF_TIME_PRE_MOTION = atoi(split);
+        if (charToInt(split) != conversion_error) {
+            ROOF_TIME_PRE_MOTION = charToInt(split);
+        }
         split = strtok(NULL, ",");
-        ROOF_TIME_POST_MOTION = atoi(split);
+        if (charToInt(split) != conversion_error) {
+            ROOF_TIME_POST_MOTION = charToInt(split);
+        }
     }
     else {
         LOGF_WARN("Communication error on get roof delays %s", OCS_get_timeouts);
@@ -184,7 +188,9 @@ void OCS::GetCapabilites()
                 char *split;
                 split = strtok(thermostat_relay_definitions_response, ",");
                 for (int relayNo = 0; relayNo < THERMOSTAT_RELAY_COUNT; relayNo ++) {
-                    thermostat_relays[relayNo] = atoi (split);
+                    if (charToInt(split) != conversion_error) {
+                        thermostat_relays[relayNo] = charToInt(split);
+                    }
                     split = strtok(NULL, ",");
                 }
             }
@@ -200,7 +206,10 @@ void OCS::GetCapabilites()
         char *split;
         split = strtok(power_relay_definitions_response, ",");
         for (int deviceNo = 0; deviceNo < POWER_DEVICE_COUNT; deviceNo ++) {
-            power_device_relays[deviceNo] = atoi (split);
+            if (charToInt(split) != conversion_error) {
+                power_device_relays[deviceNo] = charToInt(split);
+            }
+
             split = strtok(NULL, ",");
         }
         // Defined devices have a positive integer relay definition, undefined return -1
@@ -222,27 +231,27 @@ void OCS::GetCapabilites()
                     int power_relay_name_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, power_relay_name_response, get_power_device_name_command);
                     if (power_relay_name_error_or_fail > 0) {
                         if (deviceNo == 1) {
-                            strncpy(POWER_DEVICE1_NAME, power_relay_name_response, sizeof(POWER_DEVICE1_NAME));
+                            indi_strlcpy(POWER_DEVICE1_NAME, power_relay_name_response, sizeof(POWER_DEVICE1_NAME));
                             IUSaveText(&Power_Device_Name1T[0], POWER_DEVICE1_NAME);
                             IDSetText(&Power_Device_Name1TP, nullptr);
                         } else if (deviceNo == 2) {
-                            strncpy(POWER_DEVICE2_NAME, power_relay_name_response, sizeof(POWER_DEVICE2_NAME));
+                            indi_strlcpy(POWER_DEVICE2_NAME, power_relay_name_response, sizeof(POWER_DEVICE2_NAME));
                             IUSaveText(&Power_Device_Name2T[0], POWER_DEVICE2_NAME);
                             IDSetText(&Power_Device_Name2TP, nullptr);
                         } else if (deviceNo == 3) {
-                            strncpy(POWER_DEVICE3_NAME, power_relay_name_response, sizeof(POWER_DEVICE3_NAME));
+                            indi_strlcpy(POWER_DEVICE3_NAME, power_relay_name_response, sizeof(POWER_DEVICE3_NAME));
                             IUSaveText(&Power_Device_Name3T[0], POWER_DEVICE3_NAME);
                             IDSetText(&Power_Device_Name3TP, nullptr);
                         } else if (deviceNo == 4) {
-                            strncpy(POWER_DEVICE4_NAME, power_relay_name_response, sizeof(POWER_DEVICE4_NAME));
+                            indi_strlcpy(POWER_DEVICE4_NAME, power_relay_name_response, sizeof(POWER_DEVICE4_NAME));
                             IUSaveText(&Power_Device_Name4T[0], POWER_DEVICE4_NAME);
                             IDSetText(&Power_Device_Name4TP, nullptr);
                         } else if (deviceNo == 5) {
-                            strncpy(POWER_DEVICE5_NAME, power_relay_name_response, sizeof(POWER_DEVICE5_NAME));
+                            indi_strlcpy(POWER_DEVICE5_NAME, power_relay_name_response, sizeof(POWER_DEVICE5_NAME));
                             IUSaveText(&Power_Device_Name5T[0], POWER_DEVICE5_NAME);
                             IDSetText(&Power_Device_Name5TP, nullptr);
                         } else if (deviceNo == 61) {
-                            strncpy(POWER_DEVICE6_NAME, power_relay_name_response, sizeof(POWER_DEVICE6_NAME));
+                            indi_strlcpy(POWER_DEVICE6_NAME, power_relay_name_response, sizeof(POWER_DEVICE6_NAME));
                             IUSaveText(&Power_Device_Name6T[0], POWER_DEVICE6_NAME);
                             IDSetText(&Power_Device_Name6TP, nullptr);
                         }
@@ -263,7 +272,9 @@ void OCS::GetCapabilites()
         char *split;
         split = strtok(light_relay_definitions_response, ",");
         for (int lrelay = 0; lrelay < LIGHT_COUNT; lrelay ++) {
-            light_relays[lrelay] = atoi (split);
+            if (charToInt(split) != conversion_error) {
+                light_relays[lrelay] = charToInt(split);
+            }
             split = strtok(NULL, ",");
         }
         // Defined lights have a positive integer relay definition, undefined return -1
@@ -287,23 +298,23 @@ void OCS::GetCapabilites()
         char measurement_reponse[RB_MAX_LEN];
         char measurement_command[CMD_MAX_LEN];
         if (measurement == WEATHER_TEMPERATURE) {
-            strncpy(measurement_command, OCS_get_outside_temperature, sizeof(measurement_command));
+            indi_strlcpy(measurement_command, OCS_get_outside_temperature, sizeof(measurement_command));
         } else if (measurement == WEATHER_SKY_TEMP) {
-            strncpy(measurement_command, OCS_get_sky_IR_temperature, sizeof(measurement_command));
+            indi_strlcpy(measurement_command, OCS_get_sky_IR_temperature, sizeof(measurement_command));
         } else if (measurement == WEATHER_DIFF_SKY_TEMP) {
-            strncpy(measurement_command, OCS_get_sky_diff_temperature, sizeof(measurement_command));
+            indi_strlcpy(measurement_command, OCS_get_sky_diff_temperature, sizeof(measurement_command));
         } else if (measurement == WEATHER_PRESSURE) {
-            strncpy(measurement_command, OCS_get_pressure, sizeof(measurement_command));
+            indi_strlcpy(measurement_command, OCS_get_pressure, sizeof(measurement_command));
         } else if (measurement == WEATHER_HUMIDITY) {
-            strncpy(measurement_command, OCS_get_humidity, sizeof(measurement_command));
+            indi_strlcpy(measurement_command, OCS_get_humidity, sizeof(measurement_command));
         } else if (measurement == WEATHER_WIND) {
-            strncpy(measurement_command, OCS_get_wind_speed, sizeof(measurement_command));
+            indi_strlcpy(measurement_command, OCS_get_wind_speed, sizeof(measurement_command));
         } else if (measurement == WEATHER_RAIN) {
-            strncpy(measurement_command, OCS_get_rain_sensor_status, sizeof(measurement_command));
+            indi_strlcpy(measurement_command, OCS_get_rain_sensor_status, sizeof(measurement_command));
         } else if (measurement == WEATHER_CLOUD) {
-            strncpy(measurement_command, OCS_get_cloud_description, sizeof(measurement_command));
+            indi_strlcpy(measurement_command, OCS_get_cloud_description, sizeof(measurement_command));
         } else if (measurement == WEATHER_SKY) {
-            strncpy(measurement_command, OCS_get_sky_quality, sizeof(measurement_command));
+            indi_strlcpy(measurement_command, OCS_get_sky_quality, sizeof(measurement_command));
         }
         int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse, measurement_command);
         if (measurement_error_or_fail > 1 && strcmp(measurement_reponse, "N/A") != 0) {
@@ -331,11 +342,15 @@ void OCS::GetCapabilites()
                    char *split;
                    split = strtok(threshold_reponse, ",");
                    if (strcmp(split, "N/A") != 0) {
-                       wind_speed_threshold = atoi(split);
+                       if (charToInt(split) != conversion_error) {
+                           wind_speed_threshold = charToInt(split);
+                       }
                    }
                    split = strtok(NULL, ",");
                    if (strcmp(split, "N/A") != 0) {
-                       diff_temp_threshold = atoi(split);
+                       if (charToInt(split) != conversion_error) {
+                           diff_temp_threshold = charToInt(split);
+                       }
                    }
                } else {
                    LOGF_WARN("Communication error on get Weather thresholds %s", OCS_get_weather_thresholds);
@@ -386,6 +401,9 @@ bool OCS::initProperties()
     IUFillSwitchVector(&SetParkSP, SetParkS, 1, getDeviceName(), "SET_PARK", "Current > Park",
                        MAIN_CONTROL_TAB, IP_WO, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&SetParkS[0], "SET_PARK_SW", "Set Park", ISS_OFF);
+
+
+
 
     // Status tab controls
     //--------------------
@@ -868,141 +886,141 @@ void OCS::SlowTimerHit()
     if (roof_error_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
         if (strcmp(roof_error_response, "Error: Open safety interlock") == 0 &&
                 strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+            indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Open safety interlock");
         } else if (strcmp(roof_error_response, "Error: Close safety interlock") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+            indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Close safety interlock");
         } else if (strcmp(roof_error_response, "Error: Open unknown error") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+            indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Open unknown");
         } else if (strcmp(roof_error_response, "Error: Open limit sw fail") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+            indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Open limit switch fail");
         } else if (strcmp(roof_error_response, "Error: Open over time") == 0 &&
             strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+            indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Open max time exceeded");
         } else if (strcmp(roof_error_response, "Error: Open under time") == 0 &&
             strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+            indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Open min time not reached");
         } else if (strcmp(roof_error_response, "Error: Close unknown error") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+            indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Close unknow");
         } else if (strcmp(roof_error_response, "Error: Close limit sw fail") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+            indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Close limit switch");
         } else if (strcmp(roof_error_response, "Error: Close over time") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+            indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Close max time exceeded");
         } else if (strcmp(roof_error_response, "Error: Close under tim") == 0 &&
             strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+            indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             LOG_WARN("Roof/shutter error - Close min time not reached");
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
         } else if (strcmp(roof_error_response, "Error: Limit switch malfunction") == 0 &&
                 strcmp(roof_error_response, last_shutter_error) != 0) {
-            strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+            indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
             if (getShutterState() != SHUTTER_ERROR) {
                 setShutterState(SHUTTER_ERROR);
             }
             LOG_WARN("Roof/shutter error - Both open & close limit switches active together");
         } else if (strcmp(roof_error_response, "Error: Closed/opened limit sw on") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
                if (getShutterState() != SHUTTER_ERROR) {
                    setShutterState(SHUTTER_ERROR);
                }
                LOG_WARN("Roof/shutter error - Closed/opened limit switch on");
         } else if (strcmp(roof_error_response, "Warning: Already closed") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
                LOG_WARN("Roof/shutter warning - Roof/shutter is already closed");
         } else if (strcmp(roof_error_response, "Error: Close location unknown") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
                if (getShutterState() != SHUTTER_ERROR) {
                    setShutterState(SHUTTER_ERROR);
                }
                LOG_WARN("Roof/shutter error - Close location unknown");
         } else if (strcmp(roof_error_response, "Error: Motion direction unknown") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
                if (getShutterState() != SHUTTER_ERROR) {
                    setShutterState(SHUTTER_ERROR);
                }
                LOG_WARN("Roof/shutter error - Motion direction unknown");
         } else if (strcmp(roof_error_response, "Error: Close already in motion") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
                if (getShutterState() != SHUTTER_ERROR) {
                    setShutterState(SHUTTER_ERROR);
                }
                LOG_WARN("Roof/shutter error - Close already in motion");
         } else if (strcmp(roof_error_response, "Error: Opened/closed limit sw on") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
                if (getShutterState() != SHUTTER_ERROR) {
                    setShutterState(SHUTTER_ERROR);
                }
                LOG_WARN("Roof/shutter error - Opened/closed limit switch on");
         } else if (strcmp(roof_error_response, "Warning: Already open") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
                LOG_WARN("Roof/shutter warning - Roof/shutter is already open");
         } else if (strcmp(roof_error_response, "Error: Open location unknow") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
                if (getShutterState() != SHUTTER_ERROR) {
                    setShutterState(SHUTTER_ERROR);
                }
                LOG_WARN("Roof/shutter error - Open location unknow");
         } else if (strcmp(roof_error_response, "Error: Open already in motion") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
                if (getShutterState() != SHUTTER_ERROR) {
                    setShutterState(SHUTTER_ERROR);
                }
                LOG_WARN("Roof/shutter error - Open already in motion");
         } else if (strcmp(roof_error_response, "Error: Close mount not parked") == 0 &&
                    strcmp(roof_error_response, last_shutter_error) != 0) {
-               strncpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
+               indi_strlcpy(last_shutter_error,roof_error_response, RB_MAX_LEN);
                if (getShutterState() != SHUTTER_ERROR) {
                    setShutterState(SHUTTER_ERROR);
                }
@@ -1241,23 +1259,23 @@ IPState OCS::updateWeather() {
                 char measurement_reponse[RB_MAX_LEN];
                 char measurement_command[CMD_MAX_LEN];
                 if (measurement == WEATHER_TEMPERATURE) {
-                    strncpy(measurement_command, OCS_get_outside_temperature, sizeof(measurement_command));
+                    indi_strlcpy(measurement_command, OCS_get_outside_temperature, sizeof(measurement_command));
                 } else if (measurement == WEATHER_SKY_TEMP) {
-                    strncpy(measurement_command, OCS_get_sky_IR_temperature, sizeof(measurement_command));
+                    indi_strlcpy(measurement_command, OCS_get_sky_IR_temperature, sizeof(measurement_command));
                 } else if (measurement == WEATHER_DIFF_SKY_TEMP) {
-                    strncpy(measurement_command, OCS_get_sky_diff_temperature, sizeof(measurement_command));
+                    indi_strlcpy(measurement_command, OCS_get_sky_diff_temperature, sizeof(measurement_command));
                 } else if (measurement == WEATHER_PRESSURE) {
-                    strncpy(measurement_command, OCS_get_pressure, sizeof(measurement_command));
+                    indi_strlcpy(measurement_command, OCS_get_pressure, sizeof(measurement_command));
                 } else if (measurement == WEATHER_HUMIDITY) {
-                    strncpy(measurement_command, OCS_get_humidity, sizeof(measurement_command));
+                    indi_strlcpy(measurement_command, OCS_get_humidity, sizeof(measurement_command));
                 } else if (measurement == WEATHER_WIND) {
-                    strncpy(measurement_command, OCS_get_wind_speed, sizeof(measurement_command));
+                    indi_strlcpy(measurement_command, OCS_get_wind_speed, sizeof(measurement_command));
                 } else if (measurement == WEATHER_RAIN) {
-                    strncpy(measurement_command, OCS_get_rain_sensor_status, sizeof(measurement_command));
+                    indi_strlcpy(measurement_command, OCS_get_rain_sensor_status, sizeof(measurement_command));
                 } else if (measurement == WEATHER_CLOUD) {
-                    strncpy(measurement_command, OCS_get_cloud_description, sizeof(measurement_command));
+                    indi_strlcpy(measurement_command, OCS_get_cloud_description, sizeof(measurement_command));
                 } else if (measurement == WEATHER_SKY) {
-                    strncpy(measurement_command, OCS_get_sky_quality, sizeof(measurement_command));
+                    indi_strlcpy(measurement_command, OCS_get_sky_quality, sizeof(measurement_command));
                 }
                 double value = 0;
                 int measurement_error_or_fail = getCommandDoubleFromCharResponse(PortFD, measurement_reponse, &value, measurement_command);
@@ -1307,12 +1325,12 @@ IPState OCS::ControlShutter(ShutterOperation operation)
 {
     if (operation == SHUTTER_OPEN) {
         // Sending roof/shutter commands clears any OCS roof errors so we need to do the same here
-        strncpy(last_shutter_error, "", RB_MAX_LEN);
+        indi_strlcpy(last_shutter_error, "", RB_MAX_LEN);
         sendOCSCommandBlind(OCS_roof_open);
     }
     else if (operation == SHUTTER_CLOSE) {
         // Sending roof/shutter commands clears any OCS roof errors so we need to do the same here
-        strncpy(last_shutter_error, "", RB_MAX_LEN);
+        indi_strlcpy(last_shutter_error, "", RB_MAX_LEN);
         sendOCSCommandBlind(OCS_roof_close);
     }
 
@@ -1572,6 +1590,7 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
         LOGF_DEBUG("Got an IsNewSwitch for: %s", name);
 
         // Power devices
+        //--------------
         if (strcmp(Power_Device1SP.name, name) == 0) {
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "POWER_DEVICE1_ON") == 0) {
@@ -1670,6 +1689,7 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
             return false;
 
         // Lights
+        //-------
         } else if (strcmp(LIGHT_WRWSP.name, name) == 0) {
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "WRW_ON") == 0) {
@@ -1752,22 +1772,25 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
             return false;
 
         // Safety Override
+        //----------------
         } else if (strcmp(Safety_Interlock_OverrideSP.name, name) == 0) {
             IUResetSwitch(&Safety_Interlock_OverrideSP);
             return sendOCSCommand(OCS_roof_safety_override);
 
         // Roof max power
+        //---------------
         } else if (strcmp(Roof_High_PowerSP.name, name) == 0) {
             IUResetSwitch(&Roof_High_PowerSP);
             return sendOCSCommand(OCS_roof_high_power_mode);
 
         // Reset Watchdog
+        //---------------
         } else if (strcmp(Watchdog_ResetSP.name, name) == 0) {
             char watchdog_response[RB_MAX_LEN] = {0};
             int watchdog_fail_or_error = getCommandSingleCharErrorOrLongResponse(PortFD, watchdog_response, OCS_set_watchdog_flag);
             (void) watchdog_fail_or_error;
-            if (strcmp(watchdog_response, "Rebooting in 8 seconds...") == 0) {
-                LOG_WARN("Rebooting the OCS controller in 8 seconds...");
+            if (strcmp(watchdog_response, "Rebooting in a few seconds...") == 0) {
+                LOG_WARN("Rebooting the OCS controller in a few seconds...");
                 IDSetSwitch(&Safety_Interlock_OverrideSP, nullptr);
                 return true;
             } else if (strcmp(watchdog_response, "23") == 0) {
@@ -1781,6 +1804,7 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
             }
 
         // Set park
+        //---------
         } else if (strcmp(SetParkSP.name, name) == 0) {
             return SetCurrentPark();
         }
@@ -1866,20 +1890,20 @@ bool OCS::ISNewText(const char *dev,const char *name,char *texts[],char *names[]
                 int command_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, command_response, texts[0]);
                 if (command_error_or_fail > 0) {
                     if (strcmp(command_response, "") == 0) {
-                        strncpy(command_response, "No response", sizeof(command_response));
+                        indi_strlcpy(command_response, "No response", sizeof(command_response));
                     }
                 } else {
                     char error_code[RB_MAX_LEN] = {0};
                     if (command_error_or_fail == TTY_TIME_OUT) {
-                        strncpy(command_response, "No response", sizeof(command_response));
+                        indi_strlcpy(command_response, "No response", sizeof(command_response));
                     } else {
                         sprintf(error_code, "Error: %d", command_error_or_fail);
-                        strncpy(command_response, error_code, sizeof(command_response));
+                        indi_strlcpy(command_response, error_code, sizeof(command_response));
                     }
                 }
 
                 // Replace the user entered string with the OCS response
-                strncpy(texts[0], command_response, RB_MAX_LEN);
+                indi_strlcpy(texts[0], command_response, RB_MAX_LEN);
                 IUUpdateText(&Arbitary_CommandTP, texts, names, n);
                 IDSetText(&Arbitary_CommandTP, nullptr);
                 return true;
@@ -2205,4 +2229,15 @@ int OCS::flushIO(int fd)
     while (error_type > 0);
 
     return 0;
+}
+
+int OCS::charToInt (char *inString)
+{
+    int value = conversion_error;
+    try {
+        value = std::stoi(inString);
+    } catch (const std::invalid_argument&) {
+    } catch (const std::out_of_range&) {
+    }
+    return value;
 }

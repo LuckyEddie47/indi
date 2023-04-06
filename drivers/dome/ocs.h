@@ -443,6 +443,7 @@ class OCS : public INDI::Dome, public INDI::WeatherInterface
     int getCommandIntResponse(int fd, int *value, char *data, const char *cmd);
     int getCommandIntFromCharResponse(int fd, char *data, int *response, const char *cmd); //Calls getCommandSingleCharErrorOrLongResponse with conversion of return
     int getCommandDoubleFromCharResponse(int fd, char *data, double *response, const char *cmd); //Calls getCommandSingleCharErrorOrLongResponse with conversion of return
+    int charToInt(char *inString);
 
     long int OCSTimeoutSeconds = 0;
     long int OCSTimeoutMicroSeconds = 100000;
