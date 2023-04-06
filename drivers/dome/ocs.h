@@ -171,10 +171,12 @@ An unterminated 0 is returned from unconfigured items
 // Example: ":Dz[D.D]#"
 // Returns: nothing
 
+// Unused, not supported by Indi
 // Get the dome Altitude (0 to 90 degrees)
-#define OCS_get_dome_altitude ":DA#"
+// #define OCS_get_dome_altitude ":DA#"
 // Returns: D.D#, NAN# is no second axis
 
+// Unused, not supported by Indi
 // Set the dome Altitude target (0 to 90 degrees)
 // ":Da[D.D]#"
 // Returns: nothing
@@ -460,7 +462,6 @@ private:
     //---------------------
     int ROOF_TIME_PRE_MOTION = 0;
     int ROOF_TIME_POST_MOTION = 0;
-    char last_shutter_status[RB_MAX_LEN];
     char last_shutter_error[RB_MAX_LEN];
     IPState ControlShutter(ShutterOperation operation) override;
 

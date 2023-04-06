@@ -31,8 +31,15 @@ USB and network connections supported.
 *******************************************************************************/
 
 // To do:
+
+// Only poll roof last error on roof status = error (+ once per minute for transients?)
+
 // Dome handlers
+// MountLockingPolicy, set park, return home, reset home
+
+// Allow timeout changes on options tab?
 // Weather - safety status, and separate tab?
+// Save options
 // Test, test, test
 
 #include "ocs.h"
@@ -715,12 +722,96 @@ void OCS::TimerHit()
             } else if (strcmp(split, "Waiting for mount to park") == 0) {
                 sprintf(roof_message, "Waiting for mount to park");
                 LOGF_DEBUG("Roof/shutter is %s", roof_message);
+            } else {
+                // Must be an error message
+                sprintf(roof_message, "Roof/shutter: %s", split);
+                if (getShutterState() != SHUTTER_ERROR) {
+                    setShutterState(SHUTTER_ERROR);
+                }
+                LOGF_ERROR("Roof/shutter error - %s", roof_message);
             }
             IUSaveText(&Status_ItemsT[STATUS_ROOF], roof_message);
         }
     }
 
+    // Dome updates
+    if (hasDome) {
+
+        // Get the dome status
+        char dome_message[10];
+        char dome_status_response[RB_MAX_LEN] = {0};
+        int dome_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, dome_status_response, OCS_get_dome_status);
+        if (dome_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
+            if (strcmp(dome_status_response, "H") == 0) {
+                setDomeState(DOME_IDLE);
+                sprintf(dome_message, "Home");
+            } else if (strcmp(dome_status_response, "P") == 0) {
+                setDomeState(DOME_PARKED);
+                sprintf(dome_message, "Parked");
+            } else if (strcmp(dome_status_response, "K") == 0) {
+                setDomeState(DOME_PARKING);
+                sprintf(dome_message, "Parking");
+            } else if (strcmp(dome_status_response, "S") == 0) {
+                setDomeState(DOME_MOVING);
+                sprintf(dome_message, "Slewing");
+            } else if (strcmp(dome_status_response, "I") == 0) {
+                setDomeState(DOME_IDLE);
+                sprintf(dome_message, "Stopped");
+            }
+            IUSaveText(&Status_ItemsT[STATUS_DOME], dome_message);
+        } else {
+            LOGF_WARN("Communication error on get Dome status %s, this update aborted, will try again...", OCS_get_dome_status);
+        }
+
+        // Get the dome position
+        char dome_position_response[RB_MAX_LEN] = {0};
+        double position = 0;
+        int dome_position_error_or_fail = getCommandDoubleFromCharResponse(PortFD, dome_position_response, &position, OCS_get_dome_azimuth);
+        if (dome_position_error_or_fail > 1 && position != conversion_error) {
+            DomeAbsPosN->value = position;
+            IDSetNumber(&DomeAbsPosNP, nullptr);
+        } else {
+            LOGF_WARN("Communication error on get Dome position %s, this update aborted, will try again...", OCS_get_dome_azimuth);
+        }
+    }
+
+    IDSetText(&Status_ItemsTP, nullptr);
+
+    // Timer loop control
+    if (!isConnected())
+        return; //  No need to reset timer if we are not connected anymore
+
+    SetTimer(getCurrentPollingPeriod());
+}
+
+/***************************************
+* Poll properties for updates per minute
+****************************************/
+void OCS::MinuteTimerHit()
+{
+    // Status tab
+    char power_status_response[RB_MAX_LEN] = {0};
+    int power_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, power_status_response, OCS_get_power_status);
+    if (power_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
+        IUSaveText(&Status_ItemsT[STATUS_MAINS], power_status_response);
+        IDSetText(&Status_ItemsTP, nullptr);
+    } else {
+        LOGF_WARN("Communication error on get Power Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
+    }
+
+    char MCU_temp_response[RB_MAX_LEN] = {0};
+    int MCU_temp_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, MCU_temp_response, OCS_get_MCU_temperature);
+    if (MCU_temp_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
+        IUSaveText(&Status_ItemsT[STATUS_MCU_TEMPERATURE], MCU_temp_response);
+        IDSetText(&Status_ItemsTP, nullptr);
+    } else {
+        LOGF_WARN("Communication error on get MCU temperature %s, this update aborted, will try again...", OCS_get_thermostat_status);
+    }
+
     // Get the last roof error (if any)
+    // This is here because although the 1 second polled get roof status would return any error flagged
+    // at the time it could miss a transient condition that has been cleared in-between poll periods.
+    // Last roof error holds the condition until cleared by a shutter/roof action.
     char roof_error_response[RB_MAX_LEN] = {0};
     int roof_error_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, roof_error_response, OCS_get_roof_last_error);
     if (roof_error_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
@@ -869,78 +960,6 @@ void OCS::TimerHit()
         IUSaveText(&Status_ItemsT[STATUS_ROOF_LAST_ERROR], last_shutter_error);
     } else if (roof_error_error_or_fail == 1) {
         LOGF_WARN("Communication error on get Roof/Shutter last error %s, this update aborted, will try again...", OCS_get_roof_last_error);
-    }
-
-    // Dome updates
-    if (hasDome) {
-
-        // Get the dome status
-        char dome_message[10];
-        char dome_status_response[RB_MAX_LEN] = {0};
-        int dome_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, dome_status_response, OCS_get_dome_status);
-        if (dome_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
-            if (strcmp(dome_status_response, "H") == 0) {
-                setDomeState(DOME_IDLE);
-                sprintf(dome_message, "Home");
-            } else if (strcmp(dome_status_response, "P") == 0) {
-                setDomeState(DOME_PARKED);
-                sprintf(dome_message, "Parked");
-            } else if (strcmp(dome_status_response, "K") == 0) {
-                setDomeState(DOME_PARKING);
-                sprintf(dome_message, "Parking");
-            } else if (strcmp(dome_status_response, "S") == 0) {
-                setDomeState(DOME_MOVING);
-                sprintf(dome_message, "Slewing");
-            } else if (strcmp(dome_status_response, "I") == 0) {
-                setDomeState(DOME_IDLE);
-                sprintf(dome_message, "Stopped");
-            }
-            IUSaveText(&Status_ItemsT[STATUS_DOME], dome_message);
-        }
-
-        // Get the dome position
-        char dome_position_response[RB_MAX_LEN] = {0};
-        double position = 0;
-        int dome_position_error_or_fail = getCommandDoubleFromCharResponse(PortFD, dome_position_response, &position, OCS_get_dome_azimuth);
-        if (dome_position_error_or_fail > 1 && position != conversion_error) {
-            DomeAbsPosN->value = position;
-            IDSetNumber(&DomeAbsPosNP, nullptr);
-        } else {
-            LOGF_WARN("Communication error on get Dome position %s, this update aborted, will try again...", OCS_get_dome_azimuth);
-        }
-    }
-
-    IDSetText(&Status_ItemsTP, nullptr);
-
-    // Timer loop control
-    if (!isConnected())
-        return; //  No need to reset timer if we are not connected anymore
-
-    SetTimer(getCurrentPollingPeriod());
-}
-
-/***************************************
-* Poll properties for updates per minute
-****************************************/
-void OCS::MinuteTimerHit()
-{
-    // Status tab
-    char power_status_response[RB_MAX_LEN] = {0};
-    int power_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, power_status_response, OCS_get_power_status);
-    if (power_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
-        IUSaveText(&Status_ItemsT[STATUS_MAINS], power_status_response);
-        IDSetText(&Status_ItemsTP, nullptr);
-    } else {
-        LOGF_WARN("Communication error on get Power Status %s, this update aborted, will try again...", OCS_get_thermostat_status);
-    }
-
-    char MCU_temp_response[RB_MAX_LEN] = {0};
-    int MCU_temp_status_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, MCU_temp_response, OCS_get_MCU_temperature);
-    if (MCU_temp_status_error_or_fail > 1) { //> 1 as an OCS error would be 1 char in response
-        IUSaveText(&Status_ItemsT[STATUS_MCU_TEMPERATURE], MCU_temp_response);
-        IDSetText(&Status_ItemsTP, nullptr);
-    } else {
-        LOGF_WARN("Communication error on get MCU temperature %s, this update aborted, will try again...", OCS_get_thermostat_status);
     }
 
     // Thermostat tab
@@ -1299,22 +1318,22 @@ IPState OCS::MoveAbs(double az)
     sendOCSCommandBlind(set_dome_azimuth_command);
     char dome_goto_target_response[RB_MAX_LEN] = {0};
     int dome_goto_target_int_response = 0;
-    int dome_goto_target_error_or_fail = getCommandIntFromCharResponse(PortFD, dome_goto_target_response, &dome_goto_target_int_response,
+    int dome_goto_target_error_or_fail = getCommandIntResponse(PortFD, &dome_goto_target_int_response, dome_goto_target_response,
                                                                        OCS_dome_goto_taget);
-    if (dome_goto_target_error_or_fail >= 0) {
+    if (dome_goto_target_error_or_fail >= 1) {
         switch (dome_goto_target_int_response) {
         case GOTO_IS_POSSIBLE:
-            LOGF_INFO("Begin dome move to %1.1f", az);
+            LOGF_INFO("Begin dome move to %1.1f°", az);
             return IPS_BUSY;
             break;
         case BELOW_HORIZON_LIMIT:
             // Should never get here - Indi doesn't support dome Alt
-            LOGF_ERROR("Dome target (%1.1f) is below the horizon limit", az);
+            LOGF_ERROR("Dome target (%1.1f°) is below the horizon limit", az);
             return IPS_ALERT;
             break;
         case ABOVE_OVERHEAD_LIMIT:
             // Should never get here - Indi doesn't support dome Alt
-            LOGF_ERROR("Dome target (%1.1f) is above the overhead limit", az);
+            LOGF_ERROR("Dome target (%1.1f°) is above the overhead limit", az);
             return IPS_ALERT;
             break;
         case CONTROLLER_IN_STANDBY:
@@ -1330,7 +1349,7 @@ IPState OCS::MoveAbs(double az)
             return IPS_ALERT;
             break;
         case OUTSIDE_LIMITS:
-            LOGF_ERROR("Dome target (%1.1f) is outside safe limits", az);
+            LOGF_ERROR("Dome target (%1.1f°) is outside safe limits", az);
             return IPS_ALERT;
             break;
         case HARDWARE_FAULT:
@@ -1365,22 +1384,22 @@ bool OCS::Sync(double az) {
     sendOCSCommandBlind(set_dome_azimuth_command);
     char dome_sync_target_response[RB_MAX_LEN] = {0};
     int dome_sync_target_int_response = 0;
-    int dome_sync_target_error_or_fail  = getCommandIntFromCharResponse(PortFD, dome_sync_target_response, &dome_sync_target_int_response,
+    int dome_sync_target_error_or_fail  = getCommandIntResponse(PortFD, &dome_sync_target_int_response, dome_sync_target_response,
                                                                         OCS_dome_sync_target);
-    if (dome_sync_target_error_or_fail >= 0){
+    if (dome_sync_target_error_or_fail >= 1) {
         switch (dome_sync_target_int_response) {
         case GOTO_IS_POSSIBLE:
-            LOGF_INFO("Dome syncronised to %1.1f", az);
+            LOGF_INFO("Dome syncronised to %1.1f°", az);
             return true;
             break;
         case BELOW_HORIZON_LIMIT:
             // Should never get here - Indi doesn't support dome Alt
-            LOGF_ERROR("Dome target (%1.1f) is below the horizon limit", az);
+            LOGF_ERROR("Dome target (%1.1f°) is below the horizon limit", az);
             return false;
             break;
         case ABOVE_OVERHEAD_LIMIT:
             // Should never get here - Indi doesn't support dome Alt
-            LOGF_ERROR("Dome target (%1.1f) is above the overhead limit", az);
+            LOGF_ERROR("Dome target (%1.1f°) is above the overhead limit", az);
             return false;
             break;
         case CONTROLLER_IN_STANDBY:
@@ -1392,11 +1411,11 @@ bool OCS::Sync(double az) {
             return false;
             break;
         case GOTO_IN_PROGRESS:
-            LOG_ERROR("Can not ask dome to sync, dome is already moving");
+            LOG_ERROR("Can not ask dome to sync, dome is moving");
             return false;
             break;
         case OUTSIDE_LIMITS:
-            LOGF_ERROR("Dome sync target (%1.1f) is outside safe limits", az);
+            LOGF_ERROR("Dome sync target (%1.1f°) is outside safe limits", az);
             return false;
             break;
         case HARDWARE_FAULT:
@@ -1404,7 +1423,7 @@ bool OCS::Sync(double az) {
             return false;
             break;
         case ALREADY_IN_MOTION:
-            LOG_ERROR("Can not ask dome to sync, dome is already moving");
+            LOG_ERROR("Can not ask dome to sync, dome is moving");
             return false;
             break;
         case UNSPECIFIED_ERROR:
@@ -1416,7 +1435,7 @@ bool OCS::Sync(double az) {
             break;
         }
     } else {
-        LOGF_ERROR("Dome sync to target errored %S", dome_sync_target_response);
+        LOGF_ERROR("Dome sync to target produced error %s", dome_sync_target_response);
         return false;
     }
 }
@@ -1979,7 +1998,7 @@ int OCS::getCommandIntResponse(int fd, int *value, char *data, const char *cmd)
     if ((error_type = tty_write_string(fd, cmd, &nbytes_write)) != TTY_OK)
         return error_type;
 
-    error_type = tty_read_section_expanded(fd, data, '#', OCSTimeoutSeconds, OCSTimeoutMicroSeconds, &nbytes_read);
+    error_type = tty_read_expanded(fd, data, sizeof(char), OCSTimeoutSeconds, OCSTimeoutMicroSeconds, &nbytes_read);
     tcflush(fd, TCIFLUSH);
 
     term = strchr(data, '#');
