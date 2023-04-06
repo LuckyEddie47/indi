@@ -1,9 +1,5 @@
 /*******************************************************************************
- Structure based on indi_rolloffino - https://github.com/wotalota/indi-rolloffino
- Itself an edited version of the Dome Simulator
  Copyright(c) 2014 Jasem Mutlaq. All rights reserved.
-
- Communication functions taken from lx200_OnStep
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Library General Public
@@ -25,7 +21,7 @@ Driver for the Observatory Control System (OCS).
 An open source system authored by Howard Dutton (also the author of OnStep).
 Refer to https://onstep.groups.io/g/onstep-ocs/wiki
 Capabilites include: Roll off roof, dome roof, weather monitoring,
-themostat control, power monitoring & control, and GPIO.
+themostat control, power device control, lighting control.
 Hardware communication is via a simple text protocol similar to the LX200.
 USB and network connections supported.
 *******************************************************************************/
@@ -34,9 +30,8 @@ USB and network connections supported.
 
 // Roof opening status
 // Dome handlers
-// MountLockingPolicy, set park, return home, reset home
+// MountLockingPolicy, return home, reset home
 
-// Allow timeout changes on options tab?
 // Weather - safety status, and separate tab?
 // Save options
 // Test, test, test
@@ -398,21 +393,22 @@ bool OCS::initProperties()
 
     // Main control tab controls
     //--------------------------
+    IUFillTextVector(&ShutterStatusTP, ShutterStatusT, 1, getDeviceName(), "SHUTTER_STATUS", "Status",
+               MAIN_CONTROL_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&ShutterStatusT[0], "ROOF_SHUTTER_STATUS", "Roof/Shutter", "---");
     IUFillSwitchVector(&SetParkSP, SetParkS, 1, getDeviceName(), "SET_PARK", "Current > Park",
                        MAIN_CONTROL_TAB, IP_WO, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&SetParkS[0], "SET_PARK_SW", "Set Park", ISS_OFF);
-
-
-
+    IUFillTextVector(&DomeStatusTP, DomeStatusT, 1, getDeviceName(), "DOME_STATUS", "Status",
+               MAIN_CONTROL_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&DomeStatusT[0], "DOME_STATUS", "Dome", "---");
 
     // Status tab controls
     //--------------------
     IUFillTextVector(&Status_ItemsTP, Status_ItemsT, STATUS_ITEMS_COUNT, getDeviceName(), "Status", "OCS Status",
                      STATUS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Status_ItemsT[STATUS_FIRMWARE], "FIRMWARE_VERSION", "Firmware version", "---");
-    IUFillText(&Status_ItemsT[STATUS_ROOF], "ROOF_STATUS", "Roof status", "---");
-    IUFillText(&Status_ItemsT[STATUS_ROOF_LAST_ERROR], "ROOF_LAST_ERROR", "Roof error", "---");
-    IUFillText(&Status_ItemsT[STATUS_DOME], "DOME_STATUS", "Dome status", "---");
+    IUFillText(&Status_ItemsT[STATUS_ROOF_LAST_ERROR], "ROOF_LAST_ERROR", "Roof last error", "---");
     IUFillText(&Status_ItemsT[STATUS_MAINS], "MAINS_STATUS", "Mains status", "---");
     IUFillText(&Status_ItemsT[STATUS_MCU_TEMPERATURE], "MCU_TEMPERATURE", "MCU temperature °C", "---");
 
@@ -569,11 +565,18 @@ bool OCS::initProperties()
 bool OCS::updateProperties()
 {
     INDI::Dome::updateProperties();
+
+    // Remove unsupported derived controls
+    //------------------------------------
+    deleteProperty(DomeMotionSP.name);
+
     if (weather_tab_enabled) {
         WI::updateProperties();
     }
     if (isConnected()) {
+        defineProperty(&ShutterStatusTP);
         defineProperty(&SetParkSP);
+        defineProperty(&DomeStatusTP);
         defineProperty(&Status_ItemsTP);
 
         // Dynamically defined properties
@@ -641,7 +644,9 @@ bool OCS::updateProperties()
         defineProperty(&Arbitary_CommandTP);
     }
     else {
+        deleteProperty(ShutterStatusTP.name);
         deleteProperty(SetParkSP.name);
+        deleteProperty(DomeStatusTP.name);
         deleteProperty(Status_ItemsTP.name);
 
         // Dynamically defined properties
@@ -732,14 +737,14 @@ void OCS::TimerHit()
                 setShutterState(SHUTTER_MOVING);
             }
             split = strtok(NULL, ",");
-            sprintf(roof_message, "Opening, travel %s%%", split);
+            sprintf(roof_message, "Opening, travel %s", split);
             LOGF_DEBUG("Roof/shutter is %s", roof_message);
         } else if (strcmp(split, "c") == 0) {
             if (getShutterState() != SHUTTER_MOVING) {
                 setShutterState(SHUTTER_MOVING);
             }
             split = strtok(NULL, ",");
-            sprintf(roof_message, "Closing, travel %s%%", split);
+            sprintf(roof_message, "Closing, travel %s", split);
             LOGF_DEBUG("Roof/shutter is  %s", roof_message);
         } else if (strcmp(split, "i") == 0) {
             split = strtok(NULL, ",");
@@ -769,8 +774,9 @@ void OCS::TimerHit()
                 }
                 LOGF_ERROR("Roof/shutter error - %s", roof_message);
             }
-            IUSaveText(&Status_ItemsT[STATUS_ROOF], roof_message);
         }
+        IUSaveText(&ShutterStatusT[0], roof_message);
+        IDSetText(&ShutterStatusTP, nullptr);
     }
 
     // Dome updates
@@ -825,9 +831,10 @@ void OCS::TimerHit()
                     ParkSP.s = IPS_OK;
                     IDSetSwitch(&ParkSP, nullptr);
                 }
-                sprintf(dome_message, "Stopped");
+                sprintf(dome_message, "Idle");
             }
-            IUSaveText(&Status_ItemsT[STATUS_DOME], dome_message);
+            IUSaveText(&DomeStatusT[0], dome_message);
+            IDSetText(&DomeStatusTP, nullptr);
         } else {
             LOGF_WARN("Communication error on get Dome status %s, this update aborted, will try again...", OCS_get_dome_status);
         }

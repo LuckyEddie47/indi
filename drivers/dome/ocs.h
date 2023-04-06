@@ -482,16 +482,18 @@ private:
 
     // Main control tab controls
     //--------------------------
+    ITextVectorProperty ShutterStatusTP;
+    IText ShutterStatusT[1];
     ISwitchVectorProperty SetParkSP;
     ISwitch SetParkS[1];
+    ITextVectorProperty DomeStatusTP;
+    IText DomeStatusT[1];
 
     // Status tab controls
     //--------------------
     enum {
         STATUS_FIRMWARE,
-        STATUS_ROOF,
         STATUS_ROOF_LAST_ERROR,
-        STATUS_DOME,
         STATUS_MAINS,
         STATUS_MCU_TEMPERATURE,
         STATUS_ITEMS_COUNT
