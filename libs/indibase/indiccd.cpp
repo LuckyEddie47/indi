@@ -34,6 +34,10 @@
 #include "locale_compat.h"
 #include "indiutility.h"
 
+#ifdef HAVE_XISF
+#include <libxisf.h>
+#endif
+
 #include <fitsio.h>
 
 #include <libnova/julian_day.h>
@@ -53,10 +57,6 @@
 #include <cstdlib>
 #include <zlib.h>
 #include <sys/stat.h>
-
-#ifdef HAVE_XISF
-#include <libxisf.h>
-#endif
 
 const char * IMAGE_SETTINGS_TAB = "Image Settings";
 const char * IMAGE_INFO_TAB     = "Image Info";
@@ -404,10 +404,10 @@ bool CCD::initProperties()
     /****************** FITS Header****************/
     /**********************************************/
 
-    IUFillText(&FITSHeaderT[FITS_OBSERVER], "FITS_OBSERVER", "Observer", "Unknown");
-    IUFillText(&FITSHeaderT[FITS_OBJECT], "FITS_OBJECT", "Object", "Unknown");
-    IUFillTextVector(&FITSHeaderTP, FITSHeaderT, 2, getDeviceName(), "FITS_HEADER", "FITS Header", INFO_TAB, IP_RW, 60,
-                     IPS_IDLE);
+    FITSHeaderTP[KEYWORD_NAME].fill("KEYWORD_NAME", "Name", nullptr);
+    FITSHeaderTP[KEYWORD_VALUE].fill("KEYWORD_VALUE", "Value", nullptr);
+    FITSHeaderTP[KEYWORD_COMMENT].fill("KEYWORD_COMMENT", "Comment", nullptr);
+    FITSHeaderTP.fill(getDeviceName(), "FITS_HEADER", "FITS Header", INFO_TAB, IP_WO, 60, IPS_IDLE);
 
     /**********************************************/
     /****************** Exposure Looping **********/
@@ -544,7 +544,7 @@ bool CCD::updateProperties()
         if (CanBin())
             defineProperty(&PrimaryCCD.ImageBinNP);
 
-        defineProperty(&FITSHeaderTP);
+        defineProperty(FITSHeaderTP);
 
         if (HasGuideHead())
         {
@@ -655,7 +655,7 @@ bool CCD::updateProperties()
         }
 #endif
 
-        deleteProperty(FITSHeaderTP.name);
+        deleteProperty(FITSHeaderTP);
 
         if (HasGuideHead())
         {
@@ -974,11 +974,76 @@ bool CCD::ISNewText(const char * dev, const char * name, char * texts[], char * 
             return true;
         }
 
-        if (!strcmp(name, FITSHeaderTP.name))
+        // FITS Header
+        if (FITSHeaderTP.isNameMatch(name))
         {
-            IUUpdateText(&FITSHeaderTP, texts, names, n);
-            FITSHeaderTP.s = IPS_OK;
-            IDSetText(&FITSHeaderTP, nullptr);
+            FITSHeaderTP.update(texts, names, n);
+
+            std::string name = FITSHeaderTP[KEYWORD_NAME].getText();
+            std::string value = FITSHeaderTP[KEYWORD_VALUE].getText();
+            std::string comment = FITSHeaderTP[KEYWORD_COMMENT].getText();
+
+            if (name.empty() && value.empty() && comment.empty())
+            {
+                LOG_ERROR("Cannot add an empty FITS record.");
+                FITSHeaderTP.setState(IPS_ALERT);
+            }
+            else
+            {
+                FITSHeaderTP.setState(IPS_OK);
+                // Specical keyword
+                if (name == "INDI_CLEAR")
+                {
+                    m_CustomFITSKeywords.clear();
+                    LOG_INFO("Custom FITS headers cleared.");
+                }
+                else if (name.empty() == false && value.empty() == false)
+                {
+                    // Double regex
+                    std::regex checkDouble("^[-+]?([0-9]*?[.,][0-9]+|[0-9]+)$");
+                    // Integer regex
+                    std::regex checkInteger("^[-+]?([0-9]*)$");
+
+                    try
+                    {
+                        // Try long
+                        if (std::regex_match(value, checkInteger))
+                        {
+                            auto lValue = std::stol(value);
+                            FITSRecord record(name.c_str(), lValue, comment.c_str());
+                            m_CustomFITSKeywords[name.c_str()] = record;
+                        }
+                        // Try double
+                        else if (std::regex_match(value, checkDouble))
+                        {
+                            auto dValue = std::stod(value);
+                            FITSRecord record(name.c_str(), dValue, 6, comment.c_str());
+                            m_CustomFITSKeywords[name.c_str()] = record;
+                        }
+                        // Store as text
+                        else
+                        {
+                            // String
+                            FITSRecord record(name.c_str(), value.c_str(), comment.c_str());
+                            m_CustomFITSKeywords[name.c_str()] = record;
+                        }
+                    }
+                    // In case conversion fails
+                    catch (std::exception &e)
+                    {
+                        // String
+                        FITSRecord record(name.c_str(), value.c_str(), comment.c_str());
+                        m_CustomFITSKeywords[name.c_str()] = record;
+                    }
+                }
+                else if (comment.empty() == false)
+                {
+                    FITSRecord record(comment.c_str());
+                    m_CustomFITSKeywords[comment.c_str()] = record;
+                }
+            }
+
+            FITSHeaderTP.apply();
             return true;
         }
 
@@ -1899,12 +1964,6 @@ void CCD::addFITSKeywords(CCDChip * targetChip, std::vector<FITSRecord> &fitsKey
     if (std::isnan(effectiveAperture))
         LOG_WARN("Telescope aperture is missing.");
 
-    // Observer
-    fitsKeywords.push_back({"OBSERVER", FITSHeaderT[FITS_OBSERVER].text, "Observer name"});
-
-    // Object
-    fitsKeywords.push_back({"OBJECT", FITSHeaderT[FITS_OBJECT].text, "Object name"});
-
     double subPixSize1 = static_cast<double>(targetChip->getPixelSizeX());
     double subPixSize2 = static_cast<double>(targetChip->getPixelSizeY());
     uint32_t subW = targetChip->getSubW();
@@ -2179,6 +2238,8 @@ bool CCD::ExposureComplete(CCDChip * targetChip)
 
 bool CCD::ExposureCompletePrivate(CCDChip * targetChip)
 {
+    LOG_DEBUG("Exposure complete");
+
     // save information used for the fits header
     exposureDuration = targetChip->getExposureDuration();
     strncpy(exposureStartTime, targetChip->getExposureStartTime(), MAXINDINAME);
@@ -2202,7 +2263,6 @@ bool CCD::ExposureCompletePrivate(CCDChip * targetChip)
     if (targetChip->getFrameBufferSize() == 0)
         sendImage = saveImage = false;
 
-    LOG_INFO("Exposure complete");
     if (sendImage || saveImage)
     {
         if (EncodeFormatSP[FORMAT_FITS].getState() == ISS_ON)
@@ -2279,26 +2339,38 @@ bool CCD::ExposureCompletePrivate(CCDChip * targetChip)
             }
 
             std::vector<FITSRecord> fitsKeywords;
+
             addFITSKeywords(targetChip, fitsKeywords);
+
+            // Add all custom keywords next
+            for (auto &record : m_CustomFITSKeywords)
+                fitsKeywords.push_back(record.second);
 
             for (auto &keyword : fitsKeywords)
             {
+                int key_status = 0;
                 switch(keyword.type())
                 {
-                case INDI::FITSRecord::VOID:
-                    break;
-                case INDI::FITSRecord::COMMENT:
-                    fits_write_comment(fptr, keyword.comment().c_str(), &status);
-                    break;
-                case INDI::FITSRecord::STRING:
-                    fits_update_key_str(fptr, keyword.key().c_str(), keyword.valueString().c_str(), keyword.comment().c_str(), &status);
-                    break;
-                case INDI::FITSRecord::LONGLONG:
-                    fits_update_key_lng(fptr, keyword.key().c_str(), keyword.valueInt(), keyword.comment().c_str(), &status);
-                    break;
-                case INDI::FITSRecord::DOUBLE:
-                    fits_update_key_dbl(fptr, keyword.key().c_str(), keyword.valueDouble(), keyword.decimal(), keyword.comment().c_str(), &status);
-                    break;
+                    case INDI::FITSRecord::VOID:
+                        break;
+                    case INDI::FITSRecord::COMMENT:
+                        fits_write_comment(fptr, keyword.comment().c_str(), &key_status);
+                        break;
+                    case INDI::FITSRecord::STRING:
+                        fits_update_key_str(fptr, keyword.key().c_str(), keyword.valueString().c_str(), keyword.comment().c_str(), &key_status);
+                        break;
+                    case INDI::FITSRecord::LONGLONG:
+                        fits_update_key_lng(fptr, keyword.key().c_str(), keyword.valueInt(), keyword.comment().c_str(), &key_status);
+                        break;
+                    case INDI::FITSRecord::DOUBLE:
+                        fits_update_key_dbl(fptr, keyword.key().c_str(), keyword.valueDouble(), keyword.decimal(), keyword.comment().c_str(),
+                                            &key_status);
+                        break;
+                }
+                if (key_status)
+                {
+                    fits_get_errstatus(key_status, error_status);
+                    LOGF_ERROR("FITS key %s Error: %s", keyword.key().c_str(), error_status);
                 }
             }
 
@@ -2333,19 +2405,17 @@ bool CCD::ExposureCompletePrivate(CCDChip * targetChip)
             std::vector<FITSRecord> fitsKeywords;
             addFITSKeywords(targetChip, fitsKeywords);
             targetChip->setImageExtension("xisf");
-            LOG_INFO("Saving XISF");
 
             try
             {
+                AutoCNumeric locale;
                 LibXISF::Image image;
                 LibXISF::XISFWriter xisfWriter;
 
-                std::unique_lock<std::mutex> guard(ccdBufferLock);
                 for (auto &keyword : fitsKeywords)
                 {
                     image.addFITSKeyword({keyword.key().c_str(), keyword.valueString().c_str(), keyword.comment().c_str()});
-                    QVariant value = keyword.valueString().c_str();
-                    image.addFITSKeywordAsProperty(keyword.key().c_str(), value);
+                    image.addFITSKeywordAsProperty(keyword.key().c_str(), keyword.valueString());
                 }
 
                 image.setGeometry(targetChip->getSubW() / targetChip->getBinX(),
@@ -2353,18 +2423,34 @@ bool CCD::ExposureCompletePrivate(CCDChip * targetChip)
                                   targetChip->getNAxis() == 2 ? 1 : 3);
                 switch(targetChip->getBPP())
                 {
-                    case 8:  image.setSampleFormat(LibXISF::Image::UInt8); break;
-                    case 16: image.setSampleFormat(LibXISF::Image::UInt16); break;
-                    case 32: image.setSampleFormat(LibXISF::Image::UInt32); break;
-                    default: LOGF_ERROR("Unsupported bits per pixel value %d", targetChip->getBPP()); return false;
+                    case 8:
+                        image.setSampleFormat(LibXISF::Image::UInt8);
+                        break;
+                    case 16:
+                        image.setSampleFormat(LibXISF::Image::UInt16);
+                        break;
+                    case 32:
+                        image.setSampleFormat(LibXISF::Image::UInt32);
+                        break;
+                    default:
+                        LOGF_ERROR("Unsupported bits per pixel value %d", targetChip->getBPP());
+                        return false;
                 }
 
                 switch(targetChip->getFrameType())
                 {
-                    case CCDChip::LIGHT_FRAME: image.setImageType(LibXISF::Image::Light); break;
-                    case CCDChip::BIAS_FRAME:  image.setImageType(LibXISF::Image::Bias); break;
-                    case CCDChip::DARK_FRAME:  image.setImageType(LibXISF::Image::Dark); break;
-                    case CCDChip::FLAT_FRAME:  image.setImageType(LibXISF::Image::Flat); break;
+                    case CCDChip::LIGHT_FRAME:
+                        image.setImageType(LibXISF::Image::Light);
+                        break;
+                    case CCDChip::BIAS_FRAME:
+                        image.setImageType(LibXISF::Image::Bias);
+                        break;
+                    case CCDChip::DARK_FRAME:
+                        image.setImageType(LibXISF::Image::Dark);
+                        break;
+                    case CCDChip::FLAT_FRAME:
+                        image.setImageType(LibXISF::Image::Flat);
+                        break;
                 }
 
                 if (targetChip->SendCompressed)
@@ -2378,28 +2464,25 @@ bool CCD::ExposureCompletePrivate(CCDChip * targetChip)
 
                 if (targetChip->getNAxis() == 3)
                 {
-                    image.setPixelStorage(LibXISF::Image::Normal);
                     image.setColorSpace(LibXISF::Image::RGB);
                 }
 
+                std::unique_lock<std::mutex> guard(ccdBufferLock);
                 std::memcpy(image.imageData(), targetChip->getFrameBuffer(), image.imageDataSize());
                 xisfWriter.writeImage(image);
 
-                QByteArray xisfFile;
+                LibXISF::ByteArray xisfFile;
                 xisfWriter.save(xisfFile);
-                LOGF_INFO("Sending XISF image %d bytes", xisfFile.size());
                 bool rc = uploadFile(targetChip, xisfFile.data(), xisfFile.size(), sendImage, saveImage);
-                 if (rc == false)
+                if (rc == false)
                 {
                     targetChip->setExposureFailed();
                     return false;
                 }
-
             }
             catch (LibXISF::Error &error)
             {
                 LOGF_ERROR("XISF Error: %s", error.what());
-                targetChip->setExposureFailed();
                 return false;
             }
         }

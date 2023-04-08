@@ -43,8 +43,8 @@ endif()
 # Add LibXISF
 find_package(LibXISF)
 if(LibXISF_FOUND)
-    find_package(Qt5Core REQUIRED)
-    list(APPEND ${PROJECT_NAME}_LIBS Qt5::Core XISF)
+    list(APPEND ${PROJECT_NAME}_LIBS ${LibXISF_LIBRARY})
+    include_directories(${LibXISF_INCLUDE_DIR})
     add_definitions(-DHAVE_XISF)
 endif()
 
