@@ -53,11 +53,12 @@ An unterminated 0 is returned from unconfigured items
 // Returns: n.n,m.m#
 // where n.n is ROOF_TIME_PRE_MOTION and m.m ROOF_TIME_POST_MOTION
 
+// Unused, Indi generates it's own
 // Get safety status
-#define OCS_get_safety_status ":Gs#"
+// #define OCS_get_safety_status ":Gs#"
 // Returns: SAFE#, UNSAFE#
 
-// Set the watchdog reset flag - forces firmware reboot
+// Set the watchdog reset flag - forces OCS software reboot
 #define OCS_set_watchdog_flag ":SW#"
 // Returns: Rebooting in a few seconds...# or 23# "CE_SLEW_IN_MOTION" for roof/shutter/dome in motion blocking error
 
@@ -222,8 +223,9 @@ enum {
 // Axis1 is Dome Azimuth - required if dome = true
 // Axis2 is Dome Altitude - optional
 
+// Curently unused
 // Get the axis/driver configuration for axis [n]
-#define OCS_get_axis_configuration_part ":GXA"
+// #define OCS_get_axis_configuration_part ":GXA"
 // ":GXA[n]#"
 // Returns: s,s,s,s#
 // where s,s,s,s... comprises:
@@ -232,8 +234,9 @@ enum {
 // parameter [2] = minimum limit
 // parameter [3] = maximum limit
 
+// Currently unused
 // Get the stepper driver status for axis [n]
-#define OCS_get_driver_status_part ":GXU"
+// #define OCS_get_driver_status_part ":GXU"
 // ":GXU[n]#"
 // Returns:
 //  ST# = At standstill
@@ -252,8 +255,9 @@ enum {
 // Revert axis/driver configuration for axis [n] to defaults
 // ":SXA[n],R#"
 
+// Currently unused
 // Set the axis/driver configuration for axis [n]
-#define OCS_set_axis_configuration_part ":SXA"
+// #define OCS_set_axis_configuration_part ":SXA"
 // :SXA[n],[s,s,s,s...]#
 // where s,s,s,s... comprises:
 // parameter [0] = steps per degree,
@@ -685,8 +689,8 @@ private:
     ISwitchVectorProperty Watchdog_ResetSP;
     ISwitch Watchdog_ResetS[1];
 
-    // Debug only?
-    ITextVectorProperty Arbitary_CommandTP;
-    IText Arbitary_CommandT[1];
+    // Debug only
+    // ITextVectorProperty Arbitary_CommandTP;
+    // IText Arbitary_CommandT[1];
 };
 
