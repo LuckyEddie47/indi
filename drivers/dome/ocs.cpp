@@ -1868,10 +1868,12 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
                     return ResetHome();
                 }
             }
+        } else {
+            // It's meant for this driver but is unknown
+            return false;
         }
-        return INDI::Dome::ISNewSwitch(dev, name, states, names, n);
     } else {
-        return false;
+        return INDI::Dome::ISNewSwitch(dev, name, states, names, n);
     }
 }
 
