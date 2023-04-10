@@ -32,7 +32,6 @@ USB and network connections supported.
 
 // Roof opening status
 // Weather - safety status, and separate tab?
-// Save options
 // Test, test, test
 
 #include "ocs.h"
@@ -1629,6 +1628,13 @@ void OCS::ISGetProperties(const char *dev)
     INDI::Dome::ISGetProperties(dev);
 }
 
+bool OCS::saveConfigItems(FILE *fp)
+{
+    INDI::Dome::saveConfigItems(fp);
+    WI::saveConfigItems(fp);
+    return true;
+}
+
 /**************************************************
  * Now our actual functions that the overrides call
  * ************************************************/
@@ -1868,12 +1874,10 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
                     return ResetHome();
                 }
             }
-        } else {
-            // It's meant for this driver but is unknown
-            return false;
         }
-    } else {
         return INDI::Dome::ISNewSwitch(dev, name, states, names, n);
+    } else {
+        return false;
     }
 }
 
