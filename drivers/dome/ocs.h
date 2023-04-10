@@ -424,7 +424,7 @@ class OCS : public INDI::Dome, public INDI::WeatherInterface
     virtual bool ISNewText(const char *dev, const char *name, char *texts[], char *names[], int n) override;
     bool updateProperties() override;
     virtual bool ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n) override;
-//    virtual bool saveConfigItems(FILE *fp) override;
+    virtual bool saveConfigItems(FILE *fp) override;
     virtual bool ISSnoopDevice(XMLEle *root) override;
     virtual bool Handshake() override;
     virtual bool Abort() override;

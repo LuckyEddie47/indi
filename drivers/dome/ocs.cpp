@@ -32,7 +32,6 @@ USB and network connections supported.
 
 // Roof opening status
 // Weather - safety status, and separate tab?
-// Save options
 // Test, test, test
 
 #include "ocs.h"
@@ -1627,6 +1626,13 @@ void ISSnoopDevice(XMLEle *root)
 void OCS::ISGetProperties(const char *dev)
 {
     INDI::Dome::ISGetProperties(dev);
+}
+
+bool OCS::saveConfigItems(FILE *fp)
+{
+    INDI::Dome::saveConfigItems(fp);
+    WI::saveConfigItems(fp);
+    return true;
 }
 
 /**************************************************
