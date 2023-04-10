@@ -30,7 +30,7 @@ USB and network connections supported.
 
 // Roof opening status
 // Dome handlers
-// MountLockingPolicy, return home, reset home
+// MountLockingPolicy
 
 // Weather - safety status, and separate tab?
 // Save options
@@ -396,9 +396,11 @@ bool OCS::initProperties()
     IUFillTextVector(&ShutterStatusTP, ShutterStatusT, 1, getDeviceName(), "SHUTTER_STATUS", "Status",
                MAIN_CONTROL_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&ShutterStatusT[0], "ROOF_SHUTTER_STATUS", "Roof/Shutter", "---");
-    IUFillSwitchVector(&SetParkSP, SetParkS, 1, getDeviceName(), "SET_PARK", "Current > Park",
+    IUFillSwitchVector(&DomeControlsSP, DomeControlsS, DOME_CONTROL_COUNT, getDeviceName(), "DOME", "Additional controls",
                        MAIN_CONTROL_TAB, IP_WO, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&SetParkS[0], "SET_PARK_SW", "Set Park", ISS_OFF);
+    IUFillSwitch(&DomeControlsS[DOME_SET_PARK], "SET_PARK_SW", "Set Park", ISS_OFF);
+    IUFillSwitch(&DomeControlsS[DOME_RETURN_HOME], "RETURN_HOME_SW", "Return  Home", ISS_OFF);
+    IUFillSwitch(&DomeControlsS[DOME_SET_HOME], "RESET_HOME_SW", "At Home (Reset)", ISS_OFF);
     IUFillTextVector(&DomeStatusTP, DomeStatusT, 1, getDeviceName(), "DOME_STATUS", "Status",
                MAIN_CONTROL_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&DomeStatusT[0], "DOME_STATUS", "Dome", "---");
@@ -575,7 +577,7 @@ bool OCS::updateProperties()
     }
     if (isConnected()) {
         defineProperty(&ShutterStatusTP);
-        defineProperty(&SetParkSP);
+        defineProperty(&DomeControlsSP);
         defineProperty(&DomeStatusTP);
         defineProperty(&Status_ItemsTP);
 
@@ -645,7 +647,7 @@ bool OCS::updateProperties()
     }
     else {
         deleteProperty(ShutterStatusTP.name);
-        deleteProperty(SetParkSP.name);
+        deleteProperty(DomeControlsSP.name);
         deleteProperty(DomeStatusTP.name);
         deleteProperty(Status_ItemsTP.name);
 
@@ -841,8 +843,8 @@ void OCS::TimerHit()
 
         // Get the dome position
         char dome_position_response[RB_MAX_LEN] = {0};
-        double position = 0;
-        int dome_position_error_or_fail = getCommandDoubleFromCharResponse(PortFD, dome_position_response, &position, OCS_get_dome_azimuth);
+        double position = conversion_error ;
+        int dome_position_error_or_fail = getCommandDoubleResponse(PortFD, &position, dome_position_response, OCS_get_dome_azimuth);
         if (dome_position_error_or_fail > 1 && position != conversion_error) {
             DomeAbsPosN->value = position;
             IDSetNumber(&DomeAbsPosNP, nullptr);
@@ -1284,8 +1286,8 @@ IPState OCS::updateWeather() {
                 } else if (measurement == WEATHER_SKY) {
                     indi_strlcpy(measurement_command, OCS_get_sky_quality, sizeof(measurement_command));
                 }
-                double value = 0;
-                int measurement_error_or_fail = getCommandDoubleFromCharResponse(PortFD, measurement_reponse, &value, measurement_command);
+                double value = conversion_error;
+                int measurement_error_or_fail = getCommandDoubleResponse(PortFD, &value, measurement_reponse, measurement_command);
                 if (measurement_error_or_fail >= 0 && value != conversion_error) {
                      if (measurement == WEATHER_TEMPERATURE && weather_enabled[WEATHER_TEMPERATURE] == 1) {
                         setParameterValue("WI_TEMPERATURE", value);
@@ -1395,6 +1397,26 @@ bool OCS::SetCurrentPark()
         LOG_ERROR("Failed to set park position");
         return false;
     }
+}
+
+/************************************
+ * Send the dome to the Home position
+ * **********************************/
+bool OCS::ReturnHome()
+{
+    // This command has no return
+    sendOCSCommandBlind(OCS_dome_home);
+    return true;
+}
+
+/************************************************************
+ * Set the current dome Azimuth position as the home position
+ * **********************************************************/
+bool OCS::ResetHome()
+{
+    // This command has no return
+    sendOCSCommand(OCS_reset_dome_home);
+    return true;
 }
 
 /**********************************
@@ -1810,14 +1832,23 @@ bool OCS::ISNewSwitch(const char *dev, const char *name, ISState *states, char *
                 return false;
             }
 
-        // Set park
-        //---------
-        } else if (strcmp(SetParkSP.name, name) == 0) {
-            return SetCurrentPark();
+        // Additional dome controls
+        //-------------------------
+        } else if (strcmp(DomeControlsSP.name, name) == 0) {
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "SET_PARK_SW") == 0) {
+                    return SetCurrentPark();
+                } else if (strcmp(names[i], "RETURN_HOME_SW") == 0) {
+                    return ReturnHome();
+                } else if (strcmp(names[i], "RESET_HOME_SW") == 0) {
+                    return ResetHome();
+                }
+            }
         }
+        return INDI::Dome::ISNewSwitch(dev, name, states, names, n);
+    } else {
+        return false;
     }
-
-    return INDI::Dome::ISNewSwitch(dev, name, states, names, n);
 }
 
 /*************************************
@@ -2193,27 +2224,6 @@ int OCS::getCommandIntFromCharResponse(int fd, char *data, int *response, const 
     }
 }
 
-/********************************************************
- * Converts an OCS char[] return of a numeric into an int
- * ******************************************************/
-int OCS::getCommandDoubleFromCharResponse(int fd, char *data, double *response, const char *cmd)
-{
-    int errorOrFail = getCommandSingleCharErrorOrLongResponse(fd, data, cmd);
-    if (errorOrFail < 1) {
-        return errorOrFail;
-    } else {
-        double value = conversion_error;
-        try {
-            value = std::stod(data);
-        } catch (const std::invalid_argument&) {
-            LOGF_WARN("Invalid response to %s: %s", cmd, data);
-        } catch (const std::out_of_range&) {
-            LOGF_WARN("Invalid response to %s: %s", cmd, data);
-        }
-        *response = value;
-        return errorOrFail;
-    }
-}
 
 /**********************
  * Flush the comms port

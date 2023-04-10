@@ -442,7 +442,6 @@ class OCS : public INDI::Dome, public INDI::WeatherInterface
                                  const char *cmd); //Reimplemented from getCommandString Will return a double, and raw value.
     int getCommandIntResponse(int fd, int *value, char *data, const char *cmd);
     int getCommandIntFromCharResponse(int fd, char *data, int *response, const char *cmd); //Calls getCommandSingleCharErrorOrLongResponse with conversion of return
-    int getCommandDoubleFromCharResponse(int fd, char *data, double *response, const char *cmd); //Calls getCommandSingleCharErrorOrLongResponse with conversion of return
     int charToInt(char *inString);
 
     long int OCSTimeoutSeconds = 0;
@@ -473,6 +472,8 @@ private:
     virtual bool SetCurrentPark() override;
     virtual IPState MoveAbs(double az) override;
     virtual bool Sync (double az) override;
+    bool ReturnHome();
+    bool ResetHome();
 
     enum {
         ON_SWITCH,
@@ -484,10 +485,17 @@ private:
     //--------------------------
     ITextVectorProperty ShutterStatusTP;
     IText ShutterStatusT[1];
-    ISwitchVectorProperty SetParkSP;
-    ISwitch SetParkS[1];
     ITextVectorProperty DomeStatusTP;
     IText DomeStatusT[1];
+    enum {
+        DOME_SET_PARK,
+        DOME_RETURN_HOME,
+        DOME_SET_HOME,
+        DOME_CONTROL_COUNT
+    };
+    ISwitchVectorProperty DomeControlsSP;
+    ISwitch DomeControlsS[DOME_CONTROL_COUNT];
+
 
     // Status tab controls
     //--------------------
