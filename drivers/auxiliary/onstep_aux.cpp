@@ -76,88 +76,6 @@ const char *OnStep_Aux::getDefaultName()
  *****************************************************************/
 bool OnStep_Aux::Handshake()
 {
-    // Set PortFD from the active connection for use in handshake
-//    Connection::Interface *activeConnection = getActiveConnection();
-//    if (activeConnection) {
-//        if (activeConnection->name() == serialConnection->name()) {
-//            PortFD = serialConnection->getPortFD();
-//        } else if (activeConnection->name() == tcpConnection->name()) {
-//            PortFD = tcpConnection->getPortFD();
-//        } else {
-//            LOG_ERROR("Unknown connection type");
-//            return false;
-//        }
-//    } else {
-//        LOG_DEBUG("No active connection");
-//        return false;
-//    }
-
-//    if (serialConnection && serialConnection->getPortFD() > 0) {
-//        PortFD = serialConnection->getPortFD();
-//        LOGF_INFO("Using serial connection, PortFD: %d", PortFD);
-//    }
-//    else if (tcpConnection && tcpConnection->getPortFD() > 0) {
-//        PortFD = tcpConnection->getPortFD();
-//        LOGF_INFO("Using TCP connection, PortFD: %d", PortFD);
-//    }
-//
-//    if (PortFD < 0) {
-//        LOGF_ERROR("Failed to get valid file descriptor from connection, PortFD: %d", PortFD);
-//        return false;
-//    }
-
-//    // The connection plugins need to perform their handshake first
-//    Connection::Interface *activeConnection = getActiveConnection();
-//
-//    if (!activeConnection)
-//    {
-//        LOG_ERROR("No active connection");
-//        return false;
-//    }
-//
-//    LOGF_DEBUG("Active connection: %s", activeConnection->name().c_str());
-//
-//    if (serialConnection)
-//    {
-//        int serialFD = serialConnection->getPortFD();
-//        LOGF_INFO("Serial connection exists, FD = %d", serialFD);
-//        if (serialFD > 0)
-//        {
-//            PortFD = serialFD;
-//            LOG_INFO("Using serial connection");
-//        }
-//    }
-//    else
-//    {
-//        LOG_INFO("Serial connection is NULL");
-//    }
-//
-//    if (tcpConnection)
-//    {
-//        int tcpFD = tcpConnection->getPortFD();
-//        LOGF_INFO("TCP connection exists, FD = %d", tcpFD);
-//        if (tcpFD > 0)
-//        {
-//            PortFD = tcpFD;
-//            LOG_INFO("Using TCP connection");
-//        }
-//    }
-//    else
-//    {
-//        LOG_INFO("TCP connection is NULL");
-//    }
-
-//    // Also check getActiveConnection()
-//    Connection::Interface *activeConnection = getActiveConnection();
-//    if (activeConnection)
-//    {
-//        LOGF_INFO("Active connection: %s", activeConnection->name().c_str());
-//    }
-//    else
-//    {
-//        LOG_INFO("getActiveConnection() returned NULL");
-//    }
-
     if (getActiveConnection() == serialConnection) {
         PortFD = serialConnection->getPortFD();
     } else if (getActiveConnection() == tcpConnection) {
@@ -203,118 +121,118 @@ void OnStep_Aux::GetCapabilites()
     if (std::stof(OS_firmware_response) < minimum_OS_fw) {
         LOGF_WARN("OnStepX version %s is lower than this driver expects (%1.1f). Behaviour is unknown.", OS_firmware_response, minimum_OS_fw);
     }
-
-    // Get focuser presence
-    for (int focuser = 1; focuser <= MAX_FOCUSERS; focuser ++) {
-        char OS_focuser_response[RB_MAX_LEN] = {0};
-        char cmd[CMD_MAX_LEN] = {0};
-        snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_defined_focusers_part, focuser, OS_command_terminator);
-        int OS_focuser_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OS_focuser_response, cmd);
-
-        if (OS_focuser_error_or_fail > 1) {
-            hasFocusers = focuser;
-            LOGF_DEBUG("Found focuser %s", focuser);
-        } else {
-            LOGF_ERROR("Focuser %s not found", focuser);
-        }
-    }
-    if (hasFocusers > 0) {
-        LOGF_DEBUG("Found a total of %s focuser(s), enabling Focuser Tab", hasFocusers);
-    } else
-    {
-        LOG_DEBUG("No focusers found, disabling Focuser Tab");
-    }
-
-    // Get rotator presence
-    char OS_rotator_response[RB_MAX_LEN] = {0};
-    int OS_rotator_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OS_rotator_response,
-                                                                                    OS_get_defined_rotator);
-    if (OS_rotator_error_or_fail > 1 && std::stoi(OS_rotator_response) == 1) {
-        LOG_DEBUG("Rotator found, enabling Focuser Tab");
-    } else {
-        LOG_DEBUG("Rotator not found, disabling Rotator Tab");
-    }
-
-    // Get available weather measurements
-    for (int measurement = 0; measurement < WEATHER_MEASUREMENTS_COUNT; measurement ++) {
-        char measurement_reponse[RB_MAX_LEN];
-        char measurement_command[CMD_MAX_LEN];
-        switch(measurement) {
-            case WEATHER_TEMPERATURE:
-                indi_strlcpy(measurement_command, OS_get_temperature, sizeof(measurement_command));
-                break;
-            case WEATHER_PRESSURE:
-                indi_strlcpy(measurement_command, OS_get_pressure, sizeof(measurement_command));
-                break;
-            case WEATHER_HUMIDITY:
-                indi_strlcpy(measurement_command, OS_get_humidity, sizeof(measurement_command));
-                break;
-            case WEATHER_DEW_POINT:
-                indi_strlcpy(measurement_command, OS_get_dew_point, sizeof(measurement_command));
-                break;
-            default:
-                break;
-        }
-
-        int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse,
-                                                                                measurement_command);
-        if (measurement_error_or_fail > 1 && strcmp(measurement_reponse, "N/A") != 0 &&
-            strcmp(measurement_reponse, "nan") != 0 && strcmp(measurement_reponse, "0") != 0) {
-            weather_enabled[measurement] = 1;
-        } else {
-            weather_enabled[measurement] = 0;
-        }
-    }
-
-    // Available weather measurements are now defined as = 1, unavailable as = 0
-    // so we can sum these to check if any are defined, if not then keep tab disabled
-    int weatherDisabled = 0;
-    for (int wmeasure = 1; wmeasure < WEATHER_MEASUREMENTS_COUNT; wmeasure ++) {
-        weatherDisabled += weather_enabled[wmeasure];
-    }
-    if (weatherDisabled > 0) {
-        weather_tab_enabled = true;
-        LOG_INFO("Found weather sensor(s), enabling Weather Tab");
-
-        // Loop through only the first 6 measurements rather than WEATHER_MEASUREMENTS_COUNT
-        // as only these are usable for safety status with limits
-        for (int measurement = 0; measurement < 6; measurement ++) {
-            if (weather_enabled[measurement] == 1) {
-                switch(measurement) {
-                    case WEATHER_TEMPERATURE:
-                        addParameter("WEATHER_TEMPERATURE", "Temperature °C", -10, 40, 15);
-                        setCriticalParameter("WEATHER_TEMPERATURE");
-                        break;
-                    case WEATHER_PRESSURE:
-                        addParameter("WEATHER_PRESSURE", "Pressure mbar", 970, 1050, 10);
-                        setCriticalParameter("WEATHER_PRESSURE");
-                        break;
-                    case WEATHER_HUMIDITY:
-                        addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 95, 15);
-                        setCriticalParameter("WEATHER_HUMIDITY");
-                        break;
-                    case WEATHER_DEW_POINT:
-                        addParameter("WEATHER_DEW_POINT", "Dew Point %", 0, 100, 5);
-                        setCriticalParameter("WEATHER_DEW_POINT");
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-    } else {
-        LOG_INFO("Weather sensors not found, disabling Weather Tab");
-    }
-
-    // Get outputs presence
-    char OS_features_response[RB_MAX_LEN] = {0};
-    int OS_features_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OS_features_response,
-                                                                                   OS_get_defined_features);
-    if (OS_features_error_or_fail > 1 && std::stoi(OS_features_response) > 0) {
-        LOG_DEBUG("Auxiliary Feature(s) found, enabling Features Tab");
-    } else {
-        LOG_DEBUG("Auxiliary Feature not found, disabling Features Tab");
-    }
+//
+//    // Get focuser presence
+//    for (int focuser = 1; focuser <= MAX_FOCUSERS; focuser ++) {
+//        char OS_focuser_response[RB_MAX_LEN] = {0};
+//        char cmd[CMD_MAX_LEN] = {0};
+//        snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_defined_focusers_part, focuser, OS_command_terminator);
+//        int OS_focuser_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OS_focuser_response, cmd);
+//
+//        if (OS_focuser_error_or_fail > 1) {
+//            hasFocusers = focuser;
+//            LOGF_DEBUG("Found focuser %s", focuser);
+//        } else {
+//            LOGF_ERROR("Focuser %s not found", focuser);
+//        }
+//    }
+//    if (hasFocusers > 0) {
+//        LOGF_DEBUG("Found a total of %s focuser(s), enabling Focuser Tab", hasFocusers);
+//    } else
+//    {
+//        LOG_DEBUG("No focusers found, disabling Focuser Tab");
+//    }
+//
+//    // Get rotator presence
+//    char OS_rotator_response[RB_MAX_LEN] = {0};
+//    int OS_rotator_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OS_rotator_response,
+//                                                                                    OS_get_defined_rotator);
+//    if (OS_rotator_error_or_fail > 1 && std::stoi(OS_rotator_response) == 1) {
+//        LOG_DEBUG("Rotator found, enabling Focuser Tab");
+//    } else {
+//        LOG_DEBUG("Rotator not found, disabling Rotator Tab");
+//    }
+//
+//    // Get available weather measurements
+//    for (int measurement = 0; measurement < WEATHER_MEASUREMENTS_COUNT; measurement ++) {
+//        char measurement_reponse[RB_MAX_LEN];
+//        char measurement_command[CMD_MAX_LEN];
+//        switch(measurement) {
+//            case WEATHER_TEMPERATURE:
+//                indi_strlcpy(measurement_command, OS_get_temperature, sizeof(measurement_command));
+//                break;
+//            case WEATHER_PRESSURE:
+//                indi_strlcpy(measurement_command, OS_get_pressure, sizeof(measurement_command));
+//                break;
+//            case WEATHER_HUMIDITY:
+//                indi_strlcpy(measurement_command, OS_get_humidity, sizeof(measurement_command));
+//                break;
+//            case WEATHER_DEW_POINT:
+//                indi_strlcpy(measurement_command, OS_get_dew_point, sizeof(measurement_command));
+//                break;
+//            default:
+//                break;
+//        }
+//
+//        int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse,
+//                                                                                measurement_command);
+//        if (measurement_error_or_fail > 1 && strcmp(measurement_reponse, "N/A") != 0 &&
+//            strcmp(measurement_reponse, "nan") != 0 && strcmp(measurement_reponse, "0") != 0) {
+//            weather_enabled[measurement] = 1;
+//        } else {
+//            weather_enabled[measurement] = 0;
+//        }
+//    }
+//
+//    // Available weather measurements are now defined as = 1, unavailable as = 0
+//    // so we can sum these to check if any are defined, if not then keep tab disabled
+//    int weatherDisabled = 0;
+//    for (int wmeasure = 1; wmeasure < WEATHER_MEASUREMENTS_COUNT; wmeasure ++) {
+//        weatherDisabled += weather_enabled[wmeasure];
+//    }
+//    if (weatherDisabled > 0) {
+//        weather_tab_enabled = true;
+//        LOG_INFO("Found weather sensor(s), enabling Weather Tab");
+//
+//        // Loop through only the first 6 measurements rather than WEATHER_MEASUREMENTS_COUNT
+//        // as only these are usable for safety status with limits
+//        for (int measurement = 0; measurement < 6; measurement ++) {
+//            if (weather_enabled[measurement] == 1) {
+//                switch(measurement) {
+//                    case WEATHER_TEMPERATURE:
+//                        addParameter("WEATHER_TEMPERATURE", "Temperature °C", -10, 40, 15);
+//                        setCriticalParameter("WEATHER_TEMPERATURE");
+//                        break;
+//                    case WEATHER_PRESSURE:
+//                        addParameter("WEATHER_PRESSURE", "Pressure mbar", 970, 1050, 10);
+//                        setCriticalParameter("WEATHER_PRESSURE");
+//                        break;
+//                    case WEATHER_HUMIDITY:
+//                        addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 95, 15);
+//                        setCriticalParameter("WEATHER_HUMIDITY");
+//                        break;
+//                    case WEATHER_DEW_POINT:
+//                        addParameter("WEATHER_DEW_POINT", "Dew Point %", 0, 100, 5);
+//                        setCriticalParameter("WEATHER_DEW_POINT");
+//                        break;
+//                    default:
+//                        break;
+//                }
+//            }
+//        }
+//    } else {
+//        LOG_INFO("Weather sensors not found, disabling Weather Tab");
+//    }
+//
+//    // Get outputs presence
+//    char OS_features_response[RB_MAX_LEN] = {0};
+//    int OS_features_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OS_features_response,
+//                                                                                   OS_get_defined_features);
+//    if (OS_features_error_or_fail > 1 && std::stoi(OS_features_response) > 0) {
+//        LOG_DEBUG("Auxiliary Feature(s) found, enabling Features Tab");
+//    } else {
+//        LOG_DEBUG("Auxiliary Feature not found, disabling Features Tab");
+//    }
 
     // Start polling timer (e.g., every 1000ms)
 //    SetTimer(getCurrentPollingPeriod());
@@ -333,87 +251,87 @@ bool OnStep_Aux::initProperties()
     DefaultDevice::initProperties();
     setDriverInterface(FOCUSER_INTERFACE | ROTATOR_INTERFACE | WEATHER_INTERFACE | POWER_INTERFACE | AUX_INTERFACE);
 
-    addAuxControls();
-    setDefaultPollingPeriod(10000);
+//    addAuxControls();
+//    setDefaultPollingPeriod(10000);
 
 //    FI::initProperties(FOCUS_TAB);
 //    RI::initProperties(ROTATOR_TAB);
 //    WI::initProperties(WEATHER_TAB, WEATHER_TAB);
 //    PI::initProperties(POWER_TAB);
 
-    setDefaultPollingPeriod(10000);
-    addPollPeriodControl();
-
-    //FocuserInterface
-    //Initial, these will be updated later.
-    FocusRelPosNP[0].min = 0.;
-    FocusRelPosNP[0].max = 30000.;
-    FocusRelPosNP[0].value = 0;
-    FocusRelPosNP[0].step = 10;
-    FocusAbsPosNP[0].min = 0.;
-    FocusAbsPosNP[0].max = 60000.;
-    FocusAbsPosNP[0].value = 0;
-    FocusAbsPosNP[0].step = 10;
-
-    // ============== MAIN_CONTROL_TAB
-    IUFillSwitch(&ReticS[0], "PLUS", "Light", ISS_OFF);
-    IUFillSwitch(&ReticS[1], "MOINS", "Dark", ISS_OFF);
-    IUFillSwitchVector(&ReticSP, ReticS, 2, getDeviceName(), "RETICULE_BRIGHTNESS", "Reticule +/-", MAIN_CONTROL_TAB, IP_RW,
-                       ISR_ATMOST1, 60, IPS_IDLE);
-
-    IUFillText(&ObjectInfoT[0], "Info", "", "");
-    IUFillTextVector(&ObjectInfoTP, ObjectInfoT, 1, getDeviceName(), "Object Info", "", MAIN_CONTROL_TAB,
-                     IP_RO, 0, IPS_IDLE);
-
-    // ============== COMMUNICATION_TAB
-
-    // ============== CONNECTION_TAB
-
-    // ============== OPTIONS_TAB
-
-    // ============== FOCUS_TAB
-    // Focuser 1
-
-    IUFillSwitch(&OSFocus1InitializeS[0], "Focus1_0", "Zero", ISS_OFF);
-    IUFillSwitch(&OSFocus1InitializeS[1], "Focus1_2", "Mid", ISS_OFF);
-    //     IUFillSwitch(&OSFocus1InitializeS[2], "Focus1_3", "max", ISS_OFF);
-    IUFillSwitchVector(&OSFocus1InitializeSP, OSFocus1InitializeS, 2, getDeviceName(), "Foc1Rate", "Initialize", FOCUS_TAB,
-                       IP_RW, ISR_ATMOST1, 0, IPS_IDLE);
-    // Focus T° Compensation
-    // Property must be FOCUS_TEMPERATURE to be recognized by Ekos
-    IUFillNumber(&FocusTemperatureN[0], "FOCUS_TEMPERATURE", "TFC T°", "%+2.2f", 0, 1, 0.25,
-                 25);  //default value is meaningless
-    IUFillNumber(&FocusTemperatureN[1], "TFC Δ T°", "TFC Δ T°", "%+2.2f", 0, 1, 0.25, 25);  //default value is meaningless
-    IUFillNumberVector(&FocusTemperatureNP, FocusTemperatureN, 2, getDeviceName(), "FOCUS_TEMPERATURE", "Focuser T°",
-                       FOCUS_TAB, IP_RO, 0,
-                       IPS_IDLE);
-    IUFillSwitch(&TFCCompensationS[0], "Off", "Compensation: OFF", ISS_OFF);
-    IUFillSwitch(&TFCCompensationS[1], "On", "Compensation: ON", ISS_OFF);
-    IUFillSwitchVector(&TFCCompensationSP, TFCCompensationS, 2, getDeviceName(), "Compensation T°", "Temperature Compensation",
-                       FOCUS_TAB, IP_RW,
-                       ISR_1OFMANY, 0, IPS_IDLE);
-
-    IUFillNumber(&TFCCoefficientN[0], "TFC Coefficient", "TFC Coefficient µm/°C", "%+03.5f", -999.99999, 999.99999, 1, 100);
-    IUFillNumberVector(&TFCCoefficientNP, TFCCoefficientN, 1, getDeviceName(), "TFC Coefficient", "", FOCUS_TAB, IP_RW, 0,
-                       IPS_IDLE);
-    IUFillNumber(&TFCDeadbandN[0], "TFC Deadband", "TFC Deadband µm", "%g", 1, 32767, 1, 5);
-    IUFillNumberVector(&TFCDeadbandNP, TFCDeadbandN, 1, getDeviceName(), "TFC Deadband", "", FOCUS_TAB, IP_RW, 0, IPS_IDLE);
-    // End Focus T° Compensation
-
-    IUFillSwitch(&OSFocusSelectS[0], "Focuser_Primary_1", "Focuser 1", ISS_ON);
-    IUFillSwitch(&OSFocusSelectS[1], "Focuser_Primary_2", "Focuser 2/Swap", ISS_OFF);
-    // For when OnStepX comes out
-    IUFillSwitch(&OSFocusSelectS[2], "Focuser_Primary_3", "3", ISS_OFF);
-    IUFillSwitch(&OSFocusSelectS[3], "Focuser_Primary_4", "4", ISS_OFF);
-    IUFillSwitch(&OSFocusSelectS[4], "Focuser_Primary_5", "5", ISS_OFF);
-    IUFillSwitch(&OSFocusSelectS[5], "Focuser_Primary_6", "6", ISS_OFF);
-    IUFillSwitch(&OSFocusSelectS[6], "Focuser_Primary_7", "7", ISS_OFF);
-    IUFillSwitch(&OSFocusSelectS[7], "Focuser_Primary_8", "8", ISS_OFF);
-    IUFillSwitch(&OSFocusSelectS[8], "Focuser_Primary_9", "9", ISS_OFF);
-    IUFillSwitch(&OSFocusSelectS[9], "Focuser_Primary_10", "10", ISS_OFF);
-
-    IUFillSwitchVector(&OSFocusSelectSP, OSFocusSelectS, 1, getDeviceName(), "OSFocusSWAP", "Primary Focuser", FOCUS_TAB,
-                       IP_RW, ISR_ATMOST1, 0, IPS_IDLE);
+//    setDefaultPollingPeriod(10000);
+//    addPollPeriodControl();
+//
+//    //FocuserInterface
+//    //Initial, these will be updated later.
+//    FocusRelPosNP[0].min = 0.;
+//    FocusRelPosNP[0].max = 30000.;
+//    FocusRelPosNP[0].value = 0;
+//    FocusRelPosNP[0].step = 10;
+//    FocusAbsPosNP[0].min = 0.;
+//    FocusAbsPosNP[0].max = 60000.;
+//    FocusAbsPosNP[0].value = 0;
+//    FocusAbsPosNP[0].step = 10;
+//
+//    // ============== MAIN_CONTROL_TAB
+//    IUFillSwitch(&ReticS[0], "PLUS", "Light", ISS_OFF);
+//    IUFillSwitch(&ReticS[1], "MOINS", "Dark", ISS_OFF);
+//    IUFillSwitchVector(&ReticSP, ReticS, 2, getDeviceName(), "RETICULE_BRIGHTNESS", "Reticule +/-", MAIN_CONTROL_TAB, IP_RW,
+//                       ISR_ATMOST1, 60, IPS_IDLE);
+//
+//    IUFillText(&ObjectInfoT[0], "Info", "", "");
+//    IUFillTextVector(&ObjectInfoTP, ObjectInfoT, 1, getDeviceName(), "Object Info", "", MAIN_CONTROL_TAB,
+//                     IP_RO, 0, IPS_IDLE);
+//
+//    // ============== COMMUNICATION_TAB
+//
+//    // ============== CONNECTION_TAB
+//
+//    // ============== OPTIONS_TAB
+//
+//    // ============== FOCUS_TAB
+//    // Focuser 1
+//
+//    IUFillSwitch(&OSFocus1InitializeS[0], "Focus1_0", "Zero", ISS_OFF);
+//    IUFillSwitch(&OSFocus1InitializeS[1], "Focus1_2", "Mid", ISS_OFF);
+//    //     IUFillSwitch(&OSFocus1InitializeS[2], "Focus1_3", "max", ISS_OFF);
+//    IUFillSwitchVector(&OSFocus1InitializeSP, OSFocus1InitializeS, 2, getDeviceName(), "Foc1Rate", "Initialize", FOCUS_TAB,
+//                       IP_RW, ISR_ATMOST1, 0, IPS_IDLE);
+//    // Focus T° Compensation
+//    // Property must be FOCUS_TEMPERATURE to be recognized by Ekos
+//    IUFillNumber(&FocusTemperatureN[0], "FOCUS_TEMPERATURE", "TFC T°", "%+2.2f", 0, 1, 0.25,
+//                 25);  //default value is meaningless
+//    IUFillNumber(&FocusTemperatureN[1], "TFC Δ T°", "TFC Δ T°", "%+2.2f", 0, 1, 0.25, 25);  //default value is meaningless
+//    IUFillNumberVector(&FocusTemperatureNP, FocusTemperatureN, 2, getDeviceName(), "FOCUS_TEMPERATURE", "Focuser T°",
+//                       FOCUS_TAB, IP_RO, 0,
+//                       IPS_IDLE);
+//    IUFillSwitch(&TFCCompensationS[0], "Off", "Compensation: OFF", ISS_OFF);
+//    IUFillSwitch(&TFCCompensationS[1], "On", "Compensation: ON", ISS_OFF);
+//    IUFillSwitchVector(&TFCCompensationSP, TFCCompensationS, 2, getDeviceName(), "Compensation T°", "Temperature Compensation",
+//                       FOCUS_TAB, IP_RW,
+//                       ISR_1OFMANY, 0, IPS_IDLE);
+//
+//    IUFillNumber(&TFCCoefficientN[0], "TFC Coefficient", "TFC Coefficient µm/°C", "%+03.5f", -999.99999, 999.99999, 1, 100);
+//    IUFillNumberVector(&TFCCoefficientNP, TFCCoefficientN, 1, getDeviceName(), "TFC Coefficient", "", FOCUS_TAB, IP_RW, 0,
+//                       IPS_IDLE);
+//    IUFillNumber(&TFCDeadbandN[0], "TFC Deadband", "TFC Deadband µm", "%g", 1, 32767, 1, 5);
+//    IUFillNumberVector(&TFCDeadbandNP, TFCDeadbandN, 1, getDeviceName(), "TFC Deadband", "", FOCUS_TAB, IP_RW, 0, IPS_IDLE);
+//    // End Focus T° Compensation
+//
+//    IUFillSwitch(&OSFocusSelectS[0], "Focuser_Primary_1", "Focuser 1", ISS_ON);
+//    IUFillSwitch(&OSFocusSelectS[1], "Focuser_Primary_2", "Focuser 2/Swap", ISS_OFF);
+//    // For when OnStepX comes out
+//    IUFillSwitch(&OSFocusSelectS[2], "Focuser_Primary_3", "3", ISS_OFF);
+//    IUFillSwitch(&OSFocusSelectS[3], "Focuser_Primary_4", "4", ISS_OFF);
+//    IUFillSwitch(&OSFocusSelectS[4], "Focuser_Primary_5", "5", ISS_OFF);
+//    IUFillSwitch(&OSFocusSelectS[5], "Focuser_Primary_6", "6", ISS_OFF);
+//    IUFillSwitch(&OSFocusSelectS[6], "Focuser_Primary_7", "7", ISS_OFF);
+//    IUFillSwitch(&OSFocusSelectS[7], "Focuser_Primary_8", "8", ISS_OFF);
+//    IUFillSwitch(&OSFocusSelectS[8], "Focuser_Primary_9", "9", ISS_OFF);
+//    IUFillSwitch(&OSFocusSelectS[9], "Focuser_Primary_10", "10", ISS_OFF);
+//
+//    IUFillSwitchVector(&OSFocusSelectSP, OSFocusSelectS, 1, getDeviceName(), "OSFocusSWAP", "Primary Focuser", FOCUS_TAB,
+//                       IP_RW, ISR_ATMOST1, 0, IPS_IDLE);
 
 
     // Focuser 2
@@ -440,112 +358,112 @@ bool OnStep_Aux::initProperties()
 
     // =========== ROTATOR TAB
 
-    IUFillSwitch(&OSRotatorDerotateS[0], "Derotate_OFF", "OFF", ISS_OFF);
-    IUFillSwitch(&OSRotatorDerotateS[1], "Derotate_ON", "ON", ISS_OFF);
-    IUFillSwitchVector(&OSRotatorDerotateSP, OSRotatorDerotateS, 2, getDeviceName(), "Derotate_Status", "DEROTATE", ROTATOR_TAB,
-                       IP_RW,
-                       ISR_ATMOST1, 0, IPS_IDLE);
-
-    // ============== FIRMWARE_TAB
-    IUFillText(&VersionT[0], "Date", "", "");
-    IUFillText(&VersionT[1], "Time", "", "");
-    IUFillText(&VersionT[2], "Number", "", "");
-    IUFillText(&VersionT[3], "Name", "", "");
-    IUFillTextVector(&VersionTP, VersionT, 4, getDeviceName(), "Firmware Info", "", FIRMWARE_TAB, IP_RO, 0, IPS_IDLE);
-
-    // ============== WEATHER TAB
-    // Uses OnStep's defaults for this
-    IUFillNumber(&OSSetTemperatureN[0], "Set Temperature (C)", "C", "%4.2f", -100, 100, 1, 10);//-274, 999, 1, 10);
-    IUFillNumberVector(&OSSetTemperatureNP, OSSetTemperatureN, 1, getDeviceName(), "Set Temperature (C)", "", WEATHER_TAB,
-                       IP_RW, 0, IPS_IDLE);
-    IUFillNumber(&OSSetHumidityN[0], "Set Relative Humidity (%)", "%", "%5.2f", 0, 100, 1, 70);
-    IUFillNumberVector(&OSSetHumidityNP, OSSetHumidityN, 1, getDeviceName(), "Set Relative Humidity (%)", "", WEATHER_TAB,
-                       IP_RW, 0, IPS_IDLE);
-    IUFillNumber(&OSSetPressureN[0], "Set Pressure (hPa)", "hPa", "%4f", 500, 1500, 1, 1010);
-    IUFillNumberVector(&OSSetPressureNP, OSSetPressureN, 1, getDeviceName(), "Set Pressure (hPa)", "", WEATHER_TAB, IP_RW,
-                       0, IPS_IDLE);
-
-    //Will eventually pull from the elevation in site settings
-    //TODO: Pull from elevation in site settings
-    IUFillNumber(&OSSetAltitudeN[0], "Set Altitude (m)", "m", "%4f", 0, 20000, 1, 110);
-    IUFillNumberVector(&OSSetAltitudeNP, OSSetAltitudeN, 1, getDeviceName(), "Set Altitude (m)", "", WEATHER_TAB, IP_RW, 0,
-                       IPS_IDLE);
-
-
-    addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 85, 15);
-    addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
-    addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
-    addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 100, 15); // From OnStep
-    addParameter("WEATHER_CPU_TEMPERATURE", "OnStep CPU Temperature", -274, 200, -274); // From OnStep, -274 = unread
-    setCriticalParameter("WEATHER_TEMPERATURE");
-
-    addAuxControls();
-
-    // Feature tab controls
-    //--------------------
-    IUFillSwitchVector(&Feature1SP, Feature1S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE1", "Device 1",
-                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Feature1S[ON_SWITCH], "FEATURE1_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Feature1S[OFF_SWITCH], "FEATURE1_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Feature_Name1TP, Feature_Name1T, 1, getDeviceName(), "FEATURE_1_NAME", "Device 1",
-                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Feature_Name1T[0], "DEVICE_1_NAME", "Name", "");
-
-    IUFillSwitchVector(&Feature2SP, Feature2S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE2", "Device 2",
-                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Feature2S[ON_SWITCH], "FEATURE2_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Feature2S[OFF_SWITCH], "FEATURE2_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Feature_Name2TP, Feature_Name2T, 1, getDeviceName(), "FEATURE_2_NAME", "Device 2",
-                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Feature_Name2T[0], "DEVICE_2_NAME", "Name", "");
-
-    IUFillSwitchVector(&Feature3SP, Feature3S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE3", "Device 3",
-                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Feature3S[ON_SWITCH], "FEATURE3_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Feature3S[OFF_SWITCH], "FEATURE3_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Feature_Name3TP, Feature_Name3T, 1, getDeviceName(), "FEATURE_3_NAME", "Device 3",
-                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Feature_Name3T[0], "DEVICE_3_NAME", "Name", "");
-
-    IUFillSwitchVector(&Feature4SP, Feature4S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE4", "Device 4",
-                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Feature4S[ON_SWITCH], "FEATURE4_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Feature4S[OFF_SWITCH], "FEATURE4_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Feature_Name4TP, Feature_Name4T, 1, getDeviceName(), "FEATURE_4_NAME", "Device 4",
-                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Feature_Name4T[0], "DEVICE_4_NAME", "Name", "");
-
-    IUFillSwitchVector(&Feature5SP, Feature5S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE5", "Device 5",
-                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Feature5S[ON_SWITCH], "FEATURE5_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Feature5S[OFF_SWITCH], "FEATURE5_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Feature_Name5TP, Feature_Name5T, 1, getDeviceName(), "FEATURE_5_NAME", "Device 5",
-                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Feature_Name5T[0], "DEVICE_5_NAME", "Name", "");
-
-    IUFillSwitchVector(&Feature6SP, Feature6S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE6", "Device 6",
-                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Feature6S[ON_SWITCH], "FEATURE6_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Feature6S[OFF_SWITCH], "FEATURE6_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Feature_Name6TP, Feature_Name6T, 1, getDeviceName(), "FEATURE_6_NAME", "Device 6",
-                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Feature_Name6T[0], "DEVICE_6_NAME", "Name", "");
-
-    IUFillSwitchVector(&Feature7SP, Feature7S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE7", "Device 7",
-                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Feature7S[ON_SWITCH], "FEATURE7_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Feature7S[OFF_SWITCH], "FEATURE7_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Feature_Name7TP, Feature_Name7T, 1, getDeviceName(), "FEATURE_7_NAME", "Device 7",
-                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Feature_Name7T[0], "DEVICE_7_NAME", "Name", "");
-
-    IUFillSwitchVector(&Feature8SP, Feature8S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE8", "Device 8",
-                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Feature8S[ON_SWITCH], "FEATURE8_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Feature8S[OFF_SWITCH], "FEATURE8_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Feature_Name8TP, Feature_Name8T, 1, getDeviceName(), "FEATURE_8_NAME", "Device 8",
-                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Feature_Name8T[0], "DEVICE_8_NAME", "Name", "");
+//    IUFillSwitch(&OSRotatorDerotateS[0], "Derotate_OFF", "OFF", ISS_OFF);
+//    IUFillSwitch(&OSRotatorDerotateS[1], "Derotate_ON", "ON", ISS_OFF);
+//    IUFillSwitchVector(&OSRotatorDerotateSP, OSRotatorDerotateS, 2, getDeviceName(), "Derotate_Status", "DEROTATE", ROTATOR_TAB,
+//                       IP_RW,
+//                       ISR_ATMOST1, 0, IPS_IDLE);
+//
+//    // ============== FIRMWARE_TAB
+//    IUFillText(&VersionT[0], "Date", "", "");
+//    IUFillText(&VersionT[1], "Time", "", "");
+//    IUFillText(&VersionT[2], "Number", "", "");
+//    IUFillText(&VersionT[3], "Name", "", "");
+//    IUFillTextVector(&VersionTP, VersionT, 4, getDeviceName(), "Firmware Info", "", FIRMWARE_TAB, IP_RO, 0, IPS_IDLE);
+//
+//    // ============== WEATHER TAB
+//    // Uses OnStep's defaults for this
+//    IUFillNumber(&OSSetTemperatureN[0], "Set Temperature (C)", "C", "%4.2f", -100, 100, 1, 10);//-274, 999, 1, 10);
+//    IUFillNumberVector(&OSSetTemperatureNP, OSSetTemperatureN, 1, getDeviceName(), "Set Temperature (C)", "", WEATHER_TAB,
+//                       IP_RW, 0, IPS_IDLE);
+//    IUFillNumber(&OSSetHumidityN[0], "Set Relative Humidity (%)", "%", "%5.2f", 0, 100, 1, 70);
+//    IUFillNumberVector(&OSSetHumidityNP, OSSetHumidityN, 1, getDeviceName(), "Set Relative Humidity (%)", "", WEATHER_TAB,
+//                       IP_RW, 0, IPS_IDLE);
+//    IUFillNumber(&OSSetPressureN[0], "Set Pressure (hPa)", "hPa", "%4f", 500, 1500, 1, 1010);
+//    IUFillNumberVector(&OSSetPressureNP, OSSetPressureN, 1, getDeviceName(), "Set Pressure (hPa)", "", WEATHER_TAB, IP_RW,
+//                       0, IPS_IDLE);
+//
+//    //Will eventually pull from the elevation in site settings
+//    //TODO: Pull from elevation in site settings
+//    IUFillNumber(&OSSetAltitudeN[0], "Set Altitude (m)", "m", "%4f", 0, 20000, 1, 110);
+//    IUFillNumberVector(&OSSetAltitudeNP, OSSetAltitudeN, 1, getDeviceName(), "Set Altitude (m)", "", WEATHER_TAB, IP_RW, 0,
+//                       IPS_IDLE);
+//
+//
+//    addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 85, 15);
+//    addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
+//    addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
+//    addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 100, 15); // From OnStep
+//    addParameter("WEATHER_CPU_TEMPERATURE", "OnStep CPU Temperature", -274, 200, -274); // From OnStep, -274 = unread
+//    setCriticalParameter("WEATHER_TEMPERATURE");
+//
+//    addAuxControls();
+//
+//    // Feature tab controls
+//    //--------------------
+//    IUFillSwitchVector(&Feature1SP, Feature1S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE1", "Device 1",
+//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+//    IUFillSwitch(&Feature1S[ON_SWITCH], "FEATURE1_ON", "ON", ISS_OFF);
+//    IUFillSwitch(&Feature1S[OFF_SWITCH], "FEATURE1_OFF", "OFF", ISS_ON);
+//    IUFillTextVector(&Feature_Name1TP, Feature_Name1T, 1, getDeviceName(), "FEATURE_1_NAME", "Device 1",
+//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
+//    IUFillText(&Feature_Name1T[0], "DEVICE_1_NAME", "Name", "");
+//
+//    IUFillSwitchVector(&Feature2SP, Feature2S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE2", "Device 2",
+//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+//    IUFillSwitch(&Feature2S[ON_SWITCH], "FEATURE2_ON", "ON", ISS_OFF);
+//    IUFillSwitch(&Feature2S[OFF_SWITCH], "FEATURE2_OFF", "OFF", ISS_ON);
+//    IUFillTextVector(&Feature_Name2TP, Feature_Name2T, 1, getDeviceName(), "FEATURE_2_NAME", "Device 2",
+//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
+//    IUFillText(&Feature_Name2T[0], "DEVICE_2_NAME", "Name", "");
+//
+//    IUFillSwitchVector(&Feature3SP, Feature3S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE3", "Device 3",
+//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+//    IUFillSwitch(&Feature3S[ON_SWITCH], "FEATURE3_ON", "ON", ISS_OFF);
+//    IUFillSwitch(&Feature3S[OFF_SWITCH], "FEATURE3_OFF", "OFF", ISS_ON);
+//    IUFillTextVector(&Feature_Name3TP, Feature_Name3T, 1, getDeviceName(), "FEATURE_3_NAME", "Device 3",
+//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
+//    IUFillText(&Feature_Name3T[0], "DEVICE_3_NAME", "Name", "");
+//
+//    IUFillSwitchVector(&Feature4SP, Feature4S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE4", "Device 4",
+//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+//    IUFillSwitch(&Feature4S[ON_SWITCH], "FEATURE4_ON", "ON", ISS_OFF);
+//    IUFillSwitch(&Feature4S[OFF_SWITCH], "FEATURE4_OFF", "OFF", ISS_ON);
+//    IUFillTextVector(&Feature_Name4TP, Feature_Name4T, 1, getDeviceName(), "FEATURE_4_NAME", "Device 4",
+//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
+//    IUFillText(&Feature_Name4T[0], "DEVICE_4_NAME", "Name", "");
+//
+//    IUFillSwitchVector(&Feature5SP, Feature5S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE5", "Device 5",
+//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+//    IUFillSwitch(&Feature5S[ON_SWITCH], "FEATURE5_ON", "ON", ISS_OFF);
+//    IUFillSwitch(&Feature5S[OFF_SWITCH], "FEATURE5_OFF", "OFF", ISS_ON);
+//    IUFillTextVector(&Feature_Name5TP, Feature_Name5T, 1, getDeviceName(), "FEATURE_5_NAME", "Device 5",
+//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
+//    IUFillText(&Feature_Name5T[0], "DEVICE_5_NAME", "Name", "");
+//
+//    IUFillSwitchVector(&Feature6SP, Feature6S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE6", "Device 6",
+//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+//    IUFillSwitch(&Feature6S[ON_SWITCH], "FEATURE6_ON", "ON", ISS_OFF);
+//    IUFillSwitch(&Feature6S[OFF_SWITCH], "FEATURE6_OFF", "OFF", ISS_ON);
+//    IUFillTextVector(&Feature_Name6TP, Feature_Name6T, 1, getDeviceName(), "FEATURE_6_NAME", "Device 6",
+//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
+//    IUFillText(&Feature_Name6T[0], "DEVICE_6_NAME", "Name", "");
+//
+//    IUFillSwitchVector(&Feature7SP, Feature7S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE7", "Device 7",
+//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+//    IUFillSwitch(&Feature7S[ON_SWITCH], "FEATURE7_ON", "ON", ISS_OFF);
+//    IUFillSwitch(&Feature7S[OFF_SWITCH], "FEATURE7_OFF", "OFF", ISS_ON);
+//    IUFillTextVector(&Feature_Name7TP, Feature_Name7T, 1, getDeviceName(), "FEATURE_7_NAME", "Device 7",
+//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
+//    IUFillText(&Feature_Name7T[0], "DEVICE_7_NAME", "Name", "");
+//
+//    IUFillSwitchVector(&Feature8SP, Feature8S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE8", "Device 8",
+//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+//    IUFillSwitch(&Feature8S[ON_SWITCH], "FEATURE8_ON", "ON", ISS_OFF);
+//    IUFillSwitch(&Feature8S[OFF_SWITCH], "FEATURE8_OFF", "OFF", ISS_ON);
+//    IUFillTextVector(&Feature_Name8TP, Feature_Name8T, 1, getDeviceName(), "FEATURE_8_NAME", "Device 8",
+//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
+//    IUFillText(&Feature_Name8T[0], "DEVICE_8_NAME", "Name", "");
 
 
     // Manual tab controls
@@ -559,7 +477,7 @@ bool OnStep_Aux::initProperties()
 
     // Standard Indi aux controls
     //---------------------------
-    addAuxControls();
+//    addAuxControls();
 
     if (osaConnection & CONNECTION_SERIAL) {
         serialConnection = new Connection::Serial(this);
@@ -1261,40 +1179,6 @@ bool OnStep_Aux::SetRotatorBacklashEnabled(bool enabled)
 ************************************************************/
 bool OnStep_Aux::Connect()
 {
-    // Get the file descriptor from the active connection
-//    Connection::Interface *activeConnection = getActiveConnection();
-//
-//    if (!activeConnection) {
-//        LOG_ERROR("No active connection");
-//        return false;
-//    }
-//
-//    // The connection handshake is called automatically by the framework
-//    // We just need to get the port FD from the active connection
-//    if (activeConnection->name() == serialConnection->name()) {
-//        PortFD = serialConnection->getPortFD();
-//        LOG_INFO("Non-Network based connection, detection timeouts set to 0.1 seconds");
-//        OSTimeoutMicroSeconds = 100000;
-//        OSTimeoutSeconds = 0;
-//    } else if (activeConnection->name() == tcpConnection->name()) {
-//        PortFD = tcpConnection->getPortFD();
-//        LOG_INFO("Network based connection, detection timeouts set to 1 second");
-//        OSTimeoutMicroSeconds = 0;
-//        OSTimeoutSeconds = 1;
-//    } else {
-//        LOG_ERROR("Unknown connection type");
-//        return false;
-//    }
-//
-//    LOGF_INFO("PortFD = %d", PortFD);
-//
-//    if (PortFD < 0) {
-//        LOG_ERROR("Failed to get valid file descriptor");
-//        return false;
-//    }
-//
-//    LOG_INFO("OnStep Aux connected successfully");
-
     if (!INDI::DefaultDevice::Connect()) {
         LOG_ERROR("Parent Connect() failed");
         return false;
