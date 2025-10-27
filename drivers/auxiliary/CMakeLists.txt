@@ -296,3 +296,11 @@ SET(gemini_flatpanel_SRC
 add_executable(indi_gemini_flatpanel ${gemini_flatpanel_SRC})
 target_link_libraries(indi_gemini_flatpanel indidriver)
 install(TARGETS indi_gemini_flatpanel RUNTIME DESTINATION bin)
+
+# ########## OnStep Aux ###############
+SET(indi_onstep_aux_SRC
+    onstep_aux.cpp)
+
+add_executable(indi_onstep_aux ${indi_onstep_aux_SRC})
+target_link_libraries(indi_onstep_aux indidriver)
+install(TARGETS indi_onstep_aux RUNTIME DESTINATION bin)
