@@ -75,7 +75,7 @@ An unterminated 0 is returned from unconfigured items
 //-----------------
 
 // Get the defined focusers
-#define OS_get_defined_focusers_part ":FA"
+#define OS_get_defined_focusers ":FA#"
 // Returns: 1-6 if defined, or 0 if undefined
 
 // Move focuser relative
@@ -252,7 +252,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
 
     // Capability queries on connection
     void GetCapabilites();
-    int hasFocusers = 0;
+    bool hasFocuser = false;
     bool hasRotator = false;
     bool hasWeather = false;
     bool hasFeatures = false;

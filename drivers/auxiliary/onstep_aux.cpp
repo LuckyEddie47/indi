@@ -88,15 +88,14 @@ bool OnStep_Aux::Handshake()
     }
 
     bool handshake_status = false;
-    char handshake_response[RB_MAX_LEN] = {0};
-    handshake_status = getCommandSingleCharErrorOrLongResponse(PortFD, handshake_response,
-                                                                                  OS_handshake);
-    if (strcmp(handshake_response, "On-Step") == 0) {
+    char response[RB_MAX_LEN] = {0};
+    handshake_status = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_handshake);
+    if (strcmp(response, "On-Step") == 0) {
         LOG_INFO("OnStep Aux handshake established");
         handshake_status = true;
         GetCapabilites();
     } else {
-        LOGF_INFO("OnStep Aux handshake error, reponse was: %s", handshake_response);
+        LOGF_INFO("OnStep Aux handshake error, reponse was: %s", response);
     }
 
     return handshake_status;
@@ -108,131 +107,81 @@ bool OnStep_Aux::Handshake()
 void OnStep_Aux::GetCapabilites()
 {
     // Get firmware version
-    char OS_firmware_response[RB_MAX_LEN] = {0};
-    int OS_firmware_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OS_firmware_response,
-                                                                                     OS_get_firmware);
-    if (OS_firmware_error_or_fail > 1) {
-        IUSaveText(&Status_ItemsT[STATUS_FIRMWARE], OS_firmware_response);
+    char response[RB_MAX_LEN] = {0};
+    int error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_firmware);
+    if (error_or_fail > 1) {
+        IUSaveText(&Status_ItemsT[STATUS_FIRMWARE], response);
         IDSetText(&Status_ItemsTP, nullptr);
-        LOGF_DEBUG("OnStepX version: %s", OS_firmware_response);
+        LOGF_DEBUG("OnStepX version: %s", response);
     } else {
         LOG_ERROR("OnStepX version not retrieved");
     }
-    if (std::stof(OS_firmware_response) < minimum_OS_fw) {
-        LOGF_WARN("OnStepX version %s is lower than this driver expects (%1.1f). Behaviour is unknown.", OS_firmware_response, minimum_OS_fw);
+    if (std::stof(response) < minimum_OS_fw) {
+        LOGF_WARN("OnStepX version %s is lower than this driver expects (%1.1f). Behaviour is unknown.", response, minimum_OS_fw);
     }
-//
-//    // Get focuser presence
-//    for (int focuser = 1; focuser <= MAX_FOCUSERS; focuser ++) {
-//        char OS_focuser_response[RB_MAX_LEN] = {0};
-//        char cmd[CMD_MAX_LEN] = {0};
-//        snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_defined_focusers_part, focuser, OS_command_terminator);
-//        int OS_focuser_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OS_focuser_response, cmd);
-//
-//        if (OS_focuser_error_or_fail > 1) {
-//            hasFocusers = focuser;
-//            LOGF_DEBUG("Found focuser %s", focuser);
-//        } else {
-//            LOGF_ERROR("Focuser %s not found", focuser);
-//        }
-//    }
-//    if (hasFocusers > 0) {
-//        LOGF_DEBUG("Found a total of %s focuser(s), enabling Focuser Tab", hasFocusers);
-//    } else
-//    {
-//        LOG_DEBUG("No focusers found, disabling Focuser Tab");
-//    }
-//
-//    // Get rotator presence
-//    char OS_rotator_response[RB_MAX_LEN] = {0};
-//    int OS_rotator_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OS_rotator_response,
-//                                                                                    OS_get_defined_rotator);
-//    if (OS_rotator_error_or_fail > 1 && std::stoi(OS_rotator_response) == 1) {
-//        LOG_DEBUG("Rotator found, enabling Focuser Tab");
-//    } else {
-//        LOG_DEBUG("Rotator not found, disabling Rotator Tab");
-//    }
-//
-//    // Get available weather measurements
-//    for (int measurement = 0; measurement < WEATHER_MEASUREMENTS_COUNT; measurement ++) {
-//        char measurement_reponse[RB_MAX_LEN];
-//        char measurement_command[CMD_MAX_LEN];
-//        switch(measurement) {
-//            case WEATHER_TEMPERATURE:
-//                indi_strlcpy(measurement_command, OS_get_temperature, sizeof(measurement_command));
-//                break;
-//            case WEATHER_PRESSURE:
-//                indi_strlcpy(measurement_command, OS_get_pressure, sizeof(measurement_command));
-//                break;
-//            case WEATHER_HUMIDITY:
-//                indi_strlcpy(measurement_command, OS_get_humidity, sizeof(measurement_command));
-//                break;
-//            case WEATHER_DEW_POINT:
-//                indi_strlcpy(measurement_command, OS_get_dew_point, sizeof(measurement_command));
-//                break;
-//            default:
-//                break;
-//        }
-//
-//        int measurement_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, measurement_reponse,
-//                                                                                measurement_command);
-//        if (measurement_error_or_fail > 1 && strcmp(measurement_reponse, "N/A") != 0 &&
-//            strcmp(measurement_reponse, "nan") != 0 && strcmp(measurement_reponse, "0") != 0) {
-//            weather_enabled[measurement] = 1;
-//        } else {
-//            weather_enabled[measurement] = 0;
-//        }
-//    }
-//
-//    // Available weather measurements are now defined as = 1, unavailable as = 0
-//    // so we can sum these to check if any are defined, if not then keep tab disabled
-//    int weatherDisabled = 0;
-//    for (int wmeasure = 1; wmeasure < WEATHER_MEASUREMENTS_COUNT; wmeasure ++) {
-//        weatherDisabled += weather_enabled[wmeasure];
-//    }
-//    if (weatherDisabled > 0) {
-//        weather_tab_enabled = true;
-//        LOG_INFO("Found weather sensor(s), enabling Weather Tab");
-//
-//        // Loop through only the first 6 measurements rather than WEATHER_MEASUREMENTS_COUNT
-//        // as only these are usable for safety status with limits
-//        for (int measurement = 0; measurement < 6; measurement ++) {
-//            if (weather_enabled[measurement] == 1) {
-//                switch(measurement) {
-//                    case WEATHER_TEMPERATURE:
-//                        addParameter("WEATHER_TEMPERATURE", "Temperature °C", -10, 40, 15);
-//                        setCriticalParameter("WEATHER_TEMPERATURE");
-//                        break;
-//                    case WEATHER_PRESSURE:
-//                        addParameter("WEATHER_PRESSURE", "Pressure mbar", 970, 1050, 10);
-//                        setCriticalParameter("WEATHER_PRESSURE");
-//                        break;
-//                    case WEATHER_HUMIDITY:
-//                        addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 95, 15);
-//                        setCriticalParameter("WEATHER_HUMIDITY");
-//                        break;
-//                    case WEATHER_DEW_POINT:
-//                        addParameter("WEATHER_DEW_POINT", "Dew Point %", 0, 100, 5);
-//                        setCriticalParameter("WEATHER_DEW_POINT");
-//                        break;
-//                    default:
-//                        break;
-//                }
-//            }
-//        }
-//    } else {
-//        LOG_INFO("Weather sensors not found, disabling Weather Tab");
-//    }
-//
-//    // Get outputs presence
-//    char OS_features_response[RB_MAX_LEN] = {0};
-//    int OS_features_error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, OS_features_response,
-//                                                                                   OS_get_defined_features);
-//    if (OS_features_error_or_fail > 1 && std::stoi(OS_features_response) > 0) {
-//        LOG_DEBUG("Auxiliary Feature(s) found, enabling Features Tab");
-//    } else {
-//        LOG_DEBUG("Auxiliary Feature not found, disabling Features Tab");
-//    }
+
+    // Discover focuser
+    int intResponse = 0;
+    error_or_fail = getCommandIntResponse(PortFD, &intResponse, response, OS_get_defined_focusers);
+    if (error_or_fail > 1 && intResponse > 0) {
+        hasFocuser = true;
+        LOG_DEBUG("Focuser found, enabling Focuser Tab");
+    } else {
+        LOG_DEBUG("Focuser not found, disabling Focuser Tab");
+    }
+
+    // Discover rotator
+    error_or_fail = getCommandIntResponse(PortFD, &intResponse, response, OS_get_defined_rotator);
+    if (error_or_fail > 1 && intResponse > 0) {
+        hasRotator = true;
+        LOG_DEBUG("Rotator found, enabling Rotator Tab");
+    } else {
+        LOG_DEBUG("Rotator not found, disabling Rotator Tab");
+    }
+
+    // Discover weather sensors
+    for (int measurement = 0; measurement < WEATHER_MEASUREMENTS_COUNT; measurement ++) {
+        char command[CMD_MAX_LEN];
+        switch(measurement) {
+            case WEATHER_TEMPERATURE:
+                indi_strlcpy(command, OS_get_temperature, sizeof(command));
+                break;
+            case WEATHER_PRESSURE:
+                indi_strlcpy(command, OS_get_pressure, sizeof(command));
+                break;
+            case WEATHER_HUMIDITY:
+                indi_strlcpy(command, OS_get_humidity, sizeof(command));
+                break;
+            case WEATHER_DEW_POINT:
+                indi_strlcpy(command, OS_get_dew_point, sizeof(command));
+                break;
+            default:
+                break;
+        }
+
+        error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, command);
+        if (error_or_fail > 1 &&
+            strcmp(response, "N/A") != 0 &&
+            strcmp(response, "nan") != 0 &&
+            strcmp(response, "0") != 0) {
+            hasWeather = true;
+        }
+    }
+    if (hasWeather) {
+        LOG_DEBUG("Weather sensor(s) found, enabling Weather Tab");
+    } else {
+        LOG_DEBUG("Weather sensor not found, disabling Weather Tab");
+    }
+
+
+    // Get features presence
+    error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_features);
+    if (error_or_fail > 1 && std::stoi(response) > 0) {
+        hasFeatures = true;
+        LOG_DEBUG("Auxiliary Feature(s) found, enabling Features Tab");
+    } else {
+        LOG_DEBUG("Auxiliary Feature not found, disabling Features Tab");
+    }
 
     // Start polling timer (e.g., every 1000ms)
 //    SetTimer(getCurrentPollingPeriod());
