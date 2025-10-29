@@ -125,7 +125,7 @@ void OnStep_Aux::GetCapabilites()
     // Discover focuser
     int intResponse = 0;
     error_or_fail = getCommandIntResponse(PortFD, &intResponse, response, OS_get_defined_focusers);
-    if (error_or_fail > 1 && intResponse > 0) {
+    if (error_or_fail > 0 && intResponse > 0) {
         hasFocuser = true;
         LOG_DEBUG("Focuser found, enabling Focuser Tab");
     } else {
@@ -134,7 +134,7 @@ void OnStep_Aux::GetCapabilites()
 
     // Discover rotator
     error_or_fail = getCommandIntResponse(PortFD, &intResponse, response, OS_get_defined_rotator);
-    if (error_or_fail > 1 && intResponse > 0) {
+    if (error_or_fail > 0 && intResponse > 0) {
         hasRotator = true;
         LOG_DEBUG("Rotator found, enabling Rotator Tab");
     } else {
