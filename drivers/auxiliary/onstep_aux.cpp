@@ -64,6 +64,8 @@ OnStep_Aux::OnStep_Aux() : INDI::DefaultDevice(), FI(this),  RI(this), WI(this),
 //    FI::SetCapability(FOCUSER_CAN_ABS_MOVE | FOCUSER_CAN_REL_MOVE | FOCUSER_CAN_ABORT);
 //    RI::SetCapability(ROTATOR_CAN_ABORT | ROTATOR_CAN_HOME | ROTATOR_HAS_BACKLASH);
 //    PI::SetCapability(POWER_HAS_USB_TOGGLE);
+
+    SlowTimer.callOnTimeout(std::bind(&OnStep_Aux::SlowTimerHit, this));
 }
 
 const char *OnStep_Aux::getDefaultName()
@@ -186,10 +188,11 @@ void OnStep_Aux::GetCapabilites()
 
     // Start polling timer (e.g., every 1000ms)
 //    SetTimer(getCurrentPollingPeriod());
+
     // Start the slow timer for weather updates
-//    SlowTimer.start(60000);
+    SlowTimer.start(60000);
     // Call the slow property update once as this is startup and we want to populate now
-//    SlowTimerHit();
+    SlowTimerHit();
 }
 
 
@@ -1252,7 +1255,7 @@ void ISPoll(void *p);
 ****************************************/
 void OnStep_Aux::SlowTimerHit()
 {
-
+    WI::updateWeather();
 }
 
 /*****************************************************************
