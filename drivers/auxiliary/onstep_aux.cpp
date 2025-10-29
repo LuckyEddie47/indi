@@ -277,25 +277,24 @@ bool OnStep_Aux::initProperties()
 //    IUFillText(&VersionT[3], "Name", "", "");
 //    IUFillTextVector(&VersionTP, VersionT, 4, getDeviceName(), "Firmware Info", "", FIRMWARE_TAB, IP_RO, 0, IPS_IDLE);
 //
-//    // ============== WEATHER TAB
-//    // Uses OnStep's defaults for this
-//    IUFillNumber(&OSSetTemperatureN[0], "Set Temperature (C)", "C", "%4.2f", -100, 100, 1, 10);//-274, 999, 1, 10);
-//    IUFillNumberVector(&OSSetTemperatureNP, OSSetTemperatureN, 1, getDeviceName(), "Set Temperature (C)", "", WEATHER_TAB,
-//                       IP_RW, 0, IPS_IDLE);
-//    IUFillNumber(&OSSetHumidityN[0], "Set Relative Humidity (%)", "%", "%5.2f", 0, 100, 1, 70);
-//    IUFillNumberVector(&OSSetHumidityNP, OSSetHumidityN, 1, getDeviceName(), "Set Relative Humidity (%)", "", WEATHER_TAB,
-//                       IP_RW, 0, IPS_IDLE);
-//    IUFillNumber(&OSSetPressureN[0], "Set Pressure (hPa)", "hPa", "%4f", 500, 1500, 1, 1010);
-//    IUFillNumberVector(&OSSetPressureNP, OSSetPressureN, 1, getDeviceName(), "Set Pressure (hPa)", "", WEATHER_TAB, IP_RW,
-//                       0, IPS_IDLE);
-//
-//    //Will eventually pull from the elevation in site settings
-//    //TODO: Pull from elevation in site settings
-//    IUFillNumber(&OSSetAltitudeN[0], "Set Altitude (m)", "m", "%4f", 0, 20000, 1, 110);
-//    IUFillNumberVector(&OSSetAltitudeNP, OSSetAltitudeN, 1, getDeviceName(), "Set Altitude (m)", "", WEATHER_TAB, IP_RW, 0,
-//                       IPS_IDLE);
-//
-//
+    // ============== WEATHER TAB
+    // Uses OnStep's defaults for this
+    IUFillNumber(&OSSetTemperatureN[0], "Set Temperature (C)", "C", "%4.2f", -100, 100, 1, 10);//-274, 999, 1, 10);
+    IUFillNumberVector(&OSSetTemperatureNP, OSSetTemperatureN, 1, getDeviceName(), "Set Temperature (C)", "", WEATHER_TAB,
+                       IP_RW, 0, IPS_IDLE);
+    IUFillNumber(&OSSetHumidityN[0], "Set Relative Humidity (%)", "%", "%5.2f", 0, 100, 1, 70);
+    IUFillNumberVector(&OSSetHumidityNP, OSSetHumidityN, 1, getDeviceName(), "Set Relative Humidity (%)", "", WEATHER_TAB,
+                       IP_RW, 0, IPS_IDLE);
+    IUFillNumber(&OSSetPressureN[0], "Set Pressure (hPa)", "hPa", "%4f", 500, 1500, 1, 1010);
+    IUFillNumberVector(&OSSetPressureNP, OSSetPressureN, 1, getDeviceName(), "Set Pressure (hPa)", "", WEATHER_TAB, IP_RW,
+                       0, IPS_IDLE);
+
+    //Will eventually pull from the elevation in site settings
+    //TODO: Pull from elevation in site settings
+    IUFillNumber(&OSSetAltitudeN[0], "Set Altitude (m)", "m", "%4f", 0, 20000, 1, 110);
+    IUFillNumberVector(&OSSetAltitudeNP, OSSetAltitudeN, 1, getDeviceName(), "Set Altitude (m)", "", WEATHER_TAB, IP_RW, 0,
+                       IPS_IDLE);
+
     addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 85, 15);
     addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
     addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
@@ -737,6 +736,89 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
     if (!dev || strcmp(dev, getDeviceName()))
         return false;
 
+    if (!strcmp(name, OSSetTemperatureNP.name))
+    {
+        if ((values[0] >= -100) && (values[0] <= 100)) {
+            char cmd[CMD_MAX_LEN] = {0};
+            snprintf(cmd, 15, ":SX9A,%d#", (int)values[0]);
+            sendOSCommandBlind(cmd);
+            OSSetTemperatureNP.s = IPS_OK;
+            OSSetTemperatureN[0].value = values[0];
+            IDSetNumber(&OSSetTemperatureNP, "Temperature set to %d", (int)values[0]);
+        } else {
+            OSSetTemperatureNP.s = IPS_ALERT;
+            IDSetNumber(&OSSetTemperatureNP, "Setting Temperature Failed");
+        }
+        return true;
+    }
+
+    if (!strcmp(name, OSSetHumidityNP.name)) {
+        if ((values[0] >= 0) && (values[0] <= 100)) {
+            char cmd[CMD_MAX_LEN] = {0};
+            snprintf(cmd, 15, ":SX9C,%d#", (int)values[0]);
+            sendOSCommandBlind(cmd);
+            OSSetHumidityNP.s = IPS_OK;
+            OSSetHumidityN[0].value = values[0];
+            IDSetNumber(&OSSetHumidityNP, "Humidity set to %d", (int)values[0]);
+        } else {
+            OSSetHumidityNP.s = IPS_ALERT;
+            IDSetNumber(&OSSetHumidityNP, "Setting Humidity Failed");
+        }
+        return true;
+    }
+
+    if (!strcmp(name, OSSetPressureNP.name)) {
+        if ((values[0] >= 500) && (values[0] <= 1100)) {
+            char cmd[CMD_MAX_LEN] = {0};
+            snprintf(cmd, 15, ":SX9B,%d#", (int)values[0]);
+            sendOSCommandBlind(cmd);
+            OSSetPressureNP.s = IPS_OK;
+            OSSetPressureN[0].value = values[0];
+            IDSetNumber(&OSSetPressureNP, "Pressure set to %d", (int)values[0]);
+        } else {
+            OSSetPressureNP.s = IPS_ALERT;
+            IDSetNumber(&OSSetPressureNP, "Setting Pressure Failed");
+        }
+        return true;
+    }
+
+    // Focus T° Compensation
+    if (!strcmp(name, TFCCoefficientNP.name)) {
+        // :FC[sn.n]# Set focuser temperature compensation coefficient in µ/°C
+        if (abs(values[0]) < 1000) {    //Range is -999.999 .. + 999.999
+            char cmd[CMD_MAX_LEN] = {0};
+            snprintf(cmd, 15, ":FC%+3.5f#", values[0]);
+            sendOSCommandBlind(cmd);
+            TFCCoefficientNP.s = IPS_OK;
+            IDSetNumber(&TFCCoefficientNP, "TFC Coefficient set to %+3.5f", values[0]);
+        } else {
+            TFCCoefficientNP.s = IPS_ALERT;
+            IDSetNumber(&TFCCoefficientNP, "Setting TFC Coefficient Failed");
+        }
+        return true;
+    }
+
+    if (!strcmp(name, TFCDeadbandNP.name))
+    {
+        // :FD[n]#    Set focuser temperature compensation deadband amount (in steps or microns)
+        if ((values[0] >= 1) && (values[0] <= 32768)) {  //Range is 1 .. 32767
+            char cmd[CMD_MAX_LEN] = {0};
+            snprintf(cmd, 15, ":FD%d#", (int)values[0]);
+            sendOSCommandBlind(cmd);
+            TFCDeadbandNP.s = IPS_OK;
+            IDSetNumber(&TFCDeadbandNP, "TFC Deadbandset to %d", (int)values[0]);
+        } else {
+            TFCDeadbandNP.s = IPS_ALERT;
+            IDSetNumber(&TFCDeadbandNP, "Setting TFC Deadband Failed");
+        }
+        return true;
+    }
+    // end Focus T° Compensation
+
+    if (strstr(name, "WEATHER_")) {
+        return WI::processNumber(dev, name, values, names, n);
+    }
+
     return INDI::DefaultDevice::ISNewNumber(dev, name, values, names, n);
 }
 
@@ -1165,6 +1247,79 @@ void ISPoll(void *p);
 //    FI::ISGetProperties(dev);
 //}
 
+/***************************************
+* Poll properties for updates per minute
+****************************************/
+void OnStep_Aux::SlowTimerHit()
+{
+
+}
+
+/*****************************************************************
+* Poll Weather properties for updates - period set by Weather poll
+******************************************************************/
+IPState OnStep_Aux::updateWeather() {
+    if (hasWeather) {
+
+        LOG_DEBUG("Weather update called");
+
+        for (int measurement = 0; measurement < WEATHER_MEASUREMENTS_COUNT; measurement ++) {
+            if (weather_enabled[measurement] == 1) {
+                char measurement_reponse[RB_MAX_LEN];
+                char measurement_command[CMD_MAX_LEN];
+
+                LOGF_DEBUG("In weather measurements loop, %u", measurement);
+
+                switch (measurement) {
+                case WEATHER_TEMPERATURE:
+                    indi_strlcpy(measurement_command, OS_get_temperature, sizeof(measurement_command));
+                    break;
+                case WEATHER_PRESSURE:
+                    indi_strlcpy(measurement_command, OS_get_pressure, sizeof(measurement_command));
+                    break;
+                case WEATHER_HUMIDITY:
+                    indi_strlcpy(measurement_command, OS_get_humidity, sizeof(measurement_command));
+                    break;
+                case WEATHER_DEW_POINT:
+                    indi_strlcpy(measurement_command, OS_get_dew_point, sizeof(measurement_command));
+                    break;
+                default:
+                    break;
+                }
+
+                double value = conversion_error;
+                int measurement_error_or_fail = getCommandDoubleResponse(PortFD, &value, measurement_reponse,
+                                                                         measurement_command);
+                if ((measurement_error_or_fail >= 0) && (value != conversion_error) &&
+                    (weather_enabled[measurement] == 1)) {
+                    switch(measurement) {
+                    case WEATHER_TEMPERATURE:
+                        setParameterValue("WEATHER_TEMPERATURE", value);
+                        break;
+                    case WEATHER_PRESSURE:
+                        setParameterValue("WEATHER_PRESSURE", value);
+                        break;
+                    case WEATHER_HUMIDITY:
+                        setParameterValue("WEATHER_HUMIDITY", value);
+                        break;
+                    case WEATHER_DEW_POINT:
+                        setParameterValue("WEATHER_DEWPOINT", value);
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            }
+            if (WI::syncCriticalParameters()) {
+                LOG_DEBUG("SyncCriticalParameters = true");
+            } else {
+                LOG_DEBUG("SyncCriticalParameters = false");
+            }
+        }
+    }
+
+    return IPS_OK;
+}
 bool OnStep_Aux::saveConfigItems(FILE *fp)
 {
     FI::saveConfigItems(fp);

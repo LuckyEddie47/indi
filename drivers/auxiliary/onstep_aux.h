@@ -208,11 +208,13 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     virtual bool Connect() override;
     virtual bool Disconnect() override;
     virtual bool saveConfigItems(FILE *fp) override;
+
+    virtual IPState updateWeather() override;
 //    virtual void Init_Outputs();
 
 //    virtual void TimerHit() override;
     // Timer for slow updates, once per minute
-//    INDI::Timer SlowTimer;
+    INDI::Timer SlowTimer;
 
     typedef enum {
         CONNECTION_NONE = 1 << 0,
@@ -236,6 +238,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
 
   private:
     bool Handshake();
+      void SlowTimerHit();
 
     static constexpr const float minimum_OS_fw = 10.25;
     static constexpr const int conversion_error = -10000;
@@ -383,18 +386,6 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     //Not sure why this would be used, but will feed to it from site settings
     INumberVectorProperty OSSetAltitudeNP;
     INumber OSSetAltitudeN[1];
-
-
-    //This is updated via other commands, as such I'm going to ignore it like some others do.
-    virtual IPState updateWeather() override
-    {
-        return IPS_OK;
-    }
-
-
-
-
-
 
     // Weather tab controls
     //---------------------
