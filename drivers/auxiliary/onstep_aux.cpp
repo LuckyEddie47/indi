@@ -175,7 +175,6 @@ void OnStep_Aux::GetCapabilites()
         LOG_DEBUG("Weather sensor not found, disabling Weather Tab");
     }
 
-
     // Get features presence
     error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_features);
     if (error_or_fail > 1 && std::stoi(response) > 0) {
@@ -203,9 +202,9 @@ bool OnStep_Aux::initProperties()
     setDriverInterface(FOCUSER_INTERFACE | ROTATOR_INTERFACE | WEATHER_INTERFACE | POWER_INTERFACE | AUX_INTERFACE);
 
     FI::initProperties(FOCUS_TAB);
-//    RI::initProperties(ROTATOR_TAB);
-//    WI::initProperties(WEATHER_TAB, WEATHER_TAB);
-//    PI::initProperties(POWER_TAB);
+    RI::initProperties(ROTATOR_TAB);
+    WI::initProperties(WEATHER_TAB, WEATHER_TAB);
+    PI::initProperties(POWER_TAB);
 
     //FocuserInterface
     //Initial, these will be updated later.
@@ -217,21 +216,21 @@ bool OnStep_Aux::initProperties()
     FocusAbsPosNP[0].max = 60000.;
     FocusAbsPosNP[0].value = 0;
     FocusAbsPosNP[0].step = 10;
-//
-//    // ============== MAIN_CONTROL_TAB
-//    IUFillSwitch(&ReticS[0], "PLUS", "Light", ISS_OFF);
-//    IUFillSwitch(&ReticS[1], "MOINS", "Dark", ISS_OFF);
-//    IUFillSwitchVector(&ReticSP, ReticS, 2, getDeviceName(), "RETICULE_BRIGHTNESS", "Reticule +/-", MAIN_CONTROL_TAB, IP_RW,
-//                       ISR_ATMOST1, 60, IPS_IDLE);
-//
-//    IUFillText(&ObjectInfoT[0], "Info", "", "");
-//    IUFillTextVector(&ObjectInfoTP, ObjectInfoT, 1, getDeviceName(), "Object Info", "", MAIN_CONTROL_TAB,
-//                     IP_RO, 0, IPS_IDLE);
-//
-//    // ============== COMMUNICATION_TAB
-//
-//    // ============== CONNECTION_TAB
-//
+
+    // ============== MAIN_CONTROL_TAB
+    IUFillSwitch(&ReticS[0], "PLUS", "Light", ISS_OFF);
+    IUFillSwitch(&ReticS[1], "MOINS", "Dark", ISS_OFF);
+    IUFillSwitchVector(&ReticSP, ReticS, 2, getDeviceName(), "RETICULE_BRIGHTNESS", "Reticule +/-", MAIN_CONTROL_TAB, IP_RW,
+                       ISR_ATMOST1, 60, IPS_IDLE);
+
+    IUFillText(&ObjectInfoT[0], "Info", "", "");
+    IUFillTextVector(&ObjectInfoTP, ObjectInfoT, 1, getDeviceName(), "Object Info", "", MAIN_CONTROL_TAB,
+                     IP_RO, 0, IPS_IDLE);
+
+    // ============== COMMUNICATION_TAB
+
+    // ============== CONNECTION_TAB
+
     // ============== OPTIONS_TAB
 
     // ============== FOCUS_TAB
@@ -263,51 +262,14 @@ bool OnStep_Aux::initProperties()
     IUFillNumberVector(&TFCDeadbandNP, TFCDeadbandN, 1, getDeviceName(), "TFC Deadband", "", FOCUS_TAB, IP_RW, 0, IPS_IDLE);
     // End Focus T° Compensation
 
-//    IUFillSwitch(&OSFocusSelectS[0], "Focuser_Primary_1", "Focuser 1", ISS_ON);
-//    IUFillSwitch(&OSFocusSelectS[1], "Focuser_Primary_2", "Focuser 2/Swap", ISS_OFF);
-//    // For when OnStepX comes out
-//    IUFillSwitch(&OSFocusSelectS[2], "Focuser_Primary_3", "3", ISS_OFF);
-//    IUFillSwitch(&OSFocusSelectS[3], "Focuser_Primary_4", "4", ISS_OFF);
-//    IUFillSwitch(&OSFocusSelectS[4], "Focuser_Primary_5", "5", ISS_OFF);
-//    IUFillSwitch(&OSFocusSelectS[5], "Focuser_Primary_6", "6", ISS_OFF);
-//    IUFillSwitch(&OSFocusSelectS[6], "Focuser_Primary_7", "7", ISS_OFF);
-//    IUFillSwitch(&OSFocusSelectS[7], "Focuser_Primary_8", "8", ISS_OFF);
-//    IUFillSwitch(&OSFocusSelectS[8], "Focuser_Primary_9", "9", ISS_OFF);
-//    IUFillSwitch(&OSFocusSelectS[9], "Focuser_Primary_10", "10", ISS_OFF);
-//
-//    IUFillSwitchVector(&OSFocusSelectSP, OSFocusSelectS, 1, getDeviceName(), "OSFocusSWAP", "Primary Focuser", FOCUS_TAB,
-//                       IP_RW, ISR_ATMOST1, 0, IPS_IDLE);
-
-    // Focuser 2
-    //IUFillSwitch(&OSFocus2SelS[0], "Focus2_Sel1", "Foc 1", ISS_OFF);
-    //IUFillSwitch(&OSFocus2SelS[1], "Focus2_Sel2", "Foc 2", ISS_OFF);
-    //IUFillSwitchVector(&OSFocus2SelSP, OSFocus2SelS, 2, getDeviceName(), "Foc2Sel", "Foc 2", FOCUS_TAB, IP_RW, ISR_ATMOST1, 0, IPS_IDLE);
-
-//    IUFillSwitch(&OSFocus2MotionS[0], "Focus2_In", "In", ISS_OFF);
-//    IUFillSwitch(&OSFocus2MotionS[1], "Focus2_Out", "Out", ISS_OFF);
-//    IUFillSwitch(&OSFocus2MotionS[2], "Focus2_Stop", "Stop", ISS_OFF);
-//    IUFillSwitchVector(&OSFocus2MotionSP, OSFocus2MotionS, 3, getDeviceName(), "Foc2Mot", "Foc 2 Motion", FOCUS_TAB, IP_RW,
-//                       ISR_ATMOST1, 0, IPS_IDLE);
-//
-//    IUFillSwitch(&OSFocus2RateS[0], "Focus2_1", "min", ISS_OFF);
-//    IUFillSwitch(&OSFocus2RateS[1], "Focus2_2", "0.01", ISS_OFF);
-//    IUFillSwitch(&OSFocus2RateS[2], "Focus2_3", "0.1", ISS_OFF);
-//    IUFillSwitch(&OSFocus2RateS[3], "Focus2_4", "1", ISS_OFF);
-//    IUFillSwitchVector(&OSFocus2RateSP, OSFocus2RateS, 4, getDeviceName(), "Foc2Rate", "Foc 2 Rates", FOCUS_TAB, IP_RW,
-//                       ISR_ATMOST1, 0, IPS_IDLE);
-//
-//    IUFillNumber(&OSFocus2TargN[0], "FocusTarget2", "Abs Pos", "%g", -25000, 25000, 1, 0);
-//    IUFillNumberVector(&OSFocus2TargNP, OSFocus2TargN, 1, getDeviceName(), "Foc2Targ", "Foc 2 Target", FOCUS_TAB, IP_RW, 0,
-//                       IPS_IDLE);
-
     // =========== ROTATOR TAB
 
-//    IUFillSwitch(&OSRotatorDerotateS[0], "Derotate_OFF", "OFF", ISS_OFF);
-//    IUFillSwitch(&OSRotatorDerotateS[1], "Derotate_ON", "ON", ISS_OFF);
-//    IUFillSwitchVector(&OSRotatorDerotateSP, OSRotatorDerotateS, 2, getDeviceName(), "Derotate_Status", "DEROTATE", ROTATOR_TAB,
-//                       IP_RW,
-//                       ISR_ATMOST1, 0, IPS_IDLE);
-//
+    IUFillSwitch(&OSRotatorDerotateS[0], "Derotate_OFF", "OFF", ISS_OFF);
+    IUFillSwitch(&OSRotatorDerotateS[1], "Derotate_ON", "ON", ISS_OFF);
+    IUFillSwitchVector(&OSRotatorDerotateSP, OSRotatorDerotateS, 2, getDeviceName(), "Derotate_Status", "DEROTATE", ROTATOR_TAB,
+                       IP_RW,
+                       ISR_ATMOST1, 0, IPS_IDLE);
+
 //    // ============== FIRMWARE_TAB
 //    IUFillText(&VersionT[0], "Date", "", "");
 //    IUFillText(&VersionT[1], "Time", "", "");
@@ -466,8 +428,20 @@ bool OnStep_Aux::updateProperties()
             defineProperty(&TFCCompensationSP);
             defineProperty(&TFCCoefficientNP);
             defineProperty(&TFCDeadbandNP);
+            FI::updateProperties();
         }
 
+        if (hasRotator) {
+
+        }
+
+        if (hasWeather) {
+            defineProperty(&OSSetTemperatureNP);
+            defineProperty(&OSSetPressureNP);
+            defineProperty(&OSSetHumidityNP);
+            defineProperty(&OSSetAltitudeNP);
+            WI::updateProperties();
+        }
 
 //        timerIndex = SetTimer(getCurrentPollingPeriod());
 //
@@ -547,6 +521,13 @@ bool OnStep_Aux::updateProperties()
             deleteProperty(TFCCompensationSP.name);
             deleteProperty(TFCCoefficientNP.name);
             deleteProperty(TFCDeadbandNP.name);
+        }
+
+        if (hasWeather) {
+            deleteProperty(OSSetTemperatureNP.name);
+            deleteProperty(OSSetPressureNP.name);
+            deleteProperty(OSSetHumidityNP.name);
+            deleteProperty(OSSetAltitudeNP.name);
         }
 
         // Debug only
