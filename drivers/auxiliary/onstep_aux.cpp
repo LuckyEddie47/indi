@@ -106,6 +106,8 @@ bool OnStep_Aux::Handshake()
  **************************************************************/
 void OnStep_Aux::GetCapabilites()
 {
+    LOG_DEBUG("in GetCapabilities");
+
     // Get firmware version
     char response[RB_MAX_LEN] = {0};
     int error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_firmware);
@@ -200,27 +202,21 @@ bool OnStep_Aux::initProperties()
     DefaultDevice::initProperties();
     setDriverInterface(FOCUSER_INTERFACE | ROTATOR_INTERFACE | WEATHER_INTERFACE | POWER_INTERFACE | AUX_INTERFACE);
 
-//    addAuxControls();
-//    setDefaultPollingPeriod(10000);
-
-//    FI::initProperties(FOCUS_TAB);
+    FI::initProperties(FOCUS_TAB);
 //    RI::initProperties(ROTATOR_TAB);
 //    WI::initProperties(WEATHER_TAB, WEATHER_TAB);
 //    PI::initProperties(POWER_TAB);
 
-//    setDefaultPollingPeriod(10000);
-//    addPollPeriodControl();
-//
-//    //FocuserInterface
-//    //Initial, these will be updated later.
-//    FocusRelPosNP[0].min = 0.;
-//    FocusRelPosNP[0].max = 30000.;
-//    FocusRelPosNP[0].value = 0;
-//    FocusRelPosNP[0].step = 10;
-//    FocusAbsPosNP[0].min = 0.;
-//    FocusAbsPosNP[0].max = 60000.;
-//    FocusAbsPosNP[0].value = 0;
-//    FocusAbsPosNP[0].step = 10;
+    //FocuserInterface
+    //Initial, these will be updated later.
+    FocusRelPosNP[0].min = 0.;
+    FocusRelPosNP[0].max = 30000.;
+    FocusRelPosNP[0].value = 0;
+    FocusRelPosNP[0].step = 10;
+    FocusAbsPosNP[0].min = 0.;
+    FocusAbsPosNP[0].max = 60000.;
+    FocusAbsPosNP[0].value = 0;
+    FocusAbsPosNP[0].step = 10;
 //
 //    // ============== MAIN_CONTROL_TAB
 //    IUFillSwitch(&ReticS[0], "PLUS", "Light", ISS_OFF);
@@ -236,37 +232,37 @@ bool OnStep_Aux::initProperties()
 //
 //    // ============== CONNECTION_TAB
 //
-//    // ============== OPTIONS_TAB
-//
-//    // ============== FOCUS_TAB
-//    // Focuser 1
-//
-//    IUFillSwitch(&OSFocus1InitializeS[0], "Focus1_0", "Zero", ISS_OFF);
-//    IUFillSwitch(&OSFocus1InitializeS[1], "Focus1_2", "Mid", ISS_OFF);
-//    //     IUFillSwitch(&OSFocus1InitializeS[2], "Focus1_3", "max", ISS_OFF);
-//    IUFillSwitchVector(&OSFocus1InitializeSP, OSFocus1InitializeS, 2, getDeviceName(), "Foc1Rate", "Initialize", FOCUS_TAB,
-//                       IP_RW, ISR_ATMOST1, 0, IPS_IDLE);
-//    // Focus T° Compensation
-//    // Property must be FOCUS_TEMPERATURE to be recognized by Ekos
-//    IUFillNumber(&FocusTemperatureN[0], "FOCUS_TEMPERATURE", "TFC T°", "%+2.2f", 0, 1, 0.25,
-//                 25);  //default value is meaningless
-//    IUFillNumber(&FocusTemperatureN[1], "TFC Δ T°", "TFC Δ T°", "%+2.2f", 0, 1, 0.25, 25);  //default value is meaningless
-//    IUFillNumberVector(&FocusTemperatureNP, FocusTemperatureN, 2, getDeviceName(), "FOCUS_TEMPERATURE", "Focuser T°",
-//                       FOCUS_TAB, IP_RO, 0,
-//                       IPS_IDLE);
-//    IUFillSwitch(&TFCCompensationS[0], "Off", "Compensation: OFF", ISS_OFF);
-//    IUFillSwitch(&TFCCompensationS[1], "On", "Compensation: ON", ISS_OFF);
-//    IUFillSwitchVector(&TFCCompensationSP, TFCCompensationS, 2, getDeviceName(), "Compensation T°", "Temperature Compensation",
-//                       FOCUS_TAB, IP_RW,
-//                       ISR_1OFMANY, 0, IPS_IDLE);
-//
-//    IUFillNumber(&TFCCoefficientN[0], "TFC Coefficient", "TFC Coefficient µm/°C", "%+03.5f", -999.99999, 999.99999, 1, 100);
-//    IUFillNumberVector(&TFCCoefficientNP, TFCCoefficientN, 1, getDeviceName(), "TFC Coefficient", "", FOCUS_TAB, IP_RW, 0,
-//                       IPS_IDLE);
-//    IUFillNumber(&TFCDeadbandN[0], "TFC Deadband", "TFC Deadband µm", "%g", 1, 32767, 1, 5);
-//    IUFillNumberVector(&TFCDeadbandNP, TFCDeadbandN, 1, getDeviceName(), "TFC Deadband", "", FOCUS_TAB, IP_RW, 0, IPS_IDLE);
-//    // End Focus T° Compensation
-//
+    // ============== OPTIONS_TAB
+
+    // ============== FOCUS_TAB
+    // Focuser 1
+
+    IUFillSwitch(&OSFocus1InitializeS[0], "Focus1_0", "Zero", ISS_OFF);
+    IUFillSwitch(&OSFocus1InitializeS[1], "Focus1_2", "Mid", ISS_OFF);
+    //     IUFillSwitch(&OSFocus1InitializeS[2], "Focus1_3", "max", ISS_OFF);
+    IUFillSwitchVector(&OSFocus1InitializeSP, OSFocus1InitializeS, 2, getDeviceName(), "Foc1Rate", "Initialize", FOCUS_TAB,
+                       IP_RW, ISR_ATMOST1, 0, IPS_IDLE);
+    // Focus T° Compensation
+    // Property must be FOCUS_TEMPERATURE to be recognized by Ekos
+    IUFillNumber(&FocusTemperatureN[0], "FOCUS_TEMPERATURE", "TFC T°", "%+2.2f", 0, 1, 0.25,
+                 25);  //default value is meaningless
+    IUFillNumber(&FocusTemperatureN[1], "TFC Δ T°", "TFC Δ T°", "%+2.2f", 0, 1, 0.25, 25);  //default value is meaningless
+    IUFillNumberVector(&FocusTemperatureNP, FocusTemperatureN, 2, getDeviceName(), "FOCUS_TEMPERATURE", "Focuser T°",
+                       FOCUS_TAB, IP_RO, 0,
+                       IPS_IDLE);
+    IUFillSwitch(&TFCCompensationS[0], "Off", "Compensation: OFF", ISS_OFF);
+    IUFillSwitch(&TFCCompensationS[1], "On", "Compensation: ON", ISS_OFF);
+    IUFillSwitchVector(&TFCCompensationSP, TFCCompensationS, 2, getDeviceName(), "Compensation T°", "Temperature Compensation",
+                       FOCUS_TAB, IP_RW,
+                       ISR_1OFMANY, 0, IPS_IDLE);
+
+    IUFillNumber(&TFCCoefficientN[0], "TFC Coefficient", "TFC Coefficient µm/°C", "%+03.5f", -999.99999, 999.99999, 1, 100);
+    IUFillNumberVector(&TFCCoefficientNP, TFCCoefficientN, 1, getDeviceName(), "TFC Coefficient", "", FOCUS_TAB, IP_RW, 0,
+                       IPS_IDLE);
+    IUFillNumber(&TFCDeadbandN[0], "TFC Deadband", "TFC Deadband µm", "%g", 1, 32767, 1, 5);
+    IUFillNumberVector(&TFCDeadbandNP, TFCDeadbandN, 1, getDeviceName(), "TFC Deadband", "", FOCUS_TAB, IP_RW, 0, IPS_IDLE);
+    // End Focus T° Compensation
+
 //    IUFillSwitch(&OSFocusSelectS[0], "Focuser_Primary_1", "Focuser 1", ISS_ON);
 //    IUFillSwitch(&OSFocusSelectS[1], "Focuser_Primary_2", "Focuser 2/Swap", ISS_OFF);
 //    // For when OnStepX comes out
@@ -281,7 +277,6 @@ bool OnStep_Aux::initProperties()
 //
 //    IUFillSwitchVector(&OSFocusSelectSP, OSFocusSelectS, 1, getDeviceName(), "OSFocusSWAP", "Primary Focuser", FOCUS_TAB,
 //                       IP_RW, ISR_ATMOST1, 0, IPS_IDLE);
-
 
     // Focuser 2
     //IUFillSwitch(&OSFocus2SelS[0], "Focus2_Sel1", "Foc 1", ISS_OFF);
@@ -426,13 +421,11 @@ bool OnStep_Aux::initProperties()
 
     // Standard Indi aux controls
     //---------------------------
-//    addAuxControls();
+    addAuxControls();
 
     if (osaConnection & CONNECTION_SERIAL) {
         serialConnection = new Connection::Serial(this);
-        serialConnection->registerHandshake([&]() {
-                                                return Handshake();
-                                            });
+        serialConnection->registerHandshake([&]() { return Handshake(); });
         serialConnection->setDefaultBaudRate(Connection::Serial::B_9600);
         registerConnection(serialConnection);
     }
@@ -441,9 +434,7 @@ bool OnStep_Aux::initProperties()
         tcpConnection = new Connection::TCP(this);
         tcpConnection->setDefaultHost("192.168.0.1");
         tcpConnection->setDefaultPort(9999);
-        tcpConnection->registerHandshake([&]() {
-                                             return Handshake();
-                                         });
+        tcpConnection->registerHandshake([&]() { return Handshake(); });
         registerConnection(tcpConnection);
     }
 
@@ -456,6 +447,28 @@ bool OnStep_Aux::updateProperties()
 
     if (isConnected()) {
         loadConfig(true);
+
+        Connection::Interface *activeConnection = getActiveConnection();
+        if (!activeConnection->name().compare("CONNECTION_TCP")) {
+            LOG_INFO("Network based connection, detection timeouts set to 2 seconds");
+            OSTimeoutMicroSeconds = 0;
+            OSTimeoutSeconds = 2;
+        } else {
+            LOG_INFO("Non-Network based connection, detection timeouts set to 0.1 seconds");
+            OSTimeoutMicroSeconds = 100000;
+            OSTimeoutSeconds = 0;
+        }
+
+        if (hasFocuser) {
+            defineProperty(&OSFocus1InitializeSP);
+            // Focus T° Compensation
+            defineProperty(&FocusTemperatureNP);
+            defineProperty(&TFCCompensationSP);
+            defineProperty(&TFCCoefficientNP);
+            defineProperty(&TFCDeadbandNP);
+        }
+
+
 //        timerIndex = SetTimer(getCurrentPollingPeriod());
 //
 //        if (outputs[0] > 0) {
@@ -527,6 +540,14 @@ bool OnStep_Aux::updateProperties()
 //            deleteProperty(Output8SP.name);
 //            deleteProperty(Output_Name8TP.name);
 //        }
+        if (hasFocuser) {
+            deleteProperty(OSFocus1InitializeSP.name);
+            // Focus T° Compensation
+            deleteProperty(FocusTemperatureNP.name);
+            deleteProperty(TFCCompensationSP.name);
+            deleteProperty(TFCCoefficientNP.name);
+            deleteProperty(TFCDeadbandNP.name);
+        }
 
         // Debug only
         deleteProperty(Arbitary_CommandTP.name);
