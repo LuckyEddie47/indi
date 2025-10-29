@@ -296,12 +296,12 @@ bool OnStep_Aux::initProperties()
 //                       IPS_IDLE);
 //
 //
-//    addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 85, 15);
-//    addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
-//    addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
-//    addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 100, 15); // From OnStep
-//    addParameter("WEATHER_CPU_TEMPERATURE", "OnStep CPU Temperature", -274, 200, -274); // From OnStep, -274 = unread
-//    setCriticalParameter("WEATHER_TEMPERATURE");
+    addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 85, 15);
+    addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
+    addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
+    addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 100, 15); // From OnStep
+    addParameter("WEATHER_CPU_TEMPERATURE", "OnStep CPU Temperature", -274, 200, -274); // From OnStep, -274 = unread
+    setCriticalParameter("WEATHER_TEMPERATURE");
 //
 //    addAuxControls();
 //
