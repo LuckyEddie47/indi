@@ -309,12 +309,20 @@ bool OnStep_Aux::initProperties()
 //    IUFillNumberVector(&OSSetAltitudeNP, OSSetAltitudeN, 1, getDeviceName(), "Set Altitude (m)", "", WEATHER_TAB, IP_RW, 0,
 //                       IPS_IDLE);
 
-    addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 85, 15);
-    addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
-    addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
-    addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 100, 15); // From OnStep
-    addParameter("WEATHER_CPU_TEMPERATURE", "OnStep CPU Temperature", -274, 200, -274); // From OnStep, -274 = unread
-    setCriticalParameter("WEATHER_TEMPERATURE");
+    if (weather_enabled[WEATHER_TEMPERATURE] == 1 ) {
+        addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 50, 15);
+        setCriticalParameter("WEATHER_TEMPERATURE");
+    }
+    if (weather_enabled[WEATHER_HUMIDITY] == 1 ) {
+        addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
+    }
+    if (weather_enabled[WEATHER_PRESSURE] == 1 ) {
+        addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
+    }
+    if (weather_enabled[WEATHER_DEW_POINT] == 1 ) {
+        addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 50, 15); // From OnStep
+    }
+
 //
 //    addAuxControls();
 //
