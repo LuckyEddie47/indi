@@ -168,10 +168,21 @@ void OnStep_Aux::GetCapabilites()
             strcmp(response, "N/A") != 0 &&
             strcmp(response, "nan") != 0 &&
             strcmp(response, "0") != 0) {
+            weather_enabled[measurement] = 1;
             hasWeather = true;
+        } else {
+            weather_enabled[measurement] = 0;
         }
     }
-    if (hasWeather) {
+
+    // Available weather measurements are now defined as = 1, unavailable as = 0
+    // so we can sum these to check if any are defined, if not then keep tab disabled
+    int weatherDisabled = 0;
+    for (int wmeasure = 1; wmeasure < WEATHER_MEASUREMENTS_COUNT; wmeasure ++) {
+        weatherDisabled += weather_enabled[wmeasure];
+    }
+    if (weatherDisabled > 0) {
+        weather_tab_enabled = true;
         LOG_DEBUG("Weather sensor(s) found, enabling Weather Tab");
     } else {
         LOG_DEBUG("Weather sensor not found, disabling Weather Tab");
@@ -282,21 +293,21 @@ bool OnStep_Aux::initProperties()
 //
     // ============== WEATHER TAB
     // Uses OnStep's defaults for this
-    IUFillNumber(&OSSetTemperatureN[0], "Set Temperature (C)", "C", "%4.2f", -100, 100, 1, 10);//-274, 999, 1, 10);
-    IUFillNumberVector(&OSSetTemperatureNP, OSSetTemperatureN, 1, getDeviceName(), "Set Temperature (C)", "", WEATHER_TAB,
-                       IP_RW, 0, IPS_IDLE);
-    IUFillNumber(&OSSetHumidityN[0], "Set Relative Humidity (%)", "%", "%5.2f", 0, 100, 1, 70);
-    IUFillNumberVector(&OSSetHumidityNP, OSSetHumidityN, 1, getDeviceName(), "Set Relative Humidity (%)", "", WEATHER_TAB,
-                       IP_RW, 0, IPS_IDLE);
-    IUFillNumber(&OSSetPressureN[0], "Set Pressure (hPa)", "hPa", "%4f", 500, 1500, 1, 1010);
-    IUFillNumberVector(&OSSetPressureNP, OSSetPressureN, 1, getDeviceName(), "Set Pressure (hPa)", "", WEATHER_TAB, IP_RW,
-                       0, IPS_IDLE);
-
-    //Will eventually pull from the elevation in site settings
-    //TODO: Pull from elevation in site settings
-    IUFillNumber(&OSSetAltitudeN[0], "Set Altitude (m)", "m", "%4f", 0, 20000, 1, 110);
-    IUFillNumberVector(&OSSetAltitudeNP, OSSetAltitudeN, 1, getDeviceName(), "Set Altitude (m)", "", WEATHER_TAB, IP_RW, 0,
-                       IPS_IDLE);
+//    IUFillNumber(&OSSetTemperatureN[0], "Set Temperature (C)", "C", "%4.2f", -100, 100, 1, 10);//-274, 999, 1, 10);
+//    IUFillNumberVector(&OSSetTemperatureNP, OSSetTemperatureN, 1, getDeviceName(), "Set Temperature (C)", "", WEATHER_TAB,
+//                       IP_RW, 0, IPS_IDLE);
+//    IUFillNumber(&OSSetHumidityN[0], "Set Relative Humidity (%)", "%", "%5.2f", 0, 100, 1, 70);
+//    IUFillNumberVector(&OSSetHumidityNP, OSSetHumidityN, 1, getDeviceName(), "Set Relative Humidity (%)", "", WEATHER_TAB,
+//                       IP_RW, 0, IPS_IDLE);
+//    IUFillNumber(&OSSetPressureN[0], "Set Pressure (hPa)", "hPa", "%4f", 500, 1500, 1, 1010);
+//    IUFillNumberVector(&OSSetPressureNP, OSSetPressureN, 1, getDeviceName(), "Set Pressure (hPa)", "", WEATHER_TAB, IP_RW,
+//                       0, IPS_IDLE);
+//
+//    //Will eventually pull from the elevation in site settings
+//    //TODO: Pull from elevation in site settings
+//    IUFillNumber(&OSSetAltitudeN[0], "Set Altitude (m)", "m", "%4f", 0, 20000, 1, 110);
+//    IUFillNumberVector(&OSSetAltitudeNP, OSSetAltitudeN, 1, getDeviceName(), "Set Altitude (m)", "", WEATHER_TAB, IP_RW, 0,
+//                       IPS_IDLE);
 
     addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 85, 15);
     addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
@@ -438,10 +449,10 @@ bool OnStep_Aux::updateProperties()
         }
 
         if (hasWeather) {
-            defineProperty(&OSSetTemperatureNP);
-            defineProperty(&OSSetPressureNP);
-            defineProperty(&OSSetHumidityNP);
-            defineProperty(&OSSetAltitudeNP);
+//            defineProperty(&OSSetTemperatureNP);
+//            defineProperty(&OSSetPressureNP);
+//            defineProperty(&OSSetHumidityNP);
+//            defineProperty(&OSSetAltitudeNP);
             WI::updateProperties();
         }
 
@@ -526,10 +537,10 @@ bool OnStep_Aux::updateProperties()
         }
 
         if (hasWeather) {
-            deleteProperty(OSSetTemperatureNP.name);
-            deleteProperty(OSSetPressureNP.name);
-            deleteProperty(OSSetHumidityNP.name);
-            deleteProperty(OSSetAltitudeNP.name);
+//            deleteProperty(OSSetTemperatureNP.name);
+//            deleteProperty(OSSetPressureNP.name);
+//            deleteProperty(OSSetHumidityNP.name);
+//            deleteProperty(OSSetAltitudeNP.name);
         }
 
         // Debug only
@@ -1312,11 +1323,12 @@ IPState OnStep_Aux::updateWeather() {
                     }
                 }
             }
-            if (WI::syncCriticalParameters()) {
-                LOG_DEBUG("SyncCriticalParameters = true");
-            } else {
-                LOG_DEBUG("SyncCriticalParameters = false");
-            }
+        }
+
+        if (WI::syncCriticalParameters()) {
+            LOG_DEBUG("SyncCriticalParameters = true");
+        } else {
+            LOG_DEBUG("SyncCriticalParameters = false");
         }
     }
 
