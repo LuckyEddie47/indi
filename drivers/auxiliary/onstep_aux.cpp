@@ -59,12 +59,6 @@ OnStep_Aux::OnStep_Aux() : INDI::DefaultDevice(), FI(this),  RI(this), WI(this),
 // Debug only end
 
     setVersion(0, 1);
-
-    // Move to after capability discovery
-//    FI::SetCapability(FOCUSER_CAN_ABS_MOVE | FOCUSER_CAN_REL_MOVE | FOCUSER_CAN_ABORT);
-//    RI::SetCapability(ROTATOR_CAN_ABORT | ROTATOR_CAN_HOME | ROTATOR_HAS_BACKLASH);
-//    PI::SetCapability(POWER_HAS_USB_TOGGLE);
-
     SlowTimer.callOnTimeout(std::bind(&OnStep_Aux::SlowTimerHit, this));
 }
 
@@ -125,20 +119,32 @@ void OnStep_Aux::GetCapabilites()
     }
 
     // Discover focuser
+    memset(response, 0, RB_MAX_LEN);
     int intResponse = 0;
     error_or_fail = getCommandIntResponse(PortFD, &intResponse, response, OS_get_defined_focusers);
     if (error_or_fail > 0 && intResponse > 0) {
         hasFocuser = true;
+        FI::SetCapability(FOCUSER_CAN_ABS_MOVE | FOCUSER_CAN_REL_MOVE | FOCUSER_CAN_ABORT);
+        syncDriverInfo();
         LOG_DEBUG("Focuser found, enabling Focuser Tab");
     } else {
         LOG_DEBUG("Focuser not found, disabling Focuser Tab");
     }
 
     // Discover rotator
-    error_or_fail = getCommandIntResponse(PortFD, &intResponse, response, OS_get_defined_rotator);
-    if (error_or_fail > 0 && intResponse > 0) {
-        hasRotator = true;
-        LOG_DEBUG("Rotator found, enabling Rotator Tab");
+    memset(response, 0, RB_MAX_LEN);
+    error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_rotator);
+    if (error_or_fail > 0 ) {
+        if (response[0] == 'D' || response[0] == 'R') {
+            LOG_DEBUG("Rotator found, enabling Rotator Tab");
+            hasRotator = true;
+            RI::SetCapability(ROTATOR_CAN_ABORT | ROTATOR_CAN_HOME | ROTATOR_HAS_BACKLASH);
+            syncDriverInfo();
+            RI::updateProperties();
+        }
+        if (response[0] == 'D') {
+            defineProperty(&OSRotatorDerotateSP);
+        }
     } else {
         LOG_DEBUG("Rotator not found, disabling Rotator Tab");
     }
@@ -163,6 +169,7 @@ void OnStep_Aux::GetCapabilites()
                 break;
         }
 
+        memset(response, 0, RB_MAX_LEN);
         error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, command);
         if (error_or_fail > 1 &&
             strcmp(response, "N/A") != 0 &&
@@ -189,6 +196,7 @@ void OnStep_Aux::GetCapabilites()
     }
 
     // Get features presence
+    memset(response, 0, RB_MAX_LEN);
     error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_features);
     if (error_or_fail > 1 && std::stoi(response) > 0) {
         hasFeatures = true;
@@ -196,6 +204,9 @@ void OnStep_Aux::GetCapabilites()
     } else {
         LOG_DEBUG("Auxiliary Feature not found, disabling Features Tab");
     }
+
+    //    PI::SetCapability(POWER_HAS_USB_TOGGLE);
+//    syncDriverInfo();
 
     // Start polling timer (e.g., every 1000ms)
 //    SetTimer(getCurrentPollingPeriod());
@@ -248,8 +259,6 @@ bool OnStep_Aux::initProperties()
     // ============== OPTIONS_TAB
 
     // ============== FOCUS_TAB
-    // Focuser 1
-
     IUFillSwitch(&OSFocus1InitializeS[0], "Focus1_0", "Zero", ISS_OFF);
     IUFillSwitch(&OSFocus1InitializeS[1], "Focus1_2", "Mid", ISS_OFF);
     //     IUFillSwitch(&OSFocus1InitializeS[2], "Focus1_3", "max", ISS_OFF);
@@ -292,40 +301,12 @@ bool OnStep_Aux::initProperties()
 //    IUFillTextVector(&VersionTP, VersionT, 4, getDeviceName(), "Firmware Info", "", FIRMWARE_TAB, IP_RO, 0, IPS_IDLE);
 //
     // ============== WEATHER TAB
-    // Uses OnStep's defaults for this
-//    IUFillNumber(&OSSetTemperatureN[0], "Set Temperature (C)", "C", "%4.2f", -100, 100, 1, 10);//-274, 999, 1, 10);
-//    IUFillNumberVector(&OSSetTemperatureNP, OSSetTemperatureN, 1, getDeviceName(), "Set Temperature (C)", "", WEATHER_TAB,
-//                       IP_RW, 0, IPS_IDLE);
-//    IUFillNumber(&OSSetHumidityN[0], "Set Relative Humidity (%)", "%", "%5.2f", 0, 100, 1, 70);
-//    IUFillNumberVector(&OSSetHumidityNP, OSSetHumidityN, 1, getDeviceName(), "Set Relative Humidity (%)", "", WEATHER_TAB,
-//                       IP_RW, 0, IPS_IDLE);
-//    IUFillNumber(&OSSetPressureN[0], "Set Pressure (hPa)", "hPa", "%4f", 500, 1500, 1, 1010);
-//    IUFillNumberVector(&OSSetPressureNP, OSSetPressureN, 1, getDeviceName(), "Set Pressure (hPa)", "", WEATHER_TAB, IP_RW,
-//                       0, IPS_IDLE);
-//
-//    //Will eventually pull from the elevation in site settings
-//    //TODO: Pull from elevation in site settings
-//    IUFillNumber(&OSSetAltitudeN[0], "Set Altitude (m)", "m", "%4f", 0, 20000, 1, 110);
-//    IUFillNumberVector(&OSSetAltitudeNP, OSSetAltitudeN, 1, getDeviceName(), "Set Altitude (m)", "", WEATHER_TAB, IP_RW, 0,
-//                       IPS_IDLE);
+    addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 50, 15);
+    addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
+    addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
+    addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 50, 15); // From OnStep
+    setCriticalParameter("WEATHER_TEMPERATURE");
 
-    if (weather_enabled[WEATHER_TEMPERATURE] == 1 ) {
-        addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 50, 15);
-        setCriticalParameter("WEATHER_TEMPERATURE");
-    }
-    if (weather_enabled[WEATHER_HUMIDITY] == 1 ) {
-        addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
-    }
-    if (weather_enabled[WEATHER_PRESSURE] == 1 ) {
-        addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
-    }
-    if (weather_enabled[WEATHER_DEW_POINT] == 1 ) {
-        addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 50, 15); // From OnStep
-    }
-
-//
-//    addAuxControls();
-//
 //    // Feature tab controls
 //    //--------------------
 //    IUFillSwitchVector(&Feature1SP, Feature1S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE1", "Device 1",
@@ -456,85 +437,13 @@ bool OnStep_Aux::updateProperties()
 
         }
 
-        if (hasWeather) {
-//            defineProperty(&OSSetTemperatureNP);
-//            defineProperty(&OSSetPressureNP);
-//            defineProperty(&OSSetHumidityNP);
-//            defineProperty(&OSSetAltitudeNP);
-            WI::updateProperties();
-        }
-
-//        timerIndex = SetTimer(getCurrentPollingPeriod());
-//
-//        if (outputs[0] > 0) {
-//            defineProperty(&Output1SP);
-//            defineProperty(&Output_Name1TP);
-//        }
-//        if (outputs[1] > 0) {
-//            defineProperty(&Output2SP);
-//            defineProperty(&Output_Name2TP);
-//        }
-//        if (outputs[2] > 0) {
-//            defineProperty(&Output3SP);
-//            defineProperty(&Output_Name3TP);
-//        }
-//        if (outputs[3] > 0) {
-//            defineProperty(&Output4SP);
-//            defineProperty(&Output_Name4TP);
-//        }
-//        if (outputs[4] > 0) {
-//            defineProperty(&Output5SP);
-//            defineProperty(&Output_Name5TP);
-//        }
-//        if (outputs[5] > 0) {
-//            defineProperty(&Output6SP);
-//            defineProperty(&Output_Name6TP);
-//        }
-//        if (outputs[6] > 0) {
-//            defineProperty(&Output7SP);
-//            defineProperty(&Output_Name7TP);
-//        }
-//        if (outputs[7] > 0) {
-//            defineProperty(&Output8SP);
-//            defineProperty(&Output_Name8TP);
-//        }
+        WI::updateProperties();
 
         // Debug only
         defineProperty(&Arbitary_CommandTP);
         // Debug only end
     } else {
-//        if (outputs[0] > 0) {
-//            deleteProperty(Output1SP.name);
-//            deleteProperty(Output_Name1TP.name);
-//        }
-//        if (outputs[1] > 0) {
-//            deleteProperty(Output2SP.name);
-//            deleteProperty(Output_Name2TP.name);
-//        }
-//        if (outputs[2] > 0) {
-//            deleteProperty(Output3SP.name);
-//            deleteProperty(Output_Name3TP.name);
-//        }
-//        if (outputs[3] > 0) {
-//            deleteProperty(Output4SP.name);
-//            deleteProperty(Output_Name4TP.name);
-//        }
-//        if (outputs[4] > 0) {
-//            deleteProperty(Output5SP.name);
-//            deleteProperty(Output_Name5TP.name);
-//        }
-//        if (outputs[5] > 0) {
-//            deleteProperty(Output6SP.name);
-//            deleteProperty(Output_Name6TP.name);
-//        }
-//        if (outputs[6] > 0) {
-//            deleteProperty(Output7SP.name);
-//            deleteProperty(Output_Name7TP.name);
-//        }
-//        if (outputs[7] > 0) {
-//            deleteProperty(Output8SP.name);
-//            deleteProperty(Output_Name8TP.name);
-//        }
+
         if (hasFocuser) {
             deleteProperty(OSFocus1InitializeSP.name);
             // Focus T° Compensation
@@ -545,10 +454,6 @@ bool OnStep_Aux::updateProperties()
         }
 
         if (hasWeather) {
-//            deleteProperty(OSSetTemperatureNP.name);
-//            deleteProperty(OSSetPressureNP.name);
-//            deleteProperty(OSSetHumidityNP.name);
-//            deleteProperty(OSSetAltitudeNP.name);
         }
 
         // Debug only
@@ -758,58 +663,13 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
     if (!dev || strcmp(dev, getDeviceName()))
         return false;
 
-    if (!strcmp(name, OSSetTemperatureNP.name))
-    {
-        if ((values[0] >= -100) && (values[0] <= 100)) {
-            char cmd[CMD_MAX_LEN] = {0};
-            snprintf(cmd, 15, ":SX9A,%d#", (int)values[0]);
-            sendOSCommandBlind(cmd);
-            OSSetTemperatureNP.s = IPS_OK;
-            OSSetTemperatureN[0].value = values[0];
-            IDSetNumber(&OSSetTemperatureNP, "Temperature set to %d", (int)values[0]);
-        } else {
-            OSSetTemperatureNP.s = IPS_ALERT;
-            IDSetNumber(&OSSetTemperatureNP, "Setting Temperature Failed");
-        }
-        return true;
-    }
-
-    if (!strcmp(name, OSSetHumidityNP.name)) {
-        if ((values[0] >= 0) && (values[0] <= 100)) {
-            char cmd[CMD_MAX_LEN] = {0};
-            snprintf(cmd, 15, ":SX9C,%d#", (int)values[0]);
-            sendOSCommandBlind(cmd);
-            OSSetHumidityNP.s = IPS_OK;
-            OSSetHumidityN[0].value = values[0];
-            IDSetNumber(&OSSetHumidityNP, "Humidity set to %d", (int)values[0]);
-        } else {
-            OSSetHumidityNP.s = IPS_ALERT;
-            IDSetNumber(&OSSetHumidityNP, "Setting Humidity Failed");
-        }
-        return true;
-    }
-
-    if (!strcmp(name, OSSetPressureNP.name)) {
-        if ((values[0] >= 500) && (values[0] <= 1100)) {
-            char cmd[CMD_MAX_LEN] = {0};
-            snprintf(cmd, 15, ":SX9B,%d#", (int)values[0]);
-            sendOSCommandBlind(cmd);
-            OSSetPressureNP.s = IPS_OK;
-            OSSetPressureN[0].value = values[0];
-            IDSetNumber(&OSSetPressureNP, "Pressure set to %d", (int)values[0]);
-        } else {
-            OSSetPressureNP.s = IPS_ALERT;
-            IDSetNumber(&OSSetPressureNP, "Setting Pressure Failed");
-        }
-        return true;
-    }
-
     // Focus T° Compensation
     if (!strcmp(name, TFCCoefficientNP.name)) {
         // :FC[sn.n]# Set focuser temperature compensation coefficient in µ/°C
         if (abs(values[0]) < 1000) {    //Range is -999.999 .. + 999.999
             char cmd[CMD_MAX_LEN] = {0};
-            snprintf(cmd, 15, ":FC%+3.5f#", values[0]);
+//            snprintf(cmd, 15, ":FC%+3.5f#", values[0]);
+            snprintf(cmd, 15, "%s%+3.5f%s", OS_get_focuser_temp_comp_coef, values[0], OS_command_terminator);
             sendOSCommandBlind(cmd);
             TFCCoefficientNP.s = IPS_OK;
             IDSetNumber(&TFCCoefficientNP, "TFC Coefficient set to %+3.5f", values[0]);
@@ -825,7 +685,8 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
         // :FD[n]#    Set focuser temperature compensation deadband amount (in steps or microns)
         if ((values[0] >= 1) && (values[0] <= 32768)) {  //Range is 1 .. 32767
             char cmd[CMD_MAX_LEN] = {0};
-            snprintf(cmd, 15, ":FD%d#", (int)values[0]);
+//            snprintf(cmd, 15, ":FD%d#", (int)values[0]);
+            snprintf(cmd, 15, "%s%d%s", OS_get_focuser_deadband, (int)values[0], OS_command_terminator);
             sendOSCommandBlind(cmd);
             TFCDeadbandNP.s = IPS_OK;
             IDSetNumber(&TFCDeadbandNP, "TFC Deadbandset to %d", (int)values[0]);
@@ -854,23 +715,23 @@ bool OnStep_Aux::ISNewText(const char *dev,const char *name,char *texts[],char *
     if (dev != nullptr && strcmp(dev, getDeviceName()) == 0) {
         if (!strcmp(Arbitary_CommandTP.name, name)) {
             if (1 == n) {
-                char command_response[RB_MAX_LEN] = {0};
-                int command_error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, command_response, texts[0]);
-                if (command_error_or_fail > 0) {
-                    if (strcmp(command_response, "") == 0) {
-                        indi_strlcpy(command_response, "No response", sizeof(command_response));
+                char response[RB_MAX_LEN] = {0};
+                int error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, response, texts[0]);
+                if (error_or_fail > 0) {
+                    if (strcmp(response, "") == 0) {
+                        indi_strlcpy(response, "No response", sizeof(response));
                     }
                 } else {
                     char error_code[RB_MAX_LEN] = {0};
-                    if (command_error_or_fail == TTY_TIME_OUT) {
-                        indi_strlcpy(command_response, "No response", sizeof(command_response));
+                    if (error_or_fail == TTY_TIME_OUT) {
+                        indi_strlcpy(response, "No response", sizeof(response));
                     } else {
-                        sprintf(error_code, "Error: %d", command_error_or_fail);
-                        indi_strlcpy(command_response, error_code, sizeof(command_response));
+                        sprintf(error_code, "Error: %d", error_or_fail);
+                        indi_strlcpy(response, error_code, sizeof(response));
                     }
                 }
-                        // Replace the user entered string with the OCS response
-                indi_strlcpy(texts[0], command_response, RB_MAX_LEN);
+                // Replace the user entered string with the OCS response
+                indi_strlcpy(texts[0], response, RB_MAX_LEN);
                 IUUpdateText(&Arbitary_CommandTP, texts, names, n);
                 IDSetText(&Arbitary_CommandTP, nullptr);
                 return true;
@@ -1092,11 +953,11 @@ int OnStep_Aux::OSUpdateRotator()
 {
     char response[RB_MAX_LEN];
     double double_value;
-    if(OSRotator1) {
+    if(hasRotator) {
         int error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_rotator_angle);
         if (error_or_fail == 1 && response[0] == '0') { //1 char return, response 0 = no Rotator
             LOG_INFO("Detected Response that Rotator is not present, disabling further checks");
-            OSRotator1 = false;
+            hasRotator = false;
             return 0; //Return 0, as this is not a communication error
         }
         if (error_or_fail < 1) {  //This does not necessarily mean
@@ -1145,7 +1006,7 @@ int OnStep_Aux::OSUpdateRotator()
         }
         memset(response, 0, RB_MAX_LEN);
         int backlash_value;
-        error_or_fail = getCommandIntResponse(PortFD, &backlash_value, response, ":rb#");
+        error_or_fail = getCommandIntResponse(PortFD, &backlash_value, response, OS_get_rotator_backlash);
         if (error_or_fail > 1) {
             RotatorBacklashNP[0].setValue(backlash_value);
             RotatorBacklashNP.setState(IPS_OK);
@@ -1175,37 +1036,28 @@ IPState OnStep_Aux::MoveRotator(double angle)
 
     return IPS_BUSY;
 }
-/*
-bool LX200_OnStep::SyncRotator(double angle) {
 
-}*/
 IPState OnStep_Aux::HomeRotator()
 {
     //Not entirely sure if this means attempt to use limit switches and home, or goto home
     //Assuming MOVE to Home
     LOG_INFO("Moving Rotator to Home");
-    sendOSCommandBlind(":rC#");
+    sendOSCommandBlind(OS_move_rotator_home);
     return IPS_BUSY;
 }
-// bool LX200_OnStep::ReverseRotator(bool enabled) {
-//     sendOnStepCommandBlind(":rR#");
-//     return true;
-// } //No way to check which way it's going as Indi expects
 
 bool OnStep_Aux::AbortRotator()
 {
     LOG_INFO("Aborting Rotation, de-rotation in same state");
-    sendOSCommandBlind(":rQ#"); //Does NOT abort de-rotator
+    sendOSCommandBlind(OS_stop_rotator); //Does NOT abort de-rotator
     return true;
 }
 
 bool OnStep_Aux::SetRotatorBacklash(int32_t steps)
 {
     char cmd[CMD_MAX_LEN] = {0};
-    //     char response[RB_MAX_LEN];
-    snprintf(cmd, sizeof(cmd), ":rb%d#", steps);
-    if(sendOSCommand(cmd))
-    {
+    snprintf(cmd, sizeof(cmd), "%s%d%s", OS_set_rotator_backlash_part, steps, OS_command_terminator);
+    if(sendOSCommand(cmd)) {
         return true;
     }
     return false;
@@ -1218,15 +1070,6 @@ bool OnStep_Aux::SetRotatorBacklashEnabled(bool enabled)
     return true;
     //     As it's always enabled, which would mean setting it like SetRotatorBacklash to 0, and losing any saved values. So for now, leave it as is (always enabled)
 }
-
-// bool SyncRotator(double angle) override;
-//         IPState HomeRotator(double angle) override;
-// bool ReverseRotator(bool enabled) override;
-// bool AbortRotator() override;
-//         bool SetRotatorBacklash (int32_t steps) override;
-//         bool SetRotatorBacklashEnabled(bool enabled) override;
-
-// Now, derotation is NOT explicitly handled.
 
 
 /***********************************************************

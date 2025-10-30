@@ -129,8 +129,8 @@ An unterminated 0 is returned from unconfigured items
 //-----------------
 
 // Get defined rotator
-#define OS_get_defined_rotator ":rA#"
-// Returns: 1 if defined, or 0 if undefined
+#define OS_get_defined_rotator ":GX98#"
+// Returns: R if rotate only, D if de-rotate as well, or N if undefined
 
 // Get rotator angle
 #define OS_get_rotator_angle ":rG#"
@@ -152,6 +152,22 @@ An unterminated 0 is returned from unconfigured items
 #define OS_set_rotator_angle_part ":rS"
 // Returns: 1 on success, 0 on failure
 
+// Get rotator backlash
+#define OS_get_rotator_backlash ":rb#"
+// Returns n# in steps
+
+// Set rotator backlash
+#define OS_set_rotator_backlash_part ":rb"
+// Returns 0 on failure, 1 on sucess
+
+// Set rotator move to home
+#define OS_move_rotator_home ":rC#"
+// Returns nothing
+
+// Set rotator to stop
+#define OS_stop_rotator ":rQ#"
+// Returns nothing
+
 // Weather commands
 //-----------------
 
@@ -169,10 +185,6 @@ An unterminated 0 is returned from unconfigured items
 
 // Get the weather dew point in deg. C
 #define OS_get_dew_point ":GX9E#"
-// Returns: +/-n.n# if supported, 0 or nan if unsupported
-
-// Get the internal MCU temperature in deg. C
-#define OS_get_MCU_temperature ":GX9F#"
 // Returns: +/-n.n# if supported, 0 or nan if unsupported
 
 // Auxiliary features commands
@@ -344,7 +356,6 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
 //    INumber OSFocus2TargN[1];
 
     //Rotator - Some handled by RotatorInterface, but that's mostly for rotation only, absolute, and... very limited.
-    bool OSRotator1 = false; //Change to false after detection code
     ISwitchVectorProperty OSRotatorRateSP;
     ISwitch OSRotatorRateS[4]; //Set rate
 
