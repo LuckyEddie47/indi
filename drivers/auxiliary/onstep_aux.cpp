@@ -196,10 +196,16 @@ void OnStep_Aux::GetCapabilites()
         LOG_DEBUG("Weather sensor not found, disabling Weather Tab");
     }
 
-    // Get features presence
+    // Discover features
     memset(response, 0, RB_MAX_LEN);
     error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_features);
+
+    LOGF_DEBUG("std::stoi response: %d", std::stoi(response));
+
     if (error_or_fail > 1 && std::stoi(response) > 0) {
+
+        LOGF_DEBUG("size of features response: %d", sizeof response);
+
         if (sizeof response == max_features) {
             hasFeatures = true;
             LOG_DEBUG("Auxiliary Feature(s) found, enabling Features Tab");
