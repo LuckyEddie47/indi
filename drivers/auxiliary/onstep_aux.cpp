@@ -41,7 +41,8 @@
 #define STATUS_TAB "OnStep Status"
 #define ROTATOR_TAB "Rotator"
 #define WEATHER_TAB "Weather"
-#define FEATURES_TAB "Features"
+#define SWITCHES_TAB "Switches"
+#define DEW_TAB
 #define MANUAL_TAB "Manual"
 
 // Define auto pointer to ourselves
@@ -199,8 +200,34 @@ void OnStep_Aux::GetCapabilites()
     memset(response, 0, RB_MAX_LEN);
     error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_features);
     if (error_or_fail > 1 && std::stoi(response) > 0) {
-        hasFeatures = true;
-        LOG_DEBUG("Auxiliary Feature(s) found, enabling Features Tab");
+        if (sizeof response == max_features) {
+            hasFeatures = true;
+            LOG_DEBUG("Auxiliary Feature(s) found, enabling Features Tab");
+            std::string features = response;
+            for (uint digit = 0; digit < max_features; digit++) {
+                features_enabled[digit] = features[digit] - '0';
+            }
+            // Get feature names and types
+            for (int feature = 0; feature < max_features; feature++) {
+                memset(response, 0, RB_MAX_LEN);
+                char cmd[CMD_MAX_LEN] = {0};
+                snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_feature_definiton_part, feature, OS_command_terminator);
+                error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, cmd);
+                char *split;
+                split = strtok(response, ",");
+                if (strcmp(split, "N/A") != 0) {
+                    if (charToInt(split) != conversion_error) {
+                        features_name[feature] = charToInt(split);
+                    }
+                }
+                split = strtok(NULL, ",");
+                if (strcmp(split, "N/A") != 0) {
+                    if (charToInt(split) != conversion_error) {
+                        features_type[feature] = static_cast<feature_types>(charToInt(split));
+                    }
+                }
+            }
+        }
     } else {
         LOG_DEBUG("Auxiliary Feature not found, disabling Features Tab");
     }
@@ -309,69 +336,69 @@ bool OnStep_Aux::initProperties()
 
 //    // Feature tab controls
 //    //--------------------
-//    IUFillSwitchVector(&Feature1SP, Feature1S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE1", "Device 1",
-//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-//    IUFillSwitch(&Feature1S[ON_SWITCH], "FEATURE1_ON", "ON", ISS_OFF);
-//    IUFillSwitch(&Feature1S[OFF_SWITCH], "FEATURE1_OFF", "OFF", ISS_ON);
-//    IUFillTextVector(&Feature_Name1TP, Feature_Name1T, 1, getDeviceName(), "FEATURE_1_NAME", "Device 1",
-//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-//    IUFillText(&Feature_Name1T[0], "DEVICE_1_NAME", "Name", "");
-//
-//    IUFillSwitchVector(&Feature2SP, Feature2S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE2", "Device 2",
-//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-//    IUFillSwitch(&Feature2S[ON_SWITCH], "FEATURE2_ON", "ON", ISS_OFF);
-//    IUFillSwitch(&Feature2S[OFF_SWITCH], "FEATURE2_OFF", "OFF", ISS_ON);
-//    IUFillTextVector(&Feature_Name2TP, Feature_Name2T, 1, getDeviceName(), "FEATURE_2_NAME", "Device 2",
-//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-//    IUFillText(&Feature_Name2T[0], "DEVICE_2_NAME", "Name", "");
-//
-//    IUFillSwitchVector(&Feature3SP, Feature3S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE3", "Device 3",
-//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-//    IUFillSwitch(&Feature3S[ON_SWITCH], "FEATURE3_ON", "ON", ISS_OFF);
-//    IUFillSwitch(&Feature3S[OFF_SWITCH], "FEATURE3_OFF", "OFF", ISS_ON);
-//    IUFillTextVector(&Feature_Name3TP, Feature_Name3T, 1, getDeviceName(), "FEATURE_3_NAME", "Device 3",
-//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-//    IUFillText(&Feature_Name3T[0], "DEVICE_3_NAME", "Name", "");
-//
-//    IUFillSwitchVector(&Feature4SP, Feature4S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE4", "Device 4",
-//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-//    IUFillSwitch(&Feature4S[ON_SWITCH], "FEATURE4_ON", "ON", ISS_OFF);
-//    IUFillSwitch(&Feature4S[OFF_SWITCH], "FEATURE4_OFF", "OFF", ISS_ON);
-//    IUFillTextVector(&Feature_Name4TP, Feature_Name4T, 1, getDeviceName(), "FEATURE_4_NAME", "Device 4",
-//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-//    IUFillText(&Feature_Name4T[0], "DEVICE_4_NAME", "Name", "");
-//
-//    IUFillSwitchVector(&Feature5SP, Feature5S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE5", "Device 5",
-//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-//    IUFillSwitch(&Feature5S[ON_SWITCH], "FEATURE5_ON", "ON", ISS_OFF);
-//    IUFillSwitch(&Feature5S[OFF_SWITCH], "FEATURE5_OFF", "OFF", ISS_ON);
-//    IUFillTextVector(&Feature_Name5TP, Feature_Name5T, 1, getDeviceName(), "FEATURE_5_NAME", "Device 5",
-//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-//    IUFillText(&Feature_Name5T[0], "DEVICE_5_NAME", "Name", "");
-//
-//    IUFillSwitchVector(&Feature6SP, Feature6S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE6", "Device 6",
-//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-//    IUFillSwitch(&Feature6S[ON_SWITCH], "FEATURE6_ON", "ON", ISS_OFF);
-//    IUFillSwitch(&Feature6S[OFF_SWITCH], "FEATURE6_OFF", "OFF", ISS_ON);
-//    IUFillTextVector(&Feature_Name6TP, Feature_Name6T, 1, getDeviceName(), "FEATURE_6_NAME", "Device 6",
-//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-//    IUFillText(&Feature_Name6T[0], "DEVICE_6_NAME", "Name", "");
-//
-//    IUFillSwitchVector(&Feature7SP, Feature7S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE7", "Device 7",
-//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-//    IUFillSwitch(&Feature7S[ON_SWITCH], "FEATURE7_ON", "ON", ISS_OFF);
-//    IUFillSwitch(&Feature7S[OFF_SWITCH], "FEATURE7_OFF", "OFF", ISS_ON);
-//    IUFillTextVector(&Feature_Name7TP, Feature_Name7T, 1, getDeviceName(), "FEATURE_7_NAME", "Device 7",
-//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-//    IUFillText(&Feature_Name7T[0], "DEVICE_7_NAME", "Name", "");
-//
-//    IUFillSwitchVector(&Feature8SP, Feature8S, SWITCH_TOGGLE_COUNT, getDeviceName(), "FEATURE8", "Device 8",
-//                       FEATURES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-//    IUFillSwitch(&Feature8S[ON_SWITCH], "FEATURE8_ON", "ON", ISS_OFF);
-//    IUFillSwitch(&Feature8S[OFF_SWITCH], "FEATURE8_OFF", "OFF", ISS_ON);
-//    IUFillTextVector(&Feature_Name8TP, Feature_Name8T, 1, getDeviceName(), "FEATURE_8_NAME", "Device 8",
-//                     FEATURES_TAB, IP_RO, 60, IPS_OK);
-//    IUFillText(&Feature_Name8T[0], "DEVICE_8_NAME", "Name", "");
+    IUFillSwitchVector(&Switch1SP, Switch1S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch1", "Device 1",
+                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Switch1S[ON_SWITCH], "Switch1_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Switch1S[OFF_SWITCH], "Switch1_OFF", "OFF", ISS_ON);
+    IUFillTextVector(&Switch_Name1TP, Switch_Name1T, 1, getDeviceName(), "Switch_1_NAME", "Device 1",
+                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Switch_Name1T[0], "DEVICE_1_NAME", "Name", "");
+
+    IUFillSwitchVector(&Switch2SP, Switch2S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch2", "Device 2",
+                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Switch2S[ON_SWITCH], "Switch2_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Switch2S[OFF_SWITCH], "Switch2_OFF", "OFF", ISS_ON);
+    IUFillTextVector(&Switch_Name2TP, Switch_Name2T, 1, getDeviceName(), "Switch_2_NAME", "Device 2",
+                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Switch_Name2T[0], "DEVICE_2_NAME", "Name", "");
+
+    IUFillSwitchVector(&Switch3SP, Switch3S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch3", "Device 3",
+                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Switch3S[ON_SWITCH], "Switch3_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Switch3S[OFF_SWITCH], "Switch3_OFF", "OFF", ISS_ON);
+    IUFillTextVector(&Switch_Name3TP, Switch_Name3T, 1, getDeviceName(), "Switch_3_NAME", "Device 3",
+                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Switch_Name3T[0], "DEVICE_3_NAME", "Name", "");
+
+    IUFillSwitchVector(&Switch4SP, Switch4S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch4", "Device 4",
+                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Switch4S[ON_SWITCH], "Switch4_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Switch4S[OFF_SWITCH], "Switch4_OFF", "OFF", ISS_ON);
+    IUFillTextVector(&Switch_Name4TP, Switch_Name4T, 1, getDeviceName(), "Switch_4_NAME", "Device 4",
+                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Switch_Name4T[0], "DEVICE_4_NAME", "Name", "");
+
+    IUFillSwitchVector(&Switch5SP, Switch5S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch5", "Device 5",
+                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Switch5S[ON_SWITCH], "Switch5_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Switch5S[OFF_SWITCH], "Switch5_OFF", "OFF", ISS_ON);
+    IUFillTextVector(&Switch_Name5TP, Switch_Name5T, 1, getDeviceName(), "Switch_5_NAME", "Device 5",
+                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Switch_Name5T[0], "DEVICE_5_NAME", "Name", "");
+
+    IUFillSwitchVector(&Switch6SP, Switch6S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch6", "Device 6",
+                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Switch6S[ON_SWITCH], "Switch6_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Switch6S[OFF_SWITCH], "Switch6_OFF", "OFF", ISS_ON);
+    IUFillTextVector(&Switch_Name6TP, Switch_Name6T, 1, getDeviceName(), "Switch_6_NAME", "Device 6",
+                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Switch_Name6T[0], "DEVICE_6_NAME", "Name", "");
+
+    IUFillSwitchVector(&Switch7SP, Switch7S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch7", "Device 7",
+                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Switch7S[ON_SWITCH], "Switch7_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Switch7S[OFF_SWITCH], "Switch7_OFF", "OFF", ISS_ON);
+    IUFillTextVector(&Switch_Name7TP, Switch_Name7T, 1, getDeviceName(), "Switch_7_NAME", "Device 7",
+                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Switch_Name7T[0], "DEVICE_7_NAME", "Name", "");
+
+    IUFillSwitchVector(&Switch8SP, Switch8S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch8", "Device 8",
+                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Switch8S[ON_SWITCH], "Switch8_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Switch8S[OFF_SWITCH], "Switch8_OFF", "OFF", ISS_ON);
+    IUFillTextVector(&Switch_Name8TP, Switch_Name8T, 1, getDeviceName(), "Switch_8_NAME", "Device 8",
+                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Switch_Name8T[0], "DEVICE_8_NAME", "Name", "");
 
 
     // Manual tab controls
@@ -434,10 +461,103 @@ bool OnStep_Aux::updateProperties()
         }
 
         if (hasRotator) {
-
+            defineProperty(&OSRotatorRateSP);
+            defineProperty(&OSRotatorDerotateSP);
         }
 
         WI::updateProperties();
+
+        if (hasFeatures) {
+            for (int OSfeature = 0; OSfeature < max_features; OSfeature++) {
+                if (features_enabled[OSfeature] == 1) {
+                    if (features_type[OSfeature] == SWITCH ||
+                        features_type[OSfeature] == MOMENTARY_SWITCH ||
+                        features_type[OSfeature] == COVER_SWITCH) {
+                        switch (OSfeature) {
+                        case 0:
+                            defineProperty(&Switch1SP);
+                            defineProperty(&Switch_Name1TP);
+                            break;
+                        case 1:
+                            defineProperty(&Switch2SP);
+                            defineProperty(&Switch_Name2TP);
+                            break;
+                        case 2:
+                            defineProperty(&Switch3SP);
+                            defineProperty(&Switch_Name3TP);
+                            break;
+                        case 3:
+                            defineProperty(&Switch4SP);
+                            defineProperty(&Switch_Name4TP);
+                            break;
+                        case 4:
+                            defineProperty(&Switch5SP);
+                            defineProperty(&Switch_Name5TP);
+                            break;
+                        case 5:
+                            defineProperty(&Switch6SP);
+                            defineProperty(&Switch_Name6TP);
+                            break;
+                        case 6:
+                            defineProperty(&Switch7SP);
+                            defineProperty(&Switch_Name7TP);
+                            break;
+                        case 7:
+                            defineProperty(&Switch8SP);
+                            defineProperty(&Switch_Name8TP);
+                            break;
+                        default:
+                            break;
+                        }
+                    } else if (features_type[OSfeature] == DEW_HEATER) {
+                        switch (OSfeature) {
+                        case 0:
+                            defineProperty(&Dew1TP);
+                            defineProperty(&Dew1SP);
+                            defineProperty(&Dew1NP);
+                            break;
+                        case 1:
+                            defineProperty(&Dew2TP);
+                            defineProperty(&Dew2SP);
+                            defineProperty(&Dew2NP);
+                            break;
+                        case 2:
+                            defineProperty(&Dew3TP);
+                            defineProperty(&Dew3SP);
+                            defineProperty(&Dew3NP);
+                            break;
+                        case 3:
+                            defineProperty(&Dew4TP);
+                            defineProperty(&Dew4SP);
+                            defineProperty(&Dew4NP);
+                            break;
+                        case 4:
+                            defineProperty(&Dew5TP);
+                            defineProperty(&Dew5SP);
+                            defineProperty(&Dew5NP);
+                            break;
+                        case 5:
+                            defineProperty(&Dew6TP);
+                            defineProperty(&Dew6SP);
+                            defineProperty(&Dew6NP);
+                            break;
+                        case 6:
+                            defineProperty(&Dew7TP);
+                            defineProperty(&Dew7SP);
+                            defineProperty(&Dew7NP);
+                            break;
+                        case 7:
+                            defineProperty(&Dew8TP);
+                            defineProperty(&Dew8SP);
+                            defineProperty(&Dew8NP);
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         // Debug only
         defineProperty(&Arbitary_CommandTP);
@@ -453,7 +573,104 @@ bool OnStep_Aux::updateProperties()
             deleteProperty(TFCDeadbandNP.name);
         }
 
+        if (hasRotator) {
+            deleteProperty(OSRotatorRateSP.name);
+            deleteProperty(OSRotatorDerotateSP.name);
+        }
+
         if (hasWeather) {
+        }
+
+        if (hasFeatures) {
+            for (int OSfeature = 0; OSfeature < max_features; OSfeature++) {
+                if (features_enabled[OSfeature] == 1) {
+                    if (features_type[OSfeature] == SWITCH ||
+                        features_type[OSfeature] == MOMENTARY_SWITCH ||
+                        features_type[OSfeature] == COVER_SWITCH) {
+                        switch (OSfeature) {
+                        case 0:
+                            deleteProperty(Switch1SP.name);
+                            deleteProperty(Switch_Name1TP.name);
+                            break;
+                        case 1:
+                            deleteProperty(Switch2SP.name);
+                            deleteProperty(Switch_Name2TP.name);
+                            break;
+                        case 2:
+                            deleteProperty(Switch3SP.name);
+                            deleteProperty(Switch_Name3TP.name);
+                            break;
+                        case 3:
+                            deleteProperty(Switch4SP.name);
+                            deleteProperty(Switch_Name4TP.name);
+                            break;
+                        case 4:
+                            deleteProperty(Switch5SP.name);
+                            deleteProperty(Switch_Name5TP.name);
+                            break;
+                        case 5:
+                            deleteProperty(Switch6SP.name);
+                            deleteProperty(Switch_Name6TP.name);
+                            break;
+                        case 6:
+                            deleteProperty(Switch7SP.name);
+                            deleteProperty(Switch_Name7TP.name);
+                            break;
+                        case 7:
+                            deleteProperty(Switch8SP.name);
+                            deleteProperty(Switch_Name8TP.name);
+                            break;
+                        default:
+                            break;
+                        }
+                    } else if (features_type[OSfeature] == DEW_HEATER) {
+                        switch (OSfeature) {
+                        case 0:
+                            deleteProperty(Dew1TP.name);
+                            deleteProperty(Dew1SP.name);
+                            deleteProperty(Dew1NP.name);
+                            break;
+                        case 1:
+                            deleteProperty(Dew2TP.name);
+                            deleteProperty(Dew2SP.name);
+                            deleteProperty(Dew2NP.name);
+                            break;
+                        case 2:
+                            deleteProperty(Dew3TP.name);
+                            deleteProperty(Dew3SP.name);
+                            deleteProperty(Dew3NP.name);
+                            break;
+                        case 3:
+                            deleteProperty(Dew4TP.name);
+                            deleteProperty(Dew4SP.name);
+                            deleteProperty(Dew4NP.name);
+                            break;
+                        case 4:
+                            deleteProperty(Dew5TP.name);
+                            deleteProperty(Dew5SP.name);
+                            deleteProperty(Dew5NP.name);
+                            break;
+                        case 5:
+                            deleteProperty(Dew6TP.name);
+                            deleteProperty(Dew6SP.name);
+                            deleteProperty(Dew6NP.name);
+                            break;
+                        case 6:
+                            deleteProperty(Dew7TP.name);
+                            deleteProperty(Dew7SP.name);
+                            deleteProperty(Dew7NP.name);
+                            break;
+                        case 7:
+                            deleteProperty(Dew8TP.name);
+                            deleteProperty(Dew8SP.name);
+                            deleteProperty(Dew8NP.name);
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         // Debug only
@@ -466,44 +683,6 @@ bool OnStep_Aux::updateProperties()
     return true;
 }
 
-
-// Reboot the Dew Controller then wait to reconnect
-//bool OnStep_Aux::rebootController()
-//{
-//    LOG_INFO("Rebooting Controller and Disconnecting.");
-//    sendCommand(MDCP_REBOOT_CMD, nullptr);
-//
-//    if (!Disconnect())
-//        LOG_INFO("Disconnect failed");
-//    setConnected(false, IPS_IDLE);
-//    updateProperties();
-//    LOG_INFO("Waiting 10 seconds before attempting to reconnect.");
-//    RemoveTimer(timerIndex);
-//
-//    int i = 1;
-//    do
-//    {
-//        sleep(10);
-//        if (!Connect())
-//        {
-//            i++;
-//            if (i <= 5)
-//                LOGF_INFO("Could not reconnect waiting 10 seconds before attempt %d of 5.", i);
-//            else
-//            {
-//                LOGF_ERROR("Could not reconnect after %d attempts", i-1);
-//                setConnected(false, IPS_OK);
-//            }
-//        }
-//        else
-//        {
-//            i = 0;
-//            setConnected(true, IPS_OK);
-//        }
-//    } while ((i != 0) && (i <= 5));
-//
-//    return updateProperties();
-//}
 
 bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
 {

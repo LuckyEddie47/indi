@@ -148,7 +148,7 @@ An unterminated 0 is returned from unconfigured items
 #define OS_get_rotator_status ":rT#"
 // Returns: [M]oving, [S]topped, [D]e-rotating, [R]everse de-rotating
 
-// Set rotator angle (move to)
+// Set rotator angle (move to) - pass n
 #define OS_set_rotator_angle_part ":rS"
 // Returns: 1 on success, 0 on failure
 
@@ -156,7 +156,7 @@ An unterminated 0 is returned from unconfigured items
 #define OS_get_rotator_backlash ":rb#"
 // Returns n# in steps
 
-// Set rotator backlash
+// Set rotator backlash - pass n
 #define OS_set_rotator_backlash_part ":rb"
 // Returns 0 on failure, 1 on sucess
 
@@ -188,9 +188,39 @@ An unterminated 0 is returned from unconfigured items
 // Returns: +/-n.n# if supported, 0 or nan if unsupported
 
 // Auxiliary features commands
-//---------------------------
+//----------------------------
+
+// Get defined features
 #define OS_get_defined_features ":GXY0#"
 // Returns: 00000000# 1 if defined, or 0 if undefined
+
+// Get feature definition - pass 1-8
+#define OS_get_feature_definiton_part ":GXY"
+// Returns string,n where string = feature name and n = FEATURE_TYPE enum
+
+// Get feature state - pass 1-8
+#define OS_get_feature_state_part ":GXX"
+// Returns 0 or 1 for SWITCH | MOMENTARY_SWITCH | COVER_SWITCH
+// 0-255 for ANALOG_OUTPUT
+// 0 or 1,x.x,y.y,z.z for DEW_HEATER (enabled,zero point, span, temp - dew point)
+// m,n.n,p.p,q for INTERVALOMETER (currentCount,exposure,delay,targetCount)
+
+// Set feature state
+// :SXX[n]parameters where n = feature number 1-8
+// Parameters = V0 or V1 for SWITCH | MOMENTARY_SWITCH | COVER_SWITCH
+// V0-V255 for ANALOG_OUTPUT
+// V0 or V1 (enable) or Zn.n (zero degC) or Sn.n (span degC) for DEW_HEATER
+// V0 or V1 (enable) or En.n (exposure secs) or Dn.n (delay secs) or Cn (target count) for INTERVALOMETER
+#define OS_set_feature_part ":SXX"
+#define OS_set_feature_enabled_part "V"
+#define OS_set_feature_analog_level_part "V"
+#define OS_set_dew_zero_part "Z"
+#define OS_set_dew_span_part "S"
+#define OS_set_intervalometer_exposure_part "E"
+#define OS_set_intervalometer_delay_part "D"
+#define OS_set_intervalometer_targetCount_part = "C"
+// Returns 0 on failure, 1 on sucess
+
 
 // For dynamically assembled commands
 //-----------------------------------
@@ -275,34 +305,20 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     // Command sequence enforcement
     bool waitingForResponse = false;
 
-    enum {
-        ON_SWITCH,
-        OFF_SWITCH,
-        SWITCH_TOGGLE_COUNT
-    };
 
-    //FocuserInterface
-
+    // FocuserInterface
     IPState MoveFocuser(FocusDirection dir, int speed, uint16_t duration) override;
     IPState MoveAbsFocuser (uint32_t targetTicks) override;
     IPState MoveRelFocuser (FocusDirection dir, uint32_t ticks) override;
     bool AbortFocuser () override;
     int MAX_FOCUSERS = 6;
 
-    //RotatorInterface
-
+    // RotatorInterface
     IPState MoveRotator(double angle) override;
     IPState HomeRotator() override;
     bool AbortRotator() override;
     bool SetRotatorBacklash (int32_t steps) override;
     bool SetRotatorBacklashEnabled(bool enabled) override;
-
-    //Outputs
- //   IPState OSEnableOutput(int output);
- //   IPState OSDisableOutput(int output);
- //   bool OSGetOutputState(int output);
-
-
 
     int OSUpdateFocuser(); //Return = 0 good, -1 = Communication error
     int OSUpdateRotator(); //Return = 0 good, -1 = Communication error
@@ -317,12 +333,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     ITextVectorProperty OnstepStatTP;
     IText OnstepStat[11] {};
 
-    bool TMCDrivers = true; //Set to false if it doesn't detect TMC_SPI reporting. (Small delay on connection/first update)
-    bool OSHighPrecision = false;
-
     // Focuser controls
-    // Focuser 1
-//    bool OSFocuser1 = false;
     ISwitchVectorProperty OSFocus1InitializeSP;
     ISwitch OSFocus1InitializeS[4];
 
@@ -338,22 +349,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     INumber TFCDeadbandN[1];
     // End Focus T° Compensation
 
-//    int OSNumFocusers = 0;
     ISwitchVectorProperty OSFocusSelectSP;
     ISwitch OSFocusSelectS[9];
-
-    // Focuser 2
-    //ISwitchVectorProperty OSFocus2SelSP;
-    //ISwitch OSFocus2SelS[2];
-//    bool OSFocuser2 = false;
-//    ISwitchVectorProperty OSFocus2RateSP;
-//    ISwitch OSFocus2RateS[4];
-//
-//    ISwitchVectorProperty OSFocus2MotionSP;
-//    ISwitch OSFocus2MotionS[3];
-//
-//    INumberVectorProperty OSFocus2TargNP;
-//    INumber OSFocus2TargN[1];
 
     //Rotator - Some handled by RotatorInterface, but that's mostly for rotation only, absolute, and... very limited.
     ISwitchVectorProperty OSRotatorRateSP;
@@ -374,35 +371,15 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     ISwitchVectorProperty OSOutput2SP;
     ISwitch OSOutput2S[2];
 
- //   INumber OutputPorts[PORTS_COUNT];
     INumberVectorProperty OutputPorts_NP;
     bool OSHasOutputs = true;
 
     char OSStat[RB_MAX_LEN];
     char OldOSStat[RB_MAX_LEN];
 
-    // Weather support
-    // NOTE: Much is handled by WeatherInterface, these controls are mainly for setting values which are not detected
-    // As of right now, if there is a sensor the values will be overwritten on the next update
-    bool OSCpuTemp_good =
-        true; //This can fail on some processors and take the timeout before an update, so if it fails, don't check again.
-
-
-    INumberVectorProperty OSSetTemperatureNP;
-    INumber OSSetTemperatureN[1];
-    INumberVectorProperty OSSetHumidityNP;
-    INumber OSSetHumidityN[1];
-    INumberVectorProperty OSSetPressureNP;
-    INumber OSSetPressureN[1];
-    //Not sure why this would be used, but will feed to it from site settings
-    INumberVectorProperty OSSetAltitudeNP;
-    INumber OSSetAltitudeN[1];
-
     // Weather tab controls
     //---------------------
     bool weather_tab_enabled = false;
-    int wind_speed_threshold = 0;
-    int diff_temp_threshold = 0;
 
     enum {
         WEATHER_TEMPERATURE,
@@ -414,13 +391,6 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
 
     int weather_enabled[WEATHER_MEASUREMENTS_COUNT];
 
-    ITextVectorProperty Weather_CloudTP;
-    IText Weather_CloudT[1];
-    ITextVectorProperty Weather_SkyTP;
-    IText Weather_SkyT[1];
-    ITextVectorProperty Weather_Sky_TempTP;
-    IText Weather_Sky_TempT[1];
-
     // Status tab controls
     //--------------------
     enum {
@@ -430,40 +400,126 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     ITextVectorProperty Status_ItemsTP;
     IText Status_ItemsT[STATUS_ITEMS_COUNT] {};
 
-    // Features tab controls
+    // Features
+    static const int max_features = 8;
+    enum feature_types{
+        OFF,
+        SWITCH,
+        ANALOG_OUTPUT,
+        ANALOG_OUT,
+        DEW_HEATER,
+        INTERVALOMETER,
+        MOMENTARY_SWITCH,
+        HIDDEN_SWITCH,
+        COVER_SWITCH,
+        FEATURE_TYPE_COUNT
+    };
+
+    int features_enabled[max_features] = {0};
+    feature_types features_type[max_features] = {OFF};
+    std::string features_name[max_features];
+
+    // Switches tab controls
     //----------------------
-    ISwitchVectorProperty Feature1SP;
-    ISwitch Feature1S[SWITCH_TOGGLE_COUNT];
-    ISwitchVectorProperty Feature2SP;
-    ISwitch Feature2S[SWITCH_TOGGLE_COUNT];
-    ISwitchVectorProperty Feature3SP;
-    ISwitch Feature3S[SWITCH_TOGGLE_COUNT];
-    ISwitchVectorProperty Feature4SP;
-    ISwitch Feature4S[SWITCH_TOGGLE_COUNT];
-    ISwitchVectorProperty Feature5SP;
-    ISwitch Feature5S[SWITCH_TOGGLE_COUNT];
-    ISwitchVectorProperty Feature6SP;
-    ISwitch Feature6S[SWITCH_TOGGLE_COUNT];
-    ISwitchVectorProperty Feature7SP;
-    ISwitch Feature7S[SWITCH_TOGGLE_COUNT];
-    ISwitchVectorProperty Feature8SP;
-    ISwitch Feature8S[SWITCH_TOGGLE_COUNT];
-    ITextVectorProperty Feature_Name1TP;
-    IText Feature_Name1T[1] {};
-    ITextVectorProperty Feature_Name2TP;
-    IText Feature_Name2T[1] {};
-    ITextVectorProperty Feature_Name3TP;
-    IText Feature_Name3T[1] {};
-    ITextVectorProperty Feature_Name4TP;
-    IText Feature_Name4T[1] {};
-    ITextVectorProperty Feature_Name5TP;
-    IText Feature_Name5T[1] {};
-    ITextVectorProperty Feature_Name6TP;
-    IText Feature_Name6T[1] {};
-    ITextVectorProperty Feature_Name7TP;
-    IText Feature_Name7T[1] {};
-    ITextVectorProperty Feature_Name8TP;
-    IText Feature_Name8T[1] {};
+
+    enum {
+        ON_SWITCH,
+        OFF_SWITCH,
+        SWITCH_TOGGLE_COUNT
+    };
+
+    ISwitchVectorProperty Switch1SP;
+    ISwitch Switch1S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty Switch2SP;
+    ISwitch Switch2S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty Switch3SP;
+    ISwitch Switch3S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty Switch4SP;
+    ISwitch Switch4S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty Switch5SP;
+    ISwitch Switch5S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty Switch6SP;
+    ISwitch Switch6S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty Switch7SP;
+    ISwitch Switch7S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty Switch8SP;
+    ISwitch Switch8S[SWITCH_TOGGLE_COUNT];
+    ITextVectorProperty Switch_Name1TP;
+    IText Switch_Name1T[1] {};
+    ITextVectorProperty Switch_Name2TP;
+    IText Switch_Name2T[1] {};
+    ITextVectorProperty Switch_Name3TP;
+    IText Switch_Name3T[1] {};
+    ITextVectorProperty Switch_Name4TP;
+    IText Switch_Name4T[1] {};
+    ITextVectorProperty Switch_Name5TP;
+    IText Switch_Name5T[1] {};
+    ITextVectorProperty Switch_Name6TP;
+    IText Switch_Name6T[1] {};
+    ITextVectorProperty Switch_Name7TP;
+    IText Switch_Name7T[1] {};
+    ITextVectorProperty Switch_Name8TP;
+    IText Switch_Name8T[1] {};
+
+    // Dew Heaters tab controls
+    //-------------------------
+
+    ITextVectorProperty Dew1TP;
+    IText Dew1_name[1] {};
+    ISwitchVectorProperty Dew1SP;
+    ISwitch Dew1_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Dew1NP;
+    INumber Dew1_zeroN[1];
+    INumber Dew1_spanN[1];
+    ITextVectorProperty Dew2TP;
+    IText Dew2_name[1] {};
+    ISwitchVectorProperty Dew2SP;
+    ISwitch Dew2_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Dew2NP;
+    INumber Dew2_zeroN[1];
+    INumber Dew2_spanN[1];
+    ITextVectorProperty Dew3TP;
+    IText Dew3_name[1] {};
+    ISwitchVectorProperty Dew3SP;
+    ISwitch Dew3_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Dew3NP;
+    INumber Dew3_zeroN[1];
+    INumber Dew3_spanN[1];
+    ITextVectorProperty Dew4TP;
+    IText Dew4_name[1] {};
+    ISwitchVectorProperty Dew4SP;
+    ISwitch Dew4_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Dew4NP;
+    INumber Dew4_zeroN[1];
+    INumber Dew4_spanN[1];
+    ITextVectorProperty Dew5TP;
+    IText Dew5_name[1] {};
+    ISwitchVectorProperty Dew5SP;
+    ISwitch Dew5_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Dew5NP;
+    INumber Dew5_zeroN[1];
+    INumber Dew5_spanN[1];
+    ITextVectorProperty Dew6TP;
+    IText Dew6_name[1] {};
+    ISwitchVectorProperty Dew6SP;
+    ISwitch Dew6_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Dew6NP;
+    INumber Dew6_zeroN[1];
+    INumber Dew6_spanN[1];
+    ITextVectorProperty Dew7TP;
+    IText Dew7_name[1] {};
+    ISwitchVectorProperty Dew7SP;
+    ISwitch Dew7_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Dew7NP;
+    INumber Dew7_zeroN[1];
+    INumber Dew7_spanN[1];
+    ITextVectorProperty Dew8TP;
+    IText Dew8_name[1] {};
+    ISwitchVectorProperty Dew8SP;
+    ISwitch Dew8_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Dew8NP;
+    INumber Dew8_zeroN[1];
+    INumber Dew8_spanN[1];
 
     // Debug only
     ITextVectorProperty Arbitary_CommandTP;
