@@ -126,10 +126,10 @@ void OnStep_Aux::GetCapabilites()
     if (error_or_fail > 0 && intResponse > 0) {
         hasFocuser = true;
         FI::SetCapability(FOCUSER_CAN_ABS_MOVE | FOCUSER_CAN_REL_MOVE | FOCUSER_CAN_ABORT);
-        syncDriverInfo();
         LOG_DEBUG("Focuser found, enabling Focuser Tab");
     } else {
         LOG_DEBUG("Focuser not found, disabling Focuser Tab");
+        setDriverInterface(~(getDriverInterface()) | FOCUSER_INTERFACE);
     }
 
     // Discover rotator
@@ -140,14 +140,13 @@ void OnStep_Aux::GetCapabilites()
             LOG_DEBUG("Rotator found, enabling Rotator Tab");
             hasRotator = true;
             RI::SetCapability(ROTATOR_CAN_ABORT | ROTATOR_CAN_HOME | ROTATOR_HAS_BACKLASH);
-            syncDriverInfo();
-            RI::updateProperties();
         }
         if (response[0] == 'D') {
             defineProperty(&OSRotatorDerotateSP);
         }
     } else {
         LOG_DEBUG("Rotator not found, disabling Rotator Tab");
+        setDriverInterface(~(getDriverInterface()) | ROTATOR_INTERFACE);
     }
 
     // Discover weather sensors
@@ -194,13 +193,14 @@ void OnStep_Aux::GetCapabilites()
         LOG_DEBUG("Weather sensor(s) found, enabling Weather Tab");
     } else {
         LOG_DEBUG("Weather sensor not found, disabling Weather Tab");
+        setDriverInterface(~(getDriverInterface()) | WEATHER_INTERFACE);
     }
 
     // Discover features
     memset(response, 0, RB_MAX_LEN);
     error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_features);
     if (error_or_fail > 0) {
-        if (sizeof response == max_features) {
+        if (std::stoi(response) > 0 ) {
             hasFeatures = true;
             LOG_DEBUG("Auxiliary Feature(s) found, enabling Features Tab");
             std::string features = response;
@@ -230,10 +230,11 @@ void OnStep_Aux::GetCapabilites()
         }
     } else {
         LOG_DEBUG("Auxiliary Feature not found, disabling Features Tab");
+        setDriverInterface(~(getDriverInterface()) | AUX_INTERFACE);
     }
 
     //    PI::SetCapability(POWER_HAS_USB_TOGGLE);
-//    syncDriverInfo();
+    syncDriverInfo();
 
     // Start polling timer (e.g., every 1000ms)
 //    SetTimer(getCurrentPollingPeriod());
@@ -434,6 +435,8 @@ bool OnStep_Aux::initProperties()
 
 bool OnStep_Aux::updateProperties()
 {
+    LOG_DEBUG("In updateProperties");
+
     DefaultDevice::updateProperties();
 
     if (isConnected()) {
