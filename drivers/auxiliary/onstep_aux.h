@@ -300,7 +300,11 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     bool hasFocuser = false;
     bool hasRotator = false;
     bool hasWeather = false;
-    bool hasFeatures = false;
+    bool hasSwitch = false;
+    bool hasDew = false;
+    bool hasIntervalometer = false;
+    bool hasOutput = false;
+
 
     // Command sequence enforcement
     bool waitingForResponse = false;

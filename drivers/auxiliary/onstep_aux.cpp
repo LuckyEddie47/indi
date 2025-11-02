@@ -37,13 +37,13 @@
 // Debug only end
 
 // Additional tabs
-#define FIRMWARE_TAB "Firmware data"
-#define STATUS_TAB "OnStep Status"
 #define ROTATOR_TAB "Rotator"
 #define WEATHER_TAB "Weather"
-#define SWITCHES_TAB "Switches"
-#define DEW_TAB
+#define SWITCH_TAB "Switches"
+#define DEW_TAB "Dew Heaters"
 #define MANUAL_TAB "Manual"
+#define INTERVALOMETER_TAB "Intervalometers"
+#define OUTPUT_TAB "Ouputs"
 
 // Define auto pointer to ourselves
 std::unique_ptr<OnStep_Aux> OnStepAux(new OnStep_Aux());
@@ -195,6 +195,10 @@ void OnStep_Aux::GetCapabilites()
         capabilities &= ~WEATHER_INTERFACE;
     }
 
+
+    // Split feature discovery to switches / dew / power / outputs each with own tab
+
+
     // Discover features
     memset(response, 0, RB_MAX_LEN);
     error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_features);
@@ -208,7 +212,7 @@ void OnStep_Aux::GetCapabilites()
             LOGF_WARN("Invalid response to %s: %s", OS_get_defined_features, response);
         }
         if (value > 0 ) {
-            hasFeatures = true;
+            hasSwitch = true;
             LOG_DEBUG("Auxiliary Feature(s) found, enabling Features Tab");
             std::string features = response;
             for (uint digit = 0; digit < max_features; digit++) {
@@ -269,16 +273,10 @@ bool OnStep_Aux::initProperties()
 
     //FocuserInterface
     //Initial, these will be updated later.
-    FocusRelPosNP[0].min = 0.;
-    FocusRelPosNP[0].max = 30000.;
-    FocusRelPosNP[0].value = 0;
-    FocusRelPosNP[0].step = 10;
-    FocusAbsPosNP[0].min = 0.;
-    FocusAbsPosNP[0].max = 60000.;
-    FocusAbsPosNP[0].value = 0;
-    FocusAbsPosNP[0].step = 10;
 
-    // ============== MAIN_CONTROL_TAB
+
+    // MAIN_CONTROL_TAB
+    //-----------------
     IUFillSwitch(&ReticS[0], "PLUS", "Light", ISS_OFF);
     IUFillSwitch(&ReticS[1], "MOINS", "Dark", ISS_OFF);
     IUFillSwitchVector(&ReticSP, ReticS, 2, getDeviceName(), "RETICULE_BRIGHTNESS", "Reticule +/-", MAIN_CONTROL_TAB, IP_RW,
@@ -288,60 +286,76 @@ bool OnStep_Aux::initProperties()
     IUFillTextVector(&ObjectInfoTP, ObjectInfoT, 1, getDeviceName(), "Object Info", "", MAIN_CONTROL_TAB,
                      IP_RO, 0, IPS_IDLE);
 
-    // ============== COMMUNICATION_TAB
+    //    // ============== FIRMWARE_TAB
+    //    IUFillText(&VersionT[0], "Date", "", "");
+    //    IUFillText(&VersionT[1], "Time", "", "");
+    //    IUFillText(&VersionT[2], "Number", "", "");
+    //    IUFillText(&VersionT[3], "Name", "", "");
+    //    IUFillTextVector(&VersionTP, VersionT, 4, getDeviceName(), "Firmware Info", "", FIRMWARE_TAB, IP_RO, 0, IPS_IDLE);
+    //
 
-    // ============== CONNECTION_TAB
+    // COMMUNICATION_TAB
+    // CONNECTION_TAB
+    // OPTIONS_TAB
+    // Constructed form Standard Indi aux controls
+    //--------------------------------------------
+    addAuxControls();
 
-    // ============== OPTIONS_TAB
-
-    // ============== FOCUS_TAB
+    // FOCUS_TAB
+    //----------
     if (hasFocuser) {
         FI::initProperties(FOCUS_TAB);
+
+        FocusRelPosNP[0].min = 0.;
+        FocusRelPosNP[0].max = 30000.;
+        FocusRelPosNP[0].value = 0;
+        FocusRelPosNP[0].step = 10;
+        FocusAbsPosNP[0].min = 0.;
+        FocusAbsPosNP[0].max = 60000.;
+        FocusAbsPosNP[0].value = 0;
+        FocusAbsPosNP[0].step = 10;
+
+        IUFillSwitch(&OSFocus1InitializeS[0], "Focus1_0", "Zero", ISS_OFF);
+        IUFillSwitch(&OSFocus1InitializeS[1], "Focus1_2", "Mid", ISS_OFF);
+        //     IUFillSwitch(&OSFocus1InitializeS[2], "Focus1_3", "max", ISS_OFF);
+        IUFillSwitchVector(&OSFocus1InitializeSP, OSFocus1InitializeS, 2, getDeviceName(), "Foc1Rate", "Initialize", FOCUS_TAB,
+                           IP_RW, ISR_ATMOST1, 0, IPS_IDLE);
+        // Focus T° Compensation
+        // Property must be FOCUS_TEMPERATURE to be recognized by Ekos
+        IUFillNumber(&FocusTemperatureN[0], "FOCUS_TEMPERATURE", "TFC T°", "%+2.2f", 0, 1, 0.25,
+                     25);  //default value is meaningless
+        IUFillNumber(&FocusTemperatureN[1], "TFC Δ T°", "TFC Δ T°", "%+2.2f", 0, 1, 0.25, 25);  //default value is meaningless
+        IUFillNumberVector(&FocusTemperatureNP, FocusTemperatureN, 2, getDeviceName(), "FOCUS_TEMPERATURE", "Focuser T°",
+                           FOCUS_TAB, IP_RO, 0,
+                           IPS_IDLE);
+        IUFillSwitch(&TFCCompensationS[0], "Off", "Compensation: OFF", ISS_OFF);
+        IUFillSwitch(&TFCCompensationS[1], "On", "Compensation: ON", ISS_OFF);
+        IUFillSwitchVector(&TFCCompensationSP, TFCCompensationS, 2, getDeviceName(), "Compensation T°", "Temperature Compensation",
+                           FOCUS_TAB, IP_RW,
+                           ISR_1OFMANY, 0, IPS_IDLE);
+
+        IUFillNumber(&TFCCoefficientN[0], "TFC Coefficient", "TFC Coefficient µm/°C", "%+03.5f", -999.99999, 999.99999, 1, 100);
+        IUFillNumberVector(&TFCCoefficientNP, TFCCoefficientN, 1, getDeviceName(), "TFC Coefficient", "", FOCUS_TAB, IP_RW, 0,
+                           IPS_IDLE);
+        IUFillNumber(&TFCDeadbandN[0], "TFC Deadband", "TFC Deadband µm", "%g", 1, 32767, 1, 5);
+        IUFillNumberVector(&TFCDeadbandNP, TFCDeadbandN, 1, getDeviceName(), "TFC Deadband", "", FOCUS_TAB, IP_RW, 0, IPS_IDLE);
+        // End Focus T° Compensation
     }
-    IUFillSwitch(&OSFocus1InitializeS[0], "Focus1_0", "Zero", ISS_OFF);
-    IUFillSwitch(&OSFocus1InitializeS[1], "Focus1_2", "Mid", ISS_OFF);
-    //     IUFillSwitch(&OSFocus1InitializeS[2], "Focus1_3", "max", ISS_OFF);
-    IUFillSwitchVector(&OSFocus1InitializeSP, OSFocus1InitializeS, 2, getDeviceName(), "Foc1Rate", "Initialize", FOCUS_TAB,
-                       IP_RW, ISR_ATMOST1, 0, IPS_IDLE);
-    // Focus T° Compensation
-    // Property must be FOCUS_TEMPERATURE to be recognized by Ekos
-    IUFillNumber(&FocusTemperatureN[0], "FOCUS_TEMPERATURE", "TFC T°", "%+2.2f", 0, 1, 0.25,
-                 25);  //default value is meaningless
-    IUFillNumber(&FocusTemperatureN[1], "TFC Δ T°", "TFC Δ T°", "%+2.2f", 0, 1, 0.25, 25);  //default value is meaningless
-    IUFillNumberVector(&FocusTemperatureNP, FocusTemperatureN, 2, getDeviceName(), "FOCUS_TEMPERATURE", "Focuser T°",
-                       FOCUS_TAB, IP_RO, 0,
-                       IPS_IDLE);
-    IUFillSwitch(&TFCCompensationS[0], "Off", "Compensation: OFF", ISS_OFF);
-    IUFillSwitch(&TFCCompensationS[1], "On", "Compensation: ON", ISS_OFF);
-    IUFillSwitchVector(&TFCCompensationSP, TFCCompensationS, 2, getDeviceName(), "Compensation T°", "Temperature Compensation",
-                       FOCUS_TAB, IP_RW,
-                       ISR_1OFMANY, 0, IPS_IDLE);
 
-    IUFillNumber(&TFCCoefficientN[0], "TFC Coefficient", "TFC Coefficient µm/°C", "%+03.5f", -999.99999, 999.99999, 1, 100);
-    IUFillNumberVector(&TFCCoefficientNP, TFCCoefficientN, 1, getDeviceName(), "TFC Coefficient", "", FOCUS_TAB, IP_RW, 0,
-                       IPS_IDLE);
-    IUFillNumber(&TFCDeadbandN[0], "TFC Deadband", "TFC Deadband µm", "%g", 1, 32767, 1, 5);
-    IUFillNumberVector(&TFCDeadbandNP, TFCDeadbandN, 1, getDeviceName(), "TFC Deadband", "", FOCUS_TAB, IP_RW, 0, IPS_IDLE);
-    // End Focus T° Compensation
-
-    // =========== ROTATOR TAB
+    // ROTATOR_TAB
+    //------------
     if (hasRotator) {
         RI::initProperties(ROTATOR_TAB);
-    }
-    IUFillSwitch(&OSRotatorDerotateS[0], "Derotate_OFF", "OFF", ISS_OFF);
-    IUFillSwitch(&OSRotatorDerotateS[1], "Derotate_ON", "ON", ISS_OFF);
-    IUFillSwitchVector(&OSRotatorDerotateSP, OSRotatorDerotateS, 2, getDeviceName(), "Derotate_Status", "DEROTATE", ROTATOR_TAB,
-                       IP_RW,
-                       ISR_ATMOST1, 0, IPS_IDLE);
 
-//    // ============== FIRMWARE_TAB
-//    IUFillText(&VersionT[0], "Date", "", "");
-//    IUFillText(&VersionT[1], "Time", "", "");
-//    IUFillText(&VersionT[2], "Number", "", "");
-//    IUFillText(&VersionT[3], "Name", "", "");
-//    IUFillTextVector(&VersionTP, VersionT, 4, getDeviceName(), "Firmware Info", "", FIRMWARE_TAB, IP_RO, 0, IPS_IDLE);
-//
-    // ============== WEATHER TAB
+        IUFillSwitch(&OSRotatorDerotateS[0], "Derotate_OFF", "OFF", ISS_OFF);
+        IUFillSwitch(&OSRotatorDerotateS[1], "Derotate_ON", "ON", ISS_OFF);
+        IUFillSwitchVector(&OSRotatorDerotateSP, OSRotatorDerotateS, 2, getDeviceName(), "Derotate_Status", "DEROTATE", ROTATOR_TAB,
+                           IP_RW,
+                           ISR_ATMOST1, 0, IPS_IDLE);
+    }
+
+    // WEATHER_TAB
+    //------------
     if (hasWeather) {
         WI::initProperties(WEATHER_TAB, WEATHER_TAB);
         addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 50, 15);
@@ -351,76 +365,76 @@ bool OnStep_Aux::initProperties()
         setCriticalParameter("WEATHER_TEMPERATURE");
     }
 
-    // Switches tab controls
+    // SWITCH_TAB
     //----------------------
     IUFillSwitchVector(&Switch1SP, Switch1S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch1", "Device 1",
-                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Switch1S[ON_SWITCH], "Switch1_ON", "ON", ISS_OFF);
     IUFillSwitch(&Switch1S[OFF_SWITCH], "Switch1_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Switch_Name1TP, Switch_Name1T, 1, getDeviceName(), "Switch_1_NAME", "Device 1",
-                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+                     SWITCH_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Switch_Name1T[0], "DEVICE_1_NAME", "Name", "");
 
     IUFillSwitchVector(&Switch2SP, Switch2S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch2", "Device 2",
-                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Switch2S[ON_SWITCH], "Switch2_ON", "ON", ISS_OFF);
     IUFillSwitch(&Switch2S[OFF_SWITCH], "Switch2_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Switch_Name2TP, Switch_Name2T, 1, getDeviceName(), "Switch_2_NAME", "Device 2",
-                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+                     SWITCH_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Switch_Name2T[0], "DEVICE_2_NAME", "Name", "");
 
     IUFillSwitchVector(&Switch3SP, Switch3S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch3", "Device 3",
-                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Switch3S[ON_SWITCH], "Switch3_ON", "ON", ISS_OFF);
     IUFillSwitch(&Switch3S[OFF_SWITCH], "Switch3_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Switch_Name3TP, Switch_Name3T, 1, getDeviceName(), "Switch_3_NAME", "Device 3",
-                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+                     SWITCH_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Switch_Name3T[0], "DEVICE_3_NAME", "Name", "");
 
     IUFillSwitchVector(&Switch4SP, Switch4S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch4", "Device 4",
-                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Switch4S[ON_SWITCH], "Switch4_ON", "ON", ISS_OFF);
     IUFillSwitch(&Switch4S[OFF_SWITCH], "Switch4_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Switch_Name4TP, Switch_Name4T, 1, getDeviceName(), "Switch_4_NAME", "Device 4",
-                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+                     SWITCH_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Switch_Name4T[0], "DEVICE_4_NAME", "Name", "");
 
     IUFillSwitchVector(&Switch5SP, Switch5S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch5", "Device 5",
-                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Switch5S[ON_SWITCH], "Switch5_ON", "ON", ISS_OFF);
     IUFillSwitch(&Switch5S[OFF_SWITCH], "Switch5_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Switch_Name5TP, Switch_Name5T, 1, getDeviceName(), "Switch_5_NAME", "Device 5",
-                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+                     SWITCH_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Switch_Name5T[0], "DEVICE_5_NAME", "Name", "");
 
     IUFillSwitchVector(&Switch6SP, Switch6S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch6", "Device 6",
-                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Switch6S[ON_SWITCH], "Switch6_ON", "ON", ISS_OFF);
     IUFillSwitch(&Switch6S[OFF_SWITCH], "Switch6_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Switch_Name6TP, Switch_Name6T, 1, getDeviceName(), "Switch_6_NAME", "Device 6",
-                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+                     SWITCH_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Switch_Name6T[0], "DEVICE_6_NAME", "Name", "");
 
     IUFillSwitchVector(&Switch7SP, Switch7S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch7", "Device 7",
-                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Switch7S[ON_SWITCH], "Switch7_ON", "ON", ISS_OFF);
     IUFillSwitch(&Switch7S[OFF_SWITCH], "Switch7_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Switch_Name7TP, Switch_Name7T, 1, getDeviceName(), "Switch_7_NAME", "Device 7",
-                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+                     SWITCH_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Switch_Name7T[0], "DEVICE_7_NAME", "Name", "");
 
     IUFillSwitchVector(&Switch8SP, Switch8S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch8", "Device 8",
-                       SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Switch8S[ON_SWITCH], "Switch8_ON", "ON", ISS_OFF);
     IUFillSwitch(&Switch8S[OFF_SWITCH], "Switch8_OFF", "OFF", ISS_ON);
     IUFillTextVector(&Switch_Name8TP, Switch_Name8T, 1, getDeviceName(), "Switch_8_NAME", "Device 8",
-                     SWITCHES_TAB, IP_RO, 60, IPS_OK);
+                     SWITCH_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Switch_Name8T[0], "DEVICE_8_NAME", "Name", "");
 
 //    PI::initProperties(POWER_TAB);
 
-    // Manual tab controls
-    //--------------------
+    // MANUAL_TAB
+    //-----------
 
     // Debug only
     IUFillTextVector(&Arbitary_CommandTP, Arbitary_CommandT, 1, getDeviceName(), "ARBITARY_COMMAND", "Command",
@@ -428,18 +442,13 @@ bool OnStep_Aux::initProperties()
     IUFillText(&Arbitary_CommandT[0], "ARBITARY_COMMANDT", "Response:", ":IP#");
     // Debug only end
 
-    // Standard Indi aux controls
-    //---------------------------
-    addAuxControls();
-
+    // Connection and handshake registration
     if (osaConnection & CONNECTION_SERIAL) {
         serialConnection = new Connection::Serial(this);
         serialConnection->registerHandshake([&]() { return Handshake(); });
         serialConnection->setDefaultBaudRate(Connection::Serial::B_9600);
         registerConnection(serialConnection);
-    }
-
-    if (osaConnection & CONNECTION_TCP) {
+    } else if (osaConnection & CONNECTION_TCP) {
         tcpConnection = new Connection::TCP(this);
         tcpConnection->setDefaultHost("192.168.0.1");
         tcpConnection->setDefaultPort(9999);
@@ -485,7 +494,7 @@ bool OnStep_Aux::updateProperties()
 
         WI::updateProperties();
 
-        if (hasFeatures) {
+        if (hasSwitch) {
             for (int OSfeature = 0; OSfeature < max_features; OSfeature++) {
                 if (features_enabled[OSfeature] == 1) {
                     if (features_type[OSfeature] == SWITCH ||
@@ -599,7 +608,7 @@ bool OnStep_Aux::updateProperties()
         if (hasWeather) {
         }
 
-        if (hasFeatures) {
+        if (hasSwitch) {
             for (int OSfeature = 0; OSfeature < max_features; OSfeature++) {
                 if (features_enabled[OSfeature] == 1) {
                     if (features_type[OSfeature] == SWITCH ||
