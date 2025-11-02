@@ -200,7 +200,20 @@ void OnStep_Aux::GetCapabilites()
     memset(response, 0, RB_MAX_LEN);
     error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_features);
     if (error_or_fail > 0) {
-        if (std::stoi(response) > 0 ) {
+        int value = conversion_error;
+        try {
+            value = std::stoi(response);
+        } catch (const std::invalid_argument&) {
+            LOGF_WARN("Invalid response to %s: %s", OS_get_defined_features, response);
+        } catch (const std::out_of_range&) {
+            LOGF_WARN("Invalid response to %s: %s", OS_get_defined_features, response);
+        }
+
+
+        LOGF_DEBUG("value: %d", value);
+
+
+        if (value > 0 ) {
             hasFeatures = true;
             LOG_DEBUG("Auxiliary Feature(s) found, enabling Features Tab");
             std::string features = response;
