@@ -103,8 +103,7 @@ bool OnStep_Aux::Handshake()
  **************************************************************/
 void OnStep_Aux::GetCapabilites()
 {
-    LOG_DEBUG("in GetCapabilities");
-
+    uint16_t capabilities = getDriverInterface();
     // Get firmware version
     char response[RB_MAX_LEN] = {0};
     int error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_firmware);
@@ -129,7 +128,7 @@ void OnStep_Aux::GetCapabilites()
         LOG_DEBUG("Focuser found, enabling Focuser Tab");
     } else {
         LOG_DEBUG("Focuser not found, disabling Focuser Tab");
-        setDriverInterface(~(getDriverInterface()) | FOCUSER_INTERFACE);
+        capabilities &= ~FOCUSER_INTERFACE;
     }
 
     // Discover rotator
@@ -146,7 +145,7 @@ void OnStep_Aux::GetCapabilites()
         }
     } else {
         LOG_DEBUG("Rotator not found, disabling Rotator Tab");
-        setDriverInterface(~(getDriverInterface()) | ROTATOR_INTERFACE);
+        capabilities &= ~ ROTATOR_INTERFACE;
     }
 
     // Discover weather sensors
@@ -193,7 +192,7 @@ void OnStep_Aux::GetCapabilites()
         LOG_DEBUG("Weather sensor(s) found, enabling Weather Tab");
     } else {
         LOG_DEBUG("Weather sensor not found, disabling Weather Tab");
-        setDriverInterface(~(getDriverInterface()) | WEATHER_INTERFACE);
+        capabilities &= ~WEATHER_INTERFACE;
     }
 
     // Discover features
@@ -208,11 +207,6 @@ void OnStep_Aux::GetCapabilites()
         } catch (const std::out_of_range&) {
             LOGF_WARN("Invalid response to %s: %s", OS_get_defined_features, response);
         }
-
-
-        LOGF_DEBUG("value: %d", value);
-
-
         if (value > 0 ) {
             hasFeatures = true;
             LOG_DEBUG("Auxiliary Feature(s) found, enabling Features Tab");
@@ -247,10 +241,12 @@ void OnStep_Aux::GetCapabilites()
         }
     } else {
         LOG_DEBUG("Auxiliary Feature not found, disabling Features Tab");
-        setDriverInterface(~(getDriverInterface()) | AUX_INTERFACE);
+        capabilities &= ~AUX_INTERFACE;
     }
 
     //    PI::SetCapability(POWER_HAS_USB_TOGGLE);
+
+    setDriverInterface(capabilities);
     syncDriverInfo();
 
     // Start polling timer (e.g., every 1000ms)
@@ -346,14 +342,16 @@ bool OnStep_Aux::initProperties()
 //    IUFillTextVector(&VersionTP, VersionT, 4, getDeviceName(), "Firmware Info", "", FIRMWARE_TAB, IP_RO, 0, IPS_IDLE);
 //
     // ============== WEATHER TAB
-    addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 50, 15);
-    addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
-    addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
-    addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 50, 15); // From OnStep
-    setCriticalParameter("WEATHER_TEMPERATURE");
+    if (hasWeather) {
+        addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 50, 15);
+        addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
+        addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
+        addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 50, 15); // From OnStep
+        setCriticalParameter("WEATHER_TEMPERATURE");
+    }
 
-//    // Feature tab controls
-//    //--------------------
+    // Switches tab controls
+    //----------------------
     IUFillSwitchVector(&Switch1SP, Switch1S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch1", "Device 1",
                        SWITCHES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Switch1S[ON_SWITCH], "Switch1_ON", "ON", ISS_OFF);
@@ -452,8 +450,6 @@ bool OnStep_Aux::initProperties()
 
 bool OnStep_Aux::updateProperties()
 {
-    LOG_DEBUG("In updateProperties");
-
     DefaultDevice::updateProperties();
 
     if (isConnected()) {
@@ -487,18 +483,8 @@ bool OnStep_Aux::updateProperties()
 
         WI::updateProperties();
 
-
-        LOGF_DEBUG("hasFeatures: %d", hasFeatures);
-
-
         if (hasFeatures) {
             for (int OSfeature = 0; OSfeature < max_features; OSfeature++) {
-
-
-                LOGF_DEBUG("features_enabled[%d]: %d", OSfeature, features_enabled[OSfeature]);
-                LOGF_DEBUG("features_type[%d]: %d", OSfeature, features_type[OSfeature]);
-
-
                 if (features_enabled[OSfeature] == 1) {
                     if (features_type[OSfeature] == SWITCH ||
                         features_type[OSfeature] == MOMENTARY_SWITCH ||
@@ -592,8 +578,8 @@ bool OnStep_Aux::updateProperties()
         // Debug only
         defineProperty(&Arbitary_CommandTP);
         // Debug only end
-    } else {
 
+    } else {
         if (hasFocuser) {
             deleteProperty(OSFocus1InitializeSP.name);
             // Focus T° Compensation
