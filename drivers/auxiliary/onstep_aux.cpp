@@ -224,20 +224,24 @@ void OnStep_Aux::GetCapabilites()
             for (int feature = 0; feature < max_features; feature++) {
                 memset(response, 0, RB_MAX_LEN);
                 char cmd[CMD_MAX_LEN] = {0};
-                snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_feature_definiton_part, feature, OS_command_terminator);
+                snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_feature_definiton_part, (feature + 1), OS_command_terminator);
                 error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, cmd);
-                char *split;
-                split = strtok(response, ",");
-                if (strcmp(split, "N/A") != 0) {
-                    if (charToInt(split) != conversion_error) {
-                        features_name[feature] = charToInt(split);
+                if (error_or_fail > 0) {
+                    char *split;
+                    split = strtok(response, ",");
+                    if (strcmp(split, "N/A") != 0) {
+                        if (charToInt(split) != conversion_error) {
+                            features_name[feature] = charToInt(split);
+                        }
                     }
-                }
-                split = strtok(NULL, ",");
-                if (strcmp(split, "N/A") != 0) {
-                    if (charToInt(split) != conversion_error) {
-                        features_type[feature] = static_cast<feature_types>(charToInt(split));
+                    split = strtok(NULL, ",");
+                    if (strcmp(split, "N/A") != 0) {
+                        if (charToInt(split) != conversion_error) {
+                            features_type[feature] = static_cast<feature_types>(charToInt(split));
+                        }
                     }
+                } else {
+                    LOG_WARN("Failed to get feature definition");
                 }
             }
         }
