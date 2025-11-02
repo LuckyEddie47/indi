@@ -267,11 +267,6 @@ bool OnStep_Aux::initProperties()
     DefaultDevice::initProperties();
     setDriverInterface(FOCUSER_INTERFACE | ROTATOR_INTERFACE | WEATHER_INTERFACE | POWER_INTERFACE | AUX_INTERFACE);
 
-    FI::initProperties(FOCUS_TAB);
-    RI::initProperties(ROTATOR_TAB);
-    WI::initProperties(WEATHER_TAB, WEATHER_TAB);
-    PI::initProperties(POWER_TAB);
-
     //FocuserInterface
     //Initial, these will be updated later.
     FocusRelPosNP[0].min = 0.;
@@ -300,6 +295,9 @@ bool OnStep_Aux::initProperties()
     // ============== OPTIONS_TAB
 
     // ============== FOCUS_TAB
+    if (hasFocuser) {
+        FI::initProperties(FOCUS_TAB);
+    }
     IUFillSwitch(&OSFocus1InitializeS[0], "Focus1_0", "Zero", ISS_OFF);
     IUFillSwitch(&OSFocus1InitializeS[1], "Focus1_2", "Mid", ISS_OFF);
     //     IUFillSwitch(&OSFocus1InitializeS[2], "Focus1_3", "max", ISS_OFF);
@@ -327,7 +325,9 @@ bool OnStep_Aux::initProperties()
     // End Focus T° Compensation
 
     // =========== ROTATOR TAB
-
+    if (hasRotator) {
+        RI::initProperties(ROTATOR_TAB);
+    }
     IUFillSwitch(&OSRotatorDerotateS[0], "Derotate_OFF", "OFF", ISS_OFF);
     IUFillSwitch(&OSRotatorDerotateS[1], "Derotate_ON", "ON", ISS_OFF);
     IUFillSwitchVector(&OSRotatorDerotateSP, OSRotatorDerotateS, 2, getDeviceName(), "Derotate_Status", "DEROTATE", ROTATOR_TAB,
@@ -343,6 +343,7 @@ bool OnStep_Aux::initProperties()
 //
     // ============== WEATHER TAB
     if (hasWeather) {
+        WI::initProperties(WEATHER_TAB, WEATHER_TAB);
         addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 50, 15);
         addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
         addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
@@ -416,6 +417,7 @@ bool OnStep_Aux::initProperties()
                      SWITCHES_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Switch_Name8T[0], "DEVICE_8_NAME", "Name", "");
 
+//    PI::initProperties(POWER_TAB);
 
     // Manual tab controls
     //--------------------
