@@ -135,7 +135,7 @@ void OnStep_Aux::GetCapabilites()
     // Discover rotator
     memset(response, 0, RB_MAX_LEN);
     error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_rotator);
-    if (error_or_fail > 0 ) {
+    if (error_or_fail > 1 ) {
         if (response[0] == 'D' || response[0] == 'R') {
             LOG_DEBUG("Rotator found, enabling Rotator Tab");
             hasRotator = true;
@@ -199,7 +199,7 @@ void OnStep_Aux::GetCapabilites()
     // Discover features
     memset(response, 0, RB_MAX_LEN);
     error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_features);
-    if (error_or_fail > 1) {
+    if (error_or_fail > 0) {
         if (sizeof response == max_features) {
             hasFeatures = true;
             LOG_DEBUG("Auxiliary Feature(s) found, enabling Features Tab");
@@ -467,8 +467,18 @@ bool OnStep_Aux::updateProperties()
 
         WI::updateProperties();
 
+
+        LOGF_DEBUG("hasFeatures: %d", hasFeatures);
+
+
         if (hasFeatures) {
             for (int OSfeature = 0; OSfeature < max_features; OSfeature++) {
+
+
+                LOGF_DEBUG("features_enabled[%d]: %d", OSfeature, features_enabled[OSfeature]);
+                LOGF_DEBUG("features_type[%d]: %d", OSfeature, features_type[OSfeature]);
+
+
                 if (features_enabled[OSfeature] == 1) {
                     if (features_type[OSfeature] == SWITCH ||
                         features_type[OSfeature] == MOMENTARY_SWITCH ||
