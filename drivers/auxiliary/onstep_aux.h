@@ -254,7 +254,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     virtual IPState updateWeather() override;
 //    virtual void Init_Outputs();
 
-//    virtual void TimerHit() override;
+    virtual void TimerHit() override;
     // Timer for slow updates, once per minute
     INDI::Timer SlowTimer;
 
@@ -423,6 +423,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     feature_types features_type[max_features] = {OFF};
     std::string features_name[max_features];
 
+
     // Switches tab controls
     //----------------------
 
@@ -448,22 +449,22 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     ISwitch Switch7S[SWITCH_TOGGLE_COUNT];
     ISwitchVectorProperty Switch8SP;
     ISwitch Switch8S[SWITCH_TOGGLE_COUNT];
-    ITextVectorProperty Switch_Name1TP;
-    IText Switch_Name1T[1] {};
-    ITextVectorProperty Switch_Name2TP;
-    IText Switch_Name2T[1] {};
-    ITextVectorProperty Switch_Name3TP;
-    IText Switch_Name3T[1] {};
-    ITextVectorProperty Switch_Name4TP;
-    IText Switch_Name4T[1] {};
-    ITextVectorProperty Switch_Name5TP;
-    IText Switch_Name5T[1] {};
-    ITextVectorProperty Switch_Name6TP;
-    IText Switch_Name6T[1] {};
-    ITextVectorProperty Switch_Name7TP;
-    IText Switch_Name7T[1] {};
-    ITextVectorProperty Switch_Name8TP;
-    IText Switch_Name8T[1] {};
+    ITextVectorProperty Switch1_nameTP;
+    IText Switch1_nameT[1] {};
+    ITextVectorProperty Switch2_nameTP;
+    IText Switch2_nameT[1] {};
+    ITextVectorProperty Switch3_nameTP;
+    IText Switch3_nameT[1] {};
+    ITextVectorProperty Switch4_nameTP;
+    IText Switch4_nameT[1] {};
+    ITextVectorProperty Switch5_nameTP;
+    IText Switch5_nameT[1] {};
+    ITextVectorProperty Switch6_nameTP;
+    IText Switch6_nameT[1] {};
+    ITextVectorProperty Switch7_nameTP;
+    IText Switch7_nameT[1] {};
+    ITextVectorProperty Switch8_nameTP;
+    IText Switch8_nameT[1] {};
 
     // Dew Heaters tab controls
     //-------------------------
