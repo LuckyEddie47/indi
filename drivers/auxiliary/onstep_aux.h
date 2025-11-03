@@ -305,6 +305,10 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     bool hasIntervalometer = false;
     bool hasOutput = false;
 
+    // Not until OnStepX plugins ready
+    //    bool hasUSB = false;
+    //    bool hasDCout = false;
+
 
     // Command sequence enforcement
     bool waitingForResponse = false;
@@ -370,15 +374,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     ISwitchVectorProperty ReticSP;
     ISwitch ReticS[2];
 
-    ISwitchVectorProperty OSOutput1SP;
-    ISwitch OSOutput1S[2];
-    ISwitchVectorProperty OSOutput2SP;
-    ISwitch OSOutput2S[2];
-
-    INumberVectorProperty OutputPorts_NP;
-    bool OSHasOutputs = true;
-
-    char OSStat[RB_MAX_LEN];
+     char OSStat[RB_MAX_LEN];
     char OldOSStat[RB_MAX_LEN];
 
     // Weather tab controls
@@ -470,56 +466,56 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     //-------------------------
 
     ITextVectorProperty Dew1TP;
-    IText Dew1_name[1] {};
+    IText Dew1_nameT[1] {};
     ISwitchVectorProperty Dew1SP;
     ISwitch Dew1_enableS[SWITCH_TOGGLE_COUNT];
     INumberVectorProperty Dew1NP;
     INumber Dew1_zeroN[1];
     INumber Dew1_spanN[1];
     ITextVectorProperty Dew2TP;
-    IText Dew2_name[1] {};
+    IText Dew2_nameT[1] {};
     ISwitchVectorProperty Dew2SP;
     ISwitch Dew2_enableS[SWITCH_TOGGLE_COUNT];
     INumberVectorProperty Dew2NP;
     INumber Dew2_zeroN[1];
     INumber Dew2_spanN[1];
     ITextVectorProperty Dew3TP;
-    IText Dew3_name[1] {};
+    IText Dew3_nameT[1] {};
     ISwitchVectorProperty Dew3SP;
     ISwitch Dew3_enableS[SWITCH_TOGGLE_COUNT];
     INumberVectorProperty Dew3NP;
     INumber Dew3_zeroN[1];
     INumber Dew3_spanN[1];
     ITextVectorProperty Dew4TP;
-    IText Dew4_name[1] {};
+    IText Dew4_nameT[1] {};
     ISwitchVectorProperty Dew4SP;
     ISwitch Dew4_enableS[SWITCH_TOGGLE_COUNT];
     INumberVectorProperty Dew4NP;
     INumber Dew4_zeroN[1];
     INumber Dew4_spanN[1];
     ITextVectorProperty Dew5TP;
-    IText Dew5_name[1] {};
+    IText Dew5_nameT[1] {};
     ISwitchVectorProperty Dew5SP;
     ISwitch Dew5_enableS[SWITCH_TOGGLE_COUNT];
     INumberVectorProperty Dew5NP;
     INumber Dew5_zeroN[1];
     INumber Dew5_spanN[1];
     ITextVectorProperty Dew6TP;
-    IText Dew6_name[1] {};
+    IText Dew6_nameT[1] {};
     ISwitchVectorProperty Dew6SP;
     ISwitch Dew6_enableS[SWITCH_TOGGLE_COUNT];
     INumberVectorProperty Dew6NP;
     INumber Dew6_zeroN[1];
     INumber Dew6_spanN[1];
     ITextVectorProperty Dew7TP;
-    IText Dew7_name[1] {};
+    IText Dew7_nameT[1] {};
     ISwitchVectorProperty Dew7SP;
     ISwitch Dew7_enableS[SWITCH_TOGGLE_COUNT];
     INumberVectorProperty Dew7NP;
     INumber Dew7_zeroN[1];
     INumber Dew7_spanN[1];
     ITextVectorProperty Dew8TP;
-    IText Dew8_name[1] {};
+    IText Dew8_nameT[1] {};
     ISwitchVectorProperty Dew8SP;
     ISwitch Dew8_enableS[SWITCH_TOGGLE_COUNT];
     INumberVectorProperty Dew8NP;

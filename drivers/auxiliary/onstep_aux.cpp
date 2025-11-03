@@ -36,8 +36,7 @@
 
 
 /* To do
- * connection not saving in config (not not restored?) - think it's done - test
- * switch names, handler, updates
+ * switch handler, updates
  * dew names, handler, update
  * intervalometer all
  * outputs all
@@ -253,75 +252,75 @@ void OnStep_Aux::GetCapabilites()
                         }
                     }
                     switch(feature) {
-                    case 1:
+                    case 0:
                         if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch1_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch1_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
-                            IUSaveText(&Dew1_name[0], features_name[feature].c_str());
+                            IUSaveText(&Dew1_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew1TP, nullptr);
                         }
                         break;
-                    case 2:
+                    case 1:
                         if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch2_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch2_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
-                            IUSaveText(&Dew2_name[0], features_name[feature].c_str());
+                            IUSaveText(&Dew2_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew2TP, nullptr);
                         }
                         break;
-                    case 3:
+                    case 2:
                         if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch3_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch3_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
-                            IUSaveText(&Dew3_name[0], features_name[feature].c_str());
+                            IUSaveText(&Dew3_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew3TP, nullptr);
                         }
                         break;
-                    case 4:
+                    case 3:
                         if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch4_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch4_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
-                            IUSaveText(&Dew4_name[0], features_name[feature].c_str());
+                            IUSaveText(&Dew4_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew4TP, nullptr);
                         }
                         break;
-                    case 5:
+                    case 4:
                         if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch5_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch5_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
-                            IUSaveText(&Dew5_name[0], features_name[feature].c_str());
+                            IUSaveText(&Dew5_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew5TP, nullptr);
                         }
                         break;
-                    case 6:
+                    case 5:
                         if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch6_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch6_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
-                            IUSaveText(&Dew6_name[0], features_name[feature].c_str());
+                            IUSaveText(&Dew6_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew6TP, nullptr);
                         }
                         break;
-                    case 7:
+                    case 6:
                         if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch7_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch7_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
-                            IUSaveText(&Dew7_name[0], features_name[feature].c_str());
+                            IUSaveText(&Dew7_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew7TP, nullptr);
                         }
                         break;
-                    case 8:
+                    case 7:
                         if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch8_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch8_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
-                            IUSaveText(&Dew8_name[0], features_name[feature].c_str());
+                            IUSaveText(&Dew8_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew8TP, nullptr);
                         }
                         break;
@@ -457,71 +456,183 @@ bool OnStep_Aux::initProperties()
 
     // SWITCH_TAB
     //----------------------
-    IUFillSwitchVector(&Switch1SP, Switch1S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch1", "Device 1",
-                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Switch1S[ON_SWITCH], "Switch1_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Switch1S[OFF_SWITCH], "Switch1_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Switch1_nameTP, Switch1_nameT, 1, getDeviceName(), "Switch_1_NAME", "Device 1",
-                     SWITCH_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Switch1_nameT[0], "DEVICE_1_NAME", "Name", "");
+    if (hasSwitch) {
+        if (features_type[0] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
+            IUFillTextVector(&Switch1_nameTP, Switch1_nameT, 1, getDeviceName(), "Switch_1_NAME", "Device 1",
+                             SWITCH_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Switch1_nameT[0], "DEVICE_1_NAME", "Name", "");
+            IUFillSwitchVector(&Switch1SP, Switch1S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch1", "Device 1",
+                               SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Switch1S[ON_SWITCH], "Switch1_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch1S[OFF_SWITCH], "Switch1_OFF", "OFF", ISS_ON);
+        }
+        if (features_type[1] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
+            IUFillTextVector(&Switch2_nameTP, Switch2_nameT, 1, getDeviceName(), "Switch_2_NAME", "Device 2",
+                             SWITCH_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Switch2_nameT[0], "DEVICE_2_NAME", "Name", "");
+            IUFillSwitchVector(&Switch2SP, Switch2S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch2", "Device 2",
+                               SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Switch2S[ON_SWITCH], "Switch2_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch2S[OFF_SWITCH], "Switch2_OFF", "OFF", ISS_ON);
+        }
+        if (features_type[2] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
+            IUFillTextVector(&Switch3_nameTP, Switch3_nameT, 1, getDeviceName(), "Switch_3_NAME", "Device 3",
+                             SWITCH_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Switch3_nameT[0], "DEVICE_3_NAME", "Name", "");
+            IUFillSwitchVector(&Switch3SP, Switch3S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch3", "Device 3",
+                               SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Switch3S[ON_SWITCH], "Switch3_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch3S[OFF_SWITCH], "Switch3_OFF", "OFF", ISS_ON);
+        }
+        if (features_type[3] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
+            IUFillTextVector(&Switch4_nameTP, Switch4_nameT, 1, getDeviceName(), "Switch_4_NAME", "Device 4",
+                             SWITCH_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Switch4_nameT[0], "DEVICE_4_NAME", "Name", "");
+            IUFillSwitchVector(&Switch4SP, Switch4S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch4", "Device 4",
+                               SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Switch4S[ON_SWITCH], "Switch4_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch4S[OFF_SWITCH], "Switch4_OFF", "OFF", ISS_ON);
+        }
+        if (features_type[4] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
+            IUFillTextVector(&Switch5_nameTP, Switch5_nameT, 1, getDeviceName(), "Switch_5_NAME", "Device 5",
+                             SWITCH_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Switch5_nameT[0], "DEVICE_5_NAME", "Name", "");
+            IUFillSwitchVector(&Switch5SP, Switch5S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch5", "Device 5",
+                               SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Switch5S[ON_SWITCH], "Switch5_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch5S[OFF_SWITCH], "Switch5_OFF", "OFF", ISS_ON);
+        }
+        if (features_type[5] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
+            IUFillTextVector(&Switch6_nameTP, Switch6_nameT, 1, getDeviceName(), "Switch_6_NAME", "Device 6",
+                             SWITCH_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Switch6_nameT[0], "DEVICE_6_NAME", "Name", "");
+            IUFillSwitchVector(&Switch6SP, Switch6S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch6", "Device 6",
+                               SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Switch6S[ON_SWITCH], "Switch6_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch6S[OFF_SWITCH], "Switch6_OFF", "OFF", ISS_ON);
+        }
+        if (features_type[6] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
+            IUFillTextVector(&Switch7_nameTP, Switch7_nameT, 1, getDeviceName(), "Switch_7_NAME", "Device 7",
+                             SWITCH_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Switch7_nameT[0], "DEVICE_7_NAME", "Name", "");
+            IUFillSwitchVector(&Switch7SP, Switch7S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch7", "Device 7",
+                               SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Switch7S[ON_SWITCH], "Switch7_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch7S[OFF_SWITCH], "Switch7_OFF", "OFF", ISS_ON);
+        }
+        if (features_type[7] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
+            IUFillTextVector(&Switch8_nameTP, Switch8_nameT, 1, getDeviceName(), "Switch_8_NAME", "Device 8",
+                             SWITCH_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Switch8_nameT[0], "DEVICE_8_NAME", "Name", "");
+            IUFillSwitchVector(&Switch8SP, Switch8S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch8", "Device 8",
+                               SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Switch8S[ON_SWITCH], "Switch8_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch8S[OFF_SWITCH], "Switch8_OFF", "OFF", ISS_ON);
+        }
+    }
 
-    IUFillSwitchVector(&Switch2SP, Switch2S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch2", "Device 2",
-                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Switch2S[ON_SWITCH], "Switch2_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Switch2S[OFF_SWITCH], "Switch2_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Switch2_nameTP, Switch2_nameT, 1, getDeviceName(), "Switch_2_NAME", "Device 2",
-                     SWITCH_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Switch2_nameT[0], "DEVICE_2_NAME", "Name", "");
+    // POWER TAB
+    //----------
+    if (hasDew) {
+        PI::initProperties(POWER_TAB);
+        if (features_type[0] == DEW_HEATER) {
+            IUFillTextVector(&Dew1TP, Dew1_nameT, 1, getDeviceName(), "Dew_1_NAME", "Dew 1",
+                             POWER_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Dew1_nameT[0], "DEW_1_NAME", "Name", "");
+            IUFillSwitchVector(&Dew1SP, Dew1_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable1", "Enable",
+                               POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Dew1_enableS[ON_SWITCH], "Enable1_ON", "ON", ISS_OFF);
+            IUFillNumberVector(&Dew1NP, Dew1_zeroN, 1, getDeviceName(), "Dew_1_SETTINGS", "Settings degC",
+                               POWER_TAB, IP_RW, 60, IPS_OK);
+            IUFillNumber(&Dew1_zeroN[1],"DEW1_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
+            IUFillNumber(&Dew1_spanN[1],"DEW1_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
+        }
+        if (features_type[1] == DEW_HEATER) {
+            IUFillTextVector(&Dew2TP, Dew2_nameT, 1, getDeviceName(), "Dew_2_NAME", "Dew 2",
+                             POWER_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Dew2_nameT[0], "DEW_2_NAME", "Name", "");
+            IUFillSwitchVector(&Dew2SP, Dew2_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable2", "Enable",
+                               POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Dew2_enableS[ON_SWITCH], "Enable2_ON", "ON", ISS_OFF);
+            IUFillNumberVector(&Dew2NP, Dew2_zeroN, 1, getDeviceName(), "Dew_2_SETTINGS", "Settings degC",
+                               POWER_TAB, IP_RW, 60, IPS_OK);
+            IUFillNumber(&Dew2_zeroN[1],"DEW2_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
+            IUFillNumber(&Dew2_spanN[1],"DEW2_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
+        }
+        if (features_type[2] == DEW_HEATER) {
+            IUFillTextVector(&Dew3TP, Dew3_nameT, 1, getDeviceName(), "Dew_3_NAME", "Dew 3",
+                             POWER_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Dew3_nameT[0], "DEW_3_NAME", "Name", "");
+            IUFillSwitchVector(&Dew3SP, Dew3_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable3", "Enable",
+                               POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Dew3_enableS[ON_SWITCH], "Enable3_ON", "ON", ISS_OFF);
+            IUFillNumberVector(&Dew3NP, Dew3_zeroN, 1, getDeviceName(), "Dew_3_SETTINGS", "Settings degC",
+                               POWER_TAB, IP_RW, 60, IPS_OK);
+            IUFillNumber(&Dew3_zeroN[1],"DEW3_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
+            IUFillNumber(&Dew3_spanN[1],"DEW3_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
+        }
+        if (features_type[3] == DEW_HEATER) {
+            IUFillTextVector(&Dew4TP, Dew4_nameT, 1, getDeviceName(), "Dew_4_NAME", "Dew 4",
+                             POWER_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Dew4_nameT[0], "DEW_4_NAME", "Name", "");
+            IUFillSwitchVector(&Dew4SP, Dew4_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable4", "Enable",
+                               POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Dew4_enableS[ON_SWITCH], "Enable4_ON", "ON", ISS_OFF);
+            IUFillNumberVector(&Dew4NP, Dew4_zeroN, 1, getDeviceName(), "Dew_4_SETTINGS", "Settings degC",
+                               POWER_TAB, IP_RW, 60, IPS_OK);
+            IUFillNumber(&Dew4_zeroN[1],"DEW4_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
+            IUFillNumber(&Dew4_spanN[1],"DEW4_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
+        }
+        if (features_type[4] == DEW_HEATER) {
+            IUFillTextVector(&Dew5TP, Dew5_nameT, 1, getDeviceName(), "Dew_5_NAME", "Dew 5",
+                             POWER_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Dew5_nameT[0], "DEW_5_NAME", "Name", "");
+            IUFillSwitchVector(&Dew5SP, Dew5_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable5", "Enable",
+                               POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Dew5_enableS[ON_SWITCH], "Enable5_ON", "ON", ISS_OFF);
+            IUFillNumberVector(&Dew5NP, Dew5_zeroN, 1, getDeviceName(), "Dew_5_SETTINGS", "Settings degC",
+                               POWER_TAB, IP_RW, 60, IPS_OK);
+            IUFillNumber(&Dew5_zeroN[1],"DEW5_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
+            IUFillNumber(&Dew5_spanN[1],"DEW5_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
+        }
+        if (features_type[5] == DEW_HEATER) {
+            IUFillTextVector(&Dew6TP, Dew6_nameT, 1, getDeviceName(), "Dew_6_NAME", "Dew 6",
+                             POWER_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Dew6_nameT[0], "DEW_6_NAME", "Name", "");
+            IUFillSwitchVector(&Dew6SP, Dew6_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable6", "Enable",
+                               POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Dew6_enableS[ON_SWITCH], "Enable6_ON", "ON", ISS_OFF);
+            IUFillNumberVector(&Dew6NP, Dew6_zeroN, 1, getDeviceName(), "Dew_6_SETTINGS", "Settings degC",
+                               POWER_TAB, IP_RW, 60, IPS_OK);
+            IUFillNumber(&Dew6_zeroN[1],"DEW6_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
+            IUFillNumber(&Dew6_spanN[1],"DEW6_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
+        }
+        if (features_type[6] == DEW_HEATER) {
+            IUFillTextVector(&Dew7TP, Dew7_nameT, 1, getDeviceName(), "Dew_7_NAME", "Dew 7",
+                             POWER_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Dew7_nameT[0], "DEW_6_NAME", "Name", "");
+            IUFillSwitchVector(&Dew7SP, Dew7_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable7", "Enable",
+                               POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Dew7_enableS[ON_SWITCH], "Enable7_ON", "ON", ISS_OFF);
+            IUFillNumberVector(&Dew7NP, Dew6_zeroN, 1, getDeviceName(), "Dew_7_SETTINGS", "Settings degC",
+                               POWER_TAB, IP_RW, 60, IPS_OK);
+            IUFillNumber(&Dew7_zeroN[1],"DEW7_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
+            IUFillNumber(&Dew7_spanN[1],"DEW7_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
+        }
+        if (features_type[7] == DEW_HEATER) {
+            IUFillTextVector(&Dew8TP, Dew8_nameT, 1, getDeviceName(), "Dew_8_NAME", "Dew 8",
+                             POWER_TAB, IP_RO, 60, IPS_OK);
+            IUFillText(&Dew8_nameT[0], "DEW_8_NAME", "Name", "");
+            IUFillSwitchVector(&Dew8SP, Dew8_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable8", "Enable",
+                               POWER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+            IUFillSwitch(&Dew8_enableS[ON_SWITCH], "Enable8_ON", "ON", ISS_OFF);
+            IUFillNumberVector(&Dew8NP, Dew8_zeroN, 1, getDeviceName(), "Dew_8_SETTINGS", "Settings degC",
+                               POWER_TAB, IP_RW, 60, IPS_OK);
+            IUFillNumber(&Dew8_zeroN[1],"DEW8_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
+            IUFillNumber(&Dew8_spanN[1],"DEW8_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
+        }
+    }
 
-    IUFillSwitchVector(&Switch3SP, Switch3S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch3", "Device 3",
-                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Switch3S[ON_SWITCH], "Switch3_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Switch3S[OFF_SWITCH], "Switch3_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Switch3_nameTP, Switch3_nameT, 1, getDeviceName(), "Switch_3_NAME", "Device 3",
-                     SWITCH_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Switch3_nameT[0], "DEVICE_3_NAME", "Name", "");
-
-    IUFillSwitchVector(&Switch4SP, Switch4S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch4", "Device 4",
-                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Switch4S[ON_SWITCH], "Switch4_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Switch4S[OFF_SWITCH], "Switch4_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Switch4_nameTP, Switch4_nameT, 1, getDeviceName(), "Switch_4_NAME", "Device 4",
-                     SWITCH_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Switch4_nameT[0], "DEVICE_4_NAME", "Name", "");
-
-    IUFillSwitchVector(&Switch5SP, Switch5S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch5", "Device 5",
-                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Switch5S[ON_SWITCH], "Switch5_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Switch5S[OFF_SWITCH], "Switch5_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Switch5_nameTP, Switch5_nameT, 1, getDeviceName(), "Switch_5_NAME", "Device 5",
-                     SWITCH_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Switch5_nameT[0], "DEVICE_5_NAME", "Name", "");
-
-    IUFillSwitchVector(&Switch6SP, Switch6S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch6", "Device 6",
-                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Switch6S[ON_SWITCH], "Switch6_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Switch6S[OFF_SWITCH], "Switch6_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Switch6_nameTP, Switch6_nameT, 1, getDeviceName(), "Switch_6_NAME", "Device 6",
-                     SWITCH_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Switch6_nameT[0], "DEVICE_6_NAME", "Name", "");
-
-    IUFillSwitchVector(&Switch7SP, Switch7S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch7", "Device 7",
-                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Switch7S[ON_SWITCH], "Switch7_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Switch7S[OFF_SWITCH], "Switch7_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Switch7_nameTP, Switch7_nameT, 1, getDeviceName(), "Switch_7_NAME", "Device 7",
-                     SWITCH_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Switch7_nameT[0], "DEVICE_7_NAME", "Name", "");
-
-    IUFillSwitchVector(&Switch8SP, Switch8S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch8", "Device 8",
-                       SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Switch8S[ON_SWITCH], "Switch8_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Switch8S[OFF_SWITCH], "Switch8_OFF", "OFF", ISS_ON);
-    IUFillTextVector(&Switch8_nameTP, Switch8_nameT, 1, getDeviceName(), "Switch_8_NAME", "Device 8",
-                     SWITCH_TAB, IP_RO, 60, IPS_OK);
-    IUFillText(&Switch8_nameT[0], "DEVICE_8_NAME", "Name", "");
-
-//    PI::initProperties(POWER_TAB);
 
     // MANUAL_TAB
     //-----------
