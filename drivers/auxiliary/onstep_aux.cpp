@@ -256,13 +256,29 @@ void OnStep_Aux::GetCapabilites()
                     }
                     switch(feature) {
                     case 1:
+
+
+                        LOGF_DEBUG("In feature1, type:%d, name:%s", features_type[feature], features_name[feature].c_str());
+
+
                         if (features_type[feature] == (SWITCH | MOMENTARY_SWITCH | COVER_SWITCH)) {
                             IUSaveText(&Switch1_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch1_nameTP, nullptr);
+
+
+                            LOG_DEBUG("In Switch1 set");
+
+
                         } else if (features_type[feature] == DEW_HEATER) {
                             IUSaveText(&Dew1_name[0], features_name[feature].c_str());
                             IDSetText(&Dew1TP, nullptr);
+
+
+                            LOG_DEBUG("In Dew1 set");
                         }
+
+                        LOG_DEBUG("Leaving Feature1 name set");
+
                         break;
                     case 2:
                         if (features_type[feature] == (SWITCH | MOMENTARY_SWITCH | COVER_SWITCH)) {
