@@ -254,7 +254,7 @@ void OnStep_Aux::GetCapabilites()
                     }
                     switch(feature) {
                     case 1:
-                        if (features_type[feature] == (SWITCH | MOMENTARY_SWITCH | COVER_SWITCH)) {
+                        if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch1_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch1_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
@@ -263,7 +263,7 @@ void OnStep_Aux::GetCapabilites()
                         }
                         break;
                     case 2:
-                        if (features_type[feature] == (SWITCH | MOMENTARY_SWITCH | COVER_SWITCH)) {
+                        if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch2_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch2_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
@@ -272,7 +272,7 @@ void OnStep_Aux::GetCapabilites()
                         }
                         break;
                     case 3:
-                        if (features_type[feature] == (SWITCH | MOMENTARY_SWITCH | COVER_SWITCH)) {
+                        if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch3_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch3_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
@@ -281,7 +281,7 @@ void OnStep_Aux::GetCapabilites()
                         }
                         break;
                     case 4:
-                        if (features_type[feature] == (SWITCH | MOMENTARY_SWITCH | COVER_SWITCH)) {
+                        if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch4_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch4_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
@@ -290,7 +290,7 @@ void OnStep_Aux::GetCapabilites()
                         }
                         break;
                     case 5:
-                        if (features_type[feature] == (SWITCH | MOMENTARY_SWITCH | COVER_SWITCH)) {
+                        if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch5_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch5_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
@@ -299,7 +299,7 @@ void OnStep_Aux::GetCapabilites()
                         }
                         break;
                     case 6:
-                        if (features_type[feature] == (SWITCH | MOMENTARY_SWITCH | COVER_SWITCH)) {
+                        if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch6_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch6_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
@@ -308,7 +308,7 @@ void OnStep_Aux::GetCapabilites()
                         }
                         break;
                     case 7:
-                        if (features_type[feature] == (SWITCH | MOMENTARY_SWITCH | COVER_SWITCH)) {
+                        if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch7_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch7_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
@@ -317,7 +317,7 @@ void OnStep_Aux::GetCapabilites()
                         }
                         break;
                     case 8:
-                        if (features_type[feature] == (SWITCH | MOMENTARY_SWITCH | COVER_SWITCH)) {
+                        if (features_type[feature] == SWITCH || features_type[feature] == MOMENTARY_SWITCH || features_type[feature] == COVER_SWITCH) {
                             IUSaveText(&Switch8_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch8_nameTP, nullptr);
                         } else if (features_type[feature] == DEW_HEATER) {
