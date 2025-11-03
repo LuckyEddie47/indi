@@ -240,18 +240,11 @@ void OnStep_Aux::GetCapabilites()
                 char cmd[CMD_MAX_LEN] = {0};
                 snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_feature_definiton_part, (feature + 1), OS_command_terminator);
                 error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, cmd);
-
-
-                LOGF_DEBUG("error_or_fail: %d", error_or_fail);
-
-
                 if (error_or_fail > 0) {
                     char *split;
                     split = strtok(response, ",");
                     if (strcmp(split, "N/A") != 0) {
-                        if (charToInt(split) != conversion_error) {
-                            features_name[feature] = charToInt(split);
-                        }
+                        features_name[feature] = split;
                     }
                     split = strtok(NULL, ",");
                     if (strcmp(split, "N/A") != 0) {
@@ -259,36 +252,15 @@ void OnStep_Aux::GetCapabilites()
                             features_type[feature] = static_cast<feature_types>(charToInt(split));
                         }
                     }
-
-
-                    LOGF_DEBUG("Feature%d name:%s, type:%d", feature, features_name[feature].c_str(), features_type[feature]);
-
-
                     switch(feature) {
                     case 1:
-
-
-                        LOGF_DEBUG("In feature1, type:%d, name:%s", features_type[feature], features_name[feature].c_str());
-
-
                         if (features_type[feature] == (SWITCH | MOMENTARY_SWITCH | COVER_SWITCH)) {
                             IUSaveText(&Switch1_nameT[0], features_name[feature].c_str());
                             IDSetText(&Switch1_nameTP, nullptr);
-
-
-                            LOG_DEBUG("In Switch1 set");
-
-
                         } else if (features_type[feature] == DEW_HEATER) {
                             IUSaveText(&Dew1_name[0], features_name[feature].c_str());
                             IDSetText(&Dew1TP, nullptr);
-
-
-                            LOG_DEBUG("In Dew1 set");
                         }
-
-                        LOG_DEBUG("Leaving Feature1 name set");
-
                         break;
                     case 2:
                         if (features_type[feature] == (SWITCH | MOMENTARY_SWITCH | COVER_SWITCH)) {
