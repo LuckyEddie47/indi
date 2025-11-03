@@ -240,6 +240,11 @@ void OnStep_Aux::GetCapabilites()
                 char cmd[CMD_MAX_LEN] = {0};
                 snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_feature_definiton_part, (feature + 1), OS_command_terminator);
                 error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, cmd);
+
+
+                LOGF_DEBUG("error_or_fail: %d", error_or_fail);
+
+
                 if (error_or_fail > 0) {
                     char *split;
                     split = strtok(response, ",");
