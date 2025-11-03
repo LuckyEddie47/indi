@@ -254,6 +254,11 @@ void OnStep_Aux::GetCapabilites()
                             features_type[feature] = static_cast<feature_types>(charToInt(split));
                         }
                     }
+
+
+                    LOGF_DEBUG("Feature%d name:%s, type:%d", feature, features_name[feature].c_str(), features_type[feature]);
+
+
                     switch(feature) {
                     case 1:
 
