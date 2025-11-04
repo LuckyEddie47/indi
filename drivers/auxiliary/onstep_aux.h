@@ -293,7 +293,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
 
     int PortFD { -1 };
 
-    uint8_t osaConnection { CONNECTION_SERIAL | CONNECTION_TCP };
+    uint8_t osConnection { CONNECTION_SERIAL | CONNECTION_TCP };
 
     // Capability queries on connection
     void GetCapabilites();
