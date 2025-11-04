@@ -429,6 +429,12 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
         SWITCH_TOGGLE_COUNT
     };
 
+    enum {
+        SWITCH_DISABLE,
+        SWITCH_ENABLE,
+        SWITCH_STATES_COUNT
+    };
+
     ISwitchVectorProperty Switch1SP;
     ISwitch Switch1S[SWITCH_TOGGLE_COUNT];
     ISwitchVectorProperty Switch2SP;

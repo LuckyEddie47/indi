@@ -463,8 +463,8 @@ bool OnStep_Aux::initProperties()
             IUFillText(&Switch1_nameT[0], "DEVICE_1_NAME", "Name", "");
             IUFillSwitchVector(&Switch1SP, Switch1S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch1", "Device 1",
                                SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-            IUFillSwitch(&Switch1S[ON_SWITCH], "Switch1_ON", "ON", ISS_OFF);
-            IUFillSwitch(&Switch1S[OFF_SWITCH], "Switch1_OFF", "OFF", ISS_ON);
+            IUFillSwitch(&Switch1S[ON_SWITCH], "DEVICE1_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch1S[OFF_SWITCH], "DEVICE1_OFF", "OFF", ISS_ON);
         }
         if (features_type[1] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
             IUFillTextVector(&Switch2_nameTP, Switch2_nameT, 1, getDeviceName(), "Switch_2_NAME", "Device 2",
@@ -472,8 +472,8 @@ bool OnStep_Aux::initProperties()
             IUFillText(&Switch2_nameT[0], "DEVICE_2_NAME", "Name", "");
             IUFillSwitchVector(&Switch2SP, Switch2S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch2", "Device 2",
                                SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-            IUFillSwitch(&Switch2S[ON_SWITCH], "Switch2_ON", "ON", ISS_OFF);
-            IUFillSwitch(&Switch2S[OFF_SWITCH], "Switch2_OFF", "OFF", ISS_ON);
+            IUFillSwitch(&Switch2S[ON_SWITCH], "DEVICE2_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch2S[OFF_SWITCH], "DEVICE2_OFF", "OFF", ISS_ON);
         }
         if (features_type[2] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
             IUFillTextVector(&Switch3_nameTP, Switch3_nameT, 1, getDeviceName(), "Switch_3_NAME", "Device 3",
@@ -481,8 +481,8 @@ bool OnStep_Aux::initProperties()
             IUFillText(&Switch3_nameT[0], "DEVICE_3_NAME", "Name", "");
             IUFillSwitchVector(&Switch3SP, Switch3S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch3", "Device 3",
                                SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-            IUFillSwitch(&Switch3S[ON_SWITCH], "Switch3_ON", "ON", ISS_OFF);
-            IUFillSwitch(&Switch3S[OFF_SWITCH], "Switch3_OFF", "OFF", ISS_ON);
+            IUFillSwitch(&Switch3S[ON_SWITCH], "DEVICE3_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch3S[OFF_SWITCH], "DEVICE3_OFF", "OFF", ISS_ON);
         }
         if (features_type[3] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
             IUFillTextVector(&Switch4_nameTP, Switch4_nameT, 1, getDeviceName(), "Switch_4_NAME", "Device 4",
@@ -490,8 +490,8 @@ bool OnStep_Aux::initProperties()
             IUFillText(&Switch4_nameT[0], "DEVICE_4_NAME", "Name", "");
             IUFillSwitchVector(&Switch4SP, Switch4S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch4", "Device 4",
                                SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-            IUFillSwitch(&Switch4S[ON_SWITCH], "Switch4_ON", "ON", ISS_OFF);
-            IUFillSwitch(&Switch4S[OFF_SWITCH], "Switch4_OFF", "OFF", ISS_ON);
+            IUFillSwitch(&Switch4S[ON_SWITCH], "DEVICE4_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch4S[OFF_SWITCH], "DEVICE4_OFF", "OFF", ISS_ON);
         }
         if (features_type[4] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
             IUFillTextVector(&Switch5_nameTP, Switch5_nameT, 1, getDeviceName(), "Switch_5_NAME", "Device 5",
@@ -499,8 +499,8 @@ bool OnStep_Aux::initProperties()
             IUFillText(&Switch5_nameT[0], "DEVICE_5_NAME", "Name", "");
             IUFillSwitchVector(&Switch5SP, Switch5S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch5", "Device 5",
                                SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-            IUFillSwitch(&Switch5S[ON_SWITCH], "Switch5_ON", "ON", ISS_OFF);
-            IUFillSwitch(&Switch5S[OFF_SWITCH], "Switch5_OFF", "OFF", ISS_ON);
+            IUFillSwitch(&Switch5S[ON_SWITCH], "DEVICE5_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch5S[OFF_SWITCH], "DEVICE5_OFF", "OFF", ISS_ON);
         }
         if (features_type[5] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
             IUFillTextVector(&Switch6_nameTP, Switch6_nameT, 1, getDeviceName(), "Switch_6_NAME", "Device 6",
@@ -508,8 +508,8 @@ bool OnStep_Aux::initProperties()
             IUFillText(&Switch6_nameT[0], "DEVICE_6_NAME", "Name", "");
             IUFillSwitchVector(&Switch6SP, Switch6S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch6", "Device 6",
                                SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-            IUFillSwitch(&Switch6S[ON_SWITCH], "Switch6_ON", "ON", ISS_OFF);
-            IUFillSwitch(&Switch6S[OFF_SWITCH], "Switch6_OFF", "OFF", ISS_ON);
+            IUFillSwitch(&Switch6S[ON_SWITCH], "DEVICE6_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch6S[OFF_SWITCH], "DEVICE6_OFF", "OFF", ISS_ON);
         }
         if (features_type[6] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
             IUFillTextVector(&Switch7_nameTP, Switch7_nameT, 1, getDeviceName(), "Switch_7_NAME", "Device 7",
@@ -517,8 +517,8 @@ bool OnStep_Aux::initProperties()
             IUFillText(&Switch7_nameT[0], "DEVICE_7_NAME", "Name", "");
             IUFillSwitchVector(&Switch7SP, Switch7S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch7", "Device 7",
                                SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-            IUFillSwitch(&Switch7S[ON_SWITCH], "Switch7_ON", "ON", ISS_OFF);
-            IUFillSwitch(&Switch7S[OFF_SWITCH], "Switch7_OFF", "OFF", ISS_ON);
+            IUFillSwitch(&Switch7S[ON_SWITCH], "DEVICE7_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch7S[OFF_SWITCH], "DEVICE7_OFF", "OFF", ISS_ON);
         }
         if (features_type[7] == SWITCH || features_type[0] == MOMENTARY_SWITCH || features_type[0] == COVER_SWITCH) {
             IUFillTextVector(&Switch8_nameTP, Switch8_nameT, 1, getDeviceName(), "Switch_8_NAME", "Device 8",
@@ -526,8 +526,8 @@ bool OnStep_Aux::initProperties()
             IUFillText(&Switch8_nameT[0], "DEVICE_8_NAME", "Name", "");
             IUFillSwitchVector(&Switch8SP, Switch8S, SWITCH_TOGGLE_COUNT, getDeviceName(), "Switch8", "Device 8",
                                SWITCH_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-            IUFillSwitch(&Switch8S[ON_SWITCH], "Switch8_ON", "ON", ISS_OFF);
-            IUFillSwitch(&Switch8S[OFF_SWITCH], "Switch8_OFF", "OFF", ISS_ON);
+            IUFillSwitch(&Switch8S[ON_SWITCH], "DEVICE8_ON", "ON", ISS_OFF);
+            IUFillSwitch(&Switch8S[OFF_SWITCH], "DEVICE8_OFF", "OFF", ISS_ON);
         }
     }
 
@@ -919,6 +919,135 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
     if (dev != nullptr && strcmp(dev, getDeviceName()) == 0) {
 
         LOGF_DEBUG("Got an IsNewSwitch for: %s", name);
+        char cmd[CMD_MAX_LEN];
+
+        // Switch devices
+        //---------------
+        if (strcmp(Switch1SP.name, name) == 0) {
+            IUUpdateSwitch(&Switch1SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "DEVICE1_ON") == 0) {
+                    sprintf(cmd, "%s1,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch1SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "DEVICE1_OFF") == 0) {
+                    sprintf(cmd, "%s1,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch1SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&Switch1SP, nullptr);
+            return false;
+        } else if (strcmp(Switch2SP.name, name) == 0) {
+            IUUpdateSwitch(&Switch2SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "DEVICE2_ON") == 0) {
+                    sprintf(cmd, "%s2,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch2SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "DEVICE2_OFF") == 0) {
+                    sprintf(cmd, "%s2,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch2SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&Switch2SP, nullptr);
+            return false;
+        } else if (strcmp(Switch3SP.name, name) == 0) {
+            IUUpdateSwitch(&Switch3SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "DEVICE3_ON") == 0) {
+                    sprintf(cmd, "%s3,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch3SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "DEVICE3_OFF") == 0) {
+                    sprintf(cmd, "%s3,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch3SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&Switch3SP, nullptr);
+            return false;
+        } else if (strcmp(Switch4SP.name, name) == 0) {
+            IUUpdateSwitch(&Switch4SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "DEVICE4_ON") == 0) {
+                    sprintf(cmd, "%s4,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch4SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "DEVICE4_OFF") == 0) {
+                    sprintf(cmd, "%s4,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch4SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&Switch4SP, nullptr);
+            return false;
+        } else if (strcmp(Switch5SP.name, name) == 0) {
+            IUUpdateSwitch(&Switch5SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "DEVICE5_ON") == 0) {
+                    sprintf(cmd, "%s5,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch5SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "DEVICE5_OFF") == 0) {
+                    sprintf(cmd, "%s5,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch5SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&Switch5SP, nullptr);
+            return false;
+        } else if (strcmp(Switch6SP.name, name) == 0) {
+            IUUpdateSwitch(&Switch6SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "DEVICE6_ON") == 0) {
+                    sprintf(cmd, "%s6,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch6SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "DEVICE6_OFF") == 0) {
+                    sprintf(cmd, "%s6,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch6SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&Switch6SP, nullptr);
+            return false;
+        } else if (strcmp(Switch7SP.name, name) == 0) {
+            IUUpdateSwitch(&Switch7SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "DEVICE7_ON") == 0) {
+                    sprintf(cmd, "%s7,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch7SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "DEVICE7_OFF") == 0) {
+                    sprintf(cmd, "%s7,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch7SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&Switch7SP, nullptr);
+            return false;
+        } else if (strcmp(Switch8SP.name, name) == 0) {
+            IUUpdateSwitch(&Switch8SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "DEVICE8_ON") == 0) {
+                    sprintf(cmd, "%s8,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch8SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "DEVICE8_OFF") == 0) {
+                    sprintf(cmd, "%s8,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Switch8SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&Switch8SP, nullptr);
+            return false;
+        }
+
+
+
+
 
 //        // Output devices
 //        //---------------
