@@ -64,7 +64,7 @@
 std::unique_ptr<OnStep_Aux> OnStepAux(new OnStep_Aux());
 
 // Mutex for communications
-std::mutex osaCommsLock;
+std::mutex osCommsLock;
 
 OnStep_Aux::OnStep_Aux() : INDI::DefaultDevice(), FI(this),  RI(this), WI(this), PI(this)
 {
@@ -666,18 +666,7 @@ bool OnStep_Aux::updateProperties()
     DefaultDevice::updateProperties();
 
     if (isConnected()) {
-//        loadConfig(true);
-
-//        Connection::Interface *activeConnection = getActiveConnection();
-//        if (!activeConnection->name().compare("CONNECTION_TCP")) {
-//            LOG_INFO("Network based connection, detection timeouts set to 2 seconds");
-//            OSTimeoutMicroSeconds = 0;
-//            OSTimeoutSeconds = 2;
-//        } else {
-//            LOG_INFO("Non-Network based connection, detection timeouts set to 0.1 seconds");
-//            OSTimeoutMicroSeconds = 100000;
-//            OSTimeoutSeconds = 0;
-//        }
+        loadConfig(true);
 
         if (hasFocuser) {
             defineProperty(&OSFocus1InitializeSP);
@@ -795,114 +784,55 @@ bool OnStep_Aux::updateProperties()
         // Debug only end
 
     } else {
-//        if (hasFocuser) {
-            deleteProperty(OSFocus1InitializeSP.name);
-            // Focus T° Compensation
-            deleteProperty(FocusTemperatureNP.name);
-            deleteProperty(TFCCompensationSP.name);
-            deleteProperty(TFCCoefficientNP.name);
-            deleteProperty(TFCDeadbandNP.name);
-//        }
+        deleteProperty(OSFocus1InitializeSP.name);
+        deleteProperty(FocusTemperatureNP.name);
+        deleteProperty(TFCCompensationSP.name);
+        deleteProperty(TFCCoefficientNP.name);
+        deleteProperty(TFCDeadbandNP.name);
+        deleteProperty(OSRotatorRateSP.name);
+        deleteProperty(OSRotatorDerotateSP.name);
 
-//        if (hasRotator) {
-            deleteProperty(OSRotatorRateSP.name);
-            deleteProperty(OSRotatorDerotateSP.name);
-//        }
+        deleteProperty(Switch1SP.name);
+        deleteProperty(Switch1_nameTP.name);
+        deleteProperty(Switch2SP.name);
+        deleteProperty(Switch2_nameTP.name);
+        deleteProperty(Switch3SP.name);
+        deleteProperty(Switch3_nameTP.name);
+        deleteProperty(Switch4SP.name);
+        deleteProperty(Switch4_nameTP.name);
+        deleteProperty(Switch5SP.name);
+        deleteProperty(Switch5_nameTP.name);
+        deleteProperty(Switch6SP.name);
+        deleteProperty(Switch6_nameTP.name);
+        deleteProperty(Switch7SP.name);
+        deleteProperty(Switch7_nameTP.name);
+        deleteProperty(Switch8SP.name);
+        deleteProperty(Switch8_nameTP.name);
 
-//        if (hasWeather) {
-//        }
-
-//        if (hasSwitch) {
-//            for (int OSfeature = 0; OSfeature < max_features; OSfeature++) {
-//                if (features_enabled[OSfeature] == 1) {
-//                    if (features_type[OSfeature] == SWITCH ||
-//                        features_type[OSfeature] == MOMENTARY_SWITCH ||
-//                        features_type[OSfeature] == COVER_SWITCH) {
-//                        switch (OSfeature) {
-//                        case 0:
-                            deleteProperty(Switch1SP.name);
-                            deleteProperty(Switch1_nameTP.name);
-//                            break;
-//                        case 1:
-                            deleteProperty(Switch2SP.name);
-                            deleteProperty(Switch2_nameTP.name);
-//                            break;
-//                        case 2:
-                            deleteProperty(Switch3SP.name);
-                            deleteProperty(Switch3_nameTP.name);
-//                            break;
-//                        case 3:
-                            deleteProperty(Switch4SP.name);
-                            deleteProperty(Switch4_nameTP.name);
-//                            break;
-//                        case 4:
-                            deleteProperty(Switch5SP.name);
-                            deleteProperty(Switch5_nameTP.name);
-//                            break;
-//                        case 5:
-                            deleteProperty(Switch6SP.name);
-                            deleteProperty(Switch6_nameTP.name);
-//                            break;
-//                        case 6:
-                            deleteProperty(Switch7SP.name);
-                            deleteProperty(Switch7_nameTP.name);
-//                            break;
-//                        case 7:
-                            deleteProperty(Switch8SP.name);
-                            deleteProperty(Switch8_nameTP.name);
-//                            break;
-//                        default:
-//                            break;
-//                        }
-//                    } else if (features_type[OSfeature] == DEW_HEATER) {
-//                        switch (OSfeature) {
-//                        case 0:
-                            deleteProperty(Dew1TP.name);
-                            deleteProperty(Dew1SP.name);
-                            deleteProperty(Dew1NP.name);
-//                            break;
-//                        case 1:
-                            deleteProperty(Dew2TP.name);
-                            deleteProperty(Dew2SP.name);
-                            deleteProperty(Dew2NP.name);
-//                            break;
-//                        case 2:
-                            deleteProperty(Dew3TP.name);
-                            deleteProperty(Dew3SP.name);
-                            deleteProperty(Dew3NP.name);
-//                            break;
-//                        case 3:
-                            deleteProperty(Dew4TP.name);
-                            deleteProperty(Dew4SP.name);
-                            deleteProperty(Dew4NP.name);
-//                            break;
-//                        case 4:
-                            deleteProperty(Dew5TP.name);
-                            deleteProperty(Dew5SP.name);
-                            deleteProperty(Dew5NP.name);
-//                            break;
-//                        case 5:
-                            deleteProperty(Dew6TP.name);
-                            deleteProperty(Dew6SP.name);
-                            deleteProperty(Dew6NP.name);
-//                            break;
-//                        case 6:
-                            deleteProperty(Dew7TP.name);
-                            deleteProperty(Dew7SP.name);
-                            deleteProperty(Dew7NP.name);
-//                            break;
-//                        case 7:
-                            deleteProperty(Dew8TP.name);
-                            deleteProperty(Dew8SP.name);
-                            deleteProperty(Dew8NP.name);
- //                           break;
- //                       default:
- //                           break;
- //                       }
- //                   }
- //               }
-  //          }
-    //    }
+        deleteProperty(Dew1TP.name);
+        deleteProperty(Dew1SP.name);
+        deleteProperty(Dew1NP.name);
+        deleteProperty(Dew2TP.name);
+        deleteProperty(Dew2SP.name);
+        deleteProperty(Dew2NP.name);
+        deleteProperty(Dew3TP.name);
+        deleteProperty(Dew3SP.name);
+        deleteProperty(Dew3NP.name);
+        deleteProperty(Dew4TP.name);
+        deleteProperty(Dew4SP.name);
+        deleteProperty(Dew4NP.name);
+        deleteProperty(Dew5TP.name);
+        deleteProperty(Dew5SP.name);
+        deleteProperty(Dew5NP.name);
+        deleteProperty(Dew6TP.name);
+        deleteProperty(Dew6SP.name);
+        deleteProperty(Dew6NP.name);
+        deleteProperty(Dew7TP.name);
+        deleteProperty(Dew7SP.name);
+        deleteProperty(Dew7NP.name);
+        deleteProperty(Dew8TP.name);
+        deleteProperty(Dew8SP.name);
+        deleteProperty(Dew8NP.name);
 
         // Debug only
         deleteProperty(Arbitary_CommandTP.name);
@@ -1760,7 +1690,7 @@ bool OnStep_Aux::sendOSCommandBlind(const char *cmd)
     DEBUGF(INDI::Logger::DBG_DEBUG, "CMD <%s>", cmd);
     flushIO(PortFD);
     /* Add mutex */
-    std::unique_lock<std::mutex> guard(osaCommsLock);
+    std::unique_lock<std::mutex> guard(osCommsLock);
     tcflush(PortFD, TCIFLUSH);
     if ((error_type = tty_write_string(PortFD, cmd, &nbytes_write)) != TTY_OK) {
         LOGF_ERROR("CHECK CONNECTION: Error sending command %s", cmd);
@@ -1785,13 +1715,14 @@ bool OnStep_Aux::sendOSCommand(const char *cmd)
 
     flushIO(PortFD);
     /* Add mutex */
-    std::unique_lock<std::mutex> guard(osaCommsLock);
+    std::unique_lock<std::mutex> guard(osCommsLock);
     tcflush(PortFD, TCIFLUSH);
 
     if ((error_type = tty_write_string(PortFD, cmd, &nbytes_write)) != TTY_OK)
         return error_type;
 
     error_type = tty_read_expanded(PortFD, response, 1, OSTimeoutSeconds, OSTimeoutMicroSeconds, &nbytes_read);
+    INDI_UNUSED(error_type);
 
     tcflush(PortFD, TCIFLUSH);
     DEBUGF(INDI::Logger::DBG_DEBUG, "RES <%c>", response[0]);
@@ -1820,7 +1751,7 @@ int OnStep_Aux::getCommandSingleCharResponse(int fd, char *data, const char *cmd
 
     flushIO(fd);
     /* Add mutex */
-    std::unique_lock<std::mutex> guard(osaCommsLock);
+    std::unique_lock<std::mutex> guard(osCommsLock);
 
     if ((error_type = tty_write_string(fd, cmd, &nbytes_write)) != TTY_OK)
         return error_type;
@@ -1862,7 +1793,7 @@ int OnStep_Aux::getCommandDoubleResponse(int fd, double *value, char *data, cons
 
     flushIO(fd);
     /* Add mutex */
-    std::unique_lock<std::mutex> guard(osaCommsLock);
+    std::unique_lock<std::mutex> guard(osCommsLock);
     tcflush(fd, TCIFLUSH);
 
     if ((error_type = tty_write_string(fd, cmd, &nbytes_write)) != TTY_OK)
@@ -1916,7 +1847,7 @@ int OnStep_Aux::getCommandIntResponse(int fd, int *value, char *data, const char
 
     flushIO(fd);
     /* Add mutex */
-    std::unique_lock<std::mutex> guard(osaCommsLock);
+    std::unique_lock<std::mutex> guard(osCommsLock);
     tcflush(fd, TCIFLUSH);
 
     if ((error_type = tty_write_string(fd, cmd, &nbytes_write)) != TTY_OK)
@@ -1969,7 +1900,7 @@ int OnStep_Aux::getCommandSingleCharErrorOrLongResponse(int fd, char *data, cons
 
     flushIO(fd);
     /* Add mutex */
-    std::unique_lock<std::mutex> guard(osaCommsLock);
+    std::unique_lock<std::mutex> guard(osCommsLock);
     tcflush(fd, TCIFLUSH);
 
     if ((error_type = tty_write_string(fd, cmd, &nbytes_write)) != TTY_OK)
@@ -2031,7 +1962,7 @@ int OnStep_Aux::flushIO(int fd)
     tcflush(fd, TCIOFLUSH);
     int error_type = 0;
     int nbytes_read;
-    std::unique_lock<std::mutex> guard(osaCommsLock);
+    std::unique_lock<std::mutex> guard(osCommsLock);
     tcflush(fd, TCIOFLUSH);
     do {
         char discard_data[RB_MAX_LEN] = {0};
