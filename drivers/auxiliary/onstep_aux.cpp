@@ -365,7 +365,6 @@ bool OnStep_Aux::initProperties()
     // Connection and handshake registration
     if (osConnection & CONNECTION_SERIAL) {
         serialConnection = new Connection::Serial(this);
-        PortFD = serialConnection->getPortFD();
         serialConnection->registerHandshake([&]() { return Handshake(); });
         serialConnection->setDefaultBaudRate(Connection::Serial::B_9600);
         LOG_INFO("Non-Network based connection, detection timeouts set to 0.1 seconds");
@@ -374,7 +373,6 @@ bool OnStep_Aux::initProperties()
         registerConnection(serialConnection);
     } else if (osConnection & CONNECTION_TCP) {
         tcpConnection = new Connection::TCP(this);
-        PortFD = tcpConnection->getPortFD();
         tcpConnection->setDefaultHost("192.168.0.1");
         tcpConnection->setDefaultPort(9999);
         tcpConnection->registerHandshake([&]() { return Handshake(); });
@@ -396,11 +394,11 @@ bool OnStep_Aux::initProperties()
  *****************************************************************/
 bool OnStep_Aux::Handshake()
 {
-//    if (getActiveConnection() == serialConnection) {
-//        PortFD = serialConnection->getPortFD();
-//    } else if (getActiveConnection() == tcpConnection) {
-//        PortFD = tcpConnection->getPortFD();
-//    }
+    if (getActiveConnection() == serialConnection) {
+        PortFD = serialConnection->getPortFD();
+    } else if (getActiveConnection() == tcpConnection) {
+        PortFD = tcpConnection->getPortFD();
+    }
 
     if (PortFD < 0) {
         LOG_ERROR("Failed to get valid file descriptor from connection)");
@@ -708,36 +706,36 @@ bool OnStep_Aux::updateProperties()
                         features_type[OSfeature] == COVER_SWITCH) {
                         switch (OSfeature) {
                         case 0:
-                            defineProperty(&Switch1SP);
                             defineProperty(&Switch1_nameTP);
+                            defineProperty(&Switch1SP);
                             break;
                         case 1:
-                            defineProperty(&Switch2SP);
                             defineProperty(&Switch2_nameTP);
+                            defineProperty(&Switch2SP);
                             break;
                         case 2:
-                            defineProperty(&Switch3SP);
                             defineProperty(&Switch3_nameTP);
+                            defineProperty(&Switch3SP);
                             break;
                         case 3:
-                            defineProperty(&Switch4SP);
                             defineProperty(&Switch4_nameTP);
+                            defineProperty(&Switch4SP);
                             break;
                         case 4:
-                            defineProperty(&Switch5SP);
                             defineProperty(&Switch5_nameTP);
+                            defineProperty(&Switch5SP);
                             break;
                         case 5:
-                            defineProperty(&Switch6SP);
                             defineProperty(&Switch6_nameTP);
+                            defineProperty(&Switch6SP);
                             break;
                         case 6:
-                            defineProperty(&Switch7SP);
                             defineProperty(&Switch7_nameTP);
+                            defineProperty(&Switch7SP);
                             break;
                         case 7:
-                            defineProperty(&Switch8SP);
                             defineProperty(&Switch8_nameTP);
+                            defineProperty(&Switch8SP);
                             break;
                         default:
                             break;
