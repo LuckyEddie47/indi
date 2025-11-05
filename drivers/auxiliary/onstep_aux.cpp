@@ -386,6 +386,7 @@ bool OnStep_Aux::initProperties()
 
     if (isConnected()) {
         loadConfig(true);
+    }
 
     return true;
 }
@@ -666,7 +667,7 @@ bool OnStep_Aux::updateProperties()
 {
     DefaultDevice::updateProperties();
 
-//    if (isConnected()) {
+    if (isConnected()) {
 //        loadConfig(true);
 
 //        Connection::Interface *activeConnection = getActiveConnection();
