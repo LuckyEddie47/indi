@@ -795,114 +795,114 @@ bool OnStep_Aux::updateProperties()
         // Debug only end
 
     } else {
-        if (hasFocuser) {
+//        if (hasFocuser) {
             deleteProperty(OSFocus1InitializeSP.name);
             // Focus T° Compensation
             deleteProperty(FocusTemperatureNP.name);
             deleteProperty(TFCCompensationSP.name);
             deleteProperty(TFCCoefficientNP.name);
             deleteProperty(TFCDeadbandNP.name);
-        }
+//        }
 
-        if (hasRotator) {
+//        if (hasRotator) {
             deleteProperty(OSRotatorRateSP.name);
             deleteProperty(OSRotatorDerotateSP.name);
-        }
+//        }
 
-        if (hasWeather) {
-        }
+//        if (hasWeather) {
+//        }
 
-        if (hasSwitch) {
-            for (int OSfeature = 0; OSfeature < max_features; OSfeature++) {
-                if (features_enabled[OSfeature] == 1) {
-                    if (features_type[OSfeature] == SWITCH ||
-                        features_type[OSfeature] == MOMENTARY_SWITCH ||
-                        features_type[OSfeature] == COVER_SWITCH) {
-                        switch (OSfeature) {
-                        case 0:
+//        if (hasSwitch) {
+//            for (int OSfeature = 0; OSfeature < max_features; OSfeature++) {
+//                if (features_enabled[OSfeature] == 1) {
+//                    if (features_type[OSfeature] == SWITCH ||
+//                        features_type[OSfeature] == MOMENTARY_SWITCH ||
+//                        features_type[OSfeature] == COVER_SWITCH) {
+//                        switch (OSfeature) {
+//                        case 0:
                             deleteProperty(Switch1SP.name);
                             deleteProperty(Switch1_nameTP.name);
-                            break;
-                        case 1:
+//                            break;
+//                        case 1:
                             deleteProperty(Switch2SP.name);
                             deleteProperty(Switch2_nameTP.name);
-                            break;
-                        case 2:
+//                            break;
+//                        case 2:
                             deleteProperty(Switch3SP.name);
                             deleteProperty(Switch3_nameTP.name);
-                            break;
-                        case 3:
+//                            break;
+//                        case 3:
                             deleteProperty(Switch4SP.name);
                             deleteProperty(Switch4_nameTP.name);
-                            break;
-                        case 4:
+//                            break;
+//                        case 4:
                             deleteProperty(Switch5SP.name);
                             deleteProperty(Switch5_nameTP.name);
-                            break;
-                        case 5:
+//                            break;
+//                        case 5:
                             deleteProperty(Switch6SP.name);
                             deleteProperty(Switch6_nameTP.name);
-                            break;
-                        case 6:
+//                            break;
+//                        case 6:
                             deleteProperty(Switch7SP.name);
                             deleteProperty(Switch7_nameTP.name);
-                            break;
-                        case 7:
+//                            break;
+//                        case 7:
                             deleteProperty(Switch8SP.name);
                             deleteProperty(Switch8_nameTP.name);
-                            break;
-                        default:
-                            break;
-                        }
-                    } else if (features_type[OSfeature] == DEW_HEATER) {
-                        switch (OSfeature) {
-                        case 0:
+//                            break;
+//                        default:
+//                            break;
+//                        }
+//                    } else if (features_type[OSfeature] == DEW_HEATER) {
+//                        switch (OSfeature) {
+//                        case 0:
                             deleteProperty(Dew1TP.name);
                             deleteProperty(Dew1SP.name);
                             deleteProperty(Dew1NP.name);
-                            break;
-                        case 1:
+//                            break;
+//                        case 1:
                             deleteProperty(Dew2TP.name);
                             deleteProperty(Dew2SP.name);
                             deleteProperty(Dew2NP.name);
-                            break;
-                        case 2:
+//                            break;
+//                        case 2:
                             deleteProperty(Dew3TP.name);
                             deleteProperty(Dew3SP.name);
                             deleteProperty(Dew3NP.name);
-                            break;
-                        case 3:
+//                            break;
+//                        case 3:
                             deleteProperty(Dew4TP.name);
                             deleteProperty(Dew4SP.name);
                             deleteProperty(Dew4NP.name);
-                            break;
-                        case 4:
+//                            break;
+//                        case 4:
                             deleteProperty(Dew5TP.name);
                             deleteProperty(Dew5SP.name);
                             deleteProperty(Dew5NP.name);
-                            break;
-                        case 5:
+//                            break;
+//                        case 5:
                             deleteProperty(Dew6TP.name);
                             deleteProperty(Dew6SP.name);
                             deleteProperty(Dew6NP.name);
-                            break;
-                        case 6:
+//                            break;
+//                        case 6:
                             deleteProperty(Dew7TP.name);
                             deleteProperty(Dew7SP.name);
                             deleteProperty(Dew7NP.name);
-                            break;
-                        case 7:
+//                            break;
+//                        case 7:
                             deleteProperty(Dew8TP.name);
                             deleteProperty(Dew8SP.name);
                             deleteProperty(Dew8NP.name);
-                            break;
-                        default:
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+ //                           break;
+ //                       default:
+ //                           break;
+ //                       }
+ //                   }
+ //               }
+  //          }
+    //    }
 
         // Debug only
         deleteProperty(Arbitary_CommandTP.name);
