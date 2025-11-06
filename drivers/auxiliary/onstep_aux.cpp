@@ -536,7 +536,7 @@ void OnStep_Aux::GetCapabilites()
             LOGF_WARN("Invalid response to %s: %s", OS_get_defined_features, response);
         }
         if (value > 0 ) {
-            hasSwitch = true;
+            hasFeature = true;
             LOG_DEBUG("Auxiliary Feature(s) found, enabling Feature Tab(s)");
             std::string features = response;
             for (uint digit = 0; digit < max_features; digit++) {
@@ -640,6 +640,23 @@ void OnStep_Aux::GetCapabilites()
                     LOG_WARN("Failed to get feature definition");
                 }
             }
+            if (findEnumInArray(features_type, SWITCH) ||
+                findEnumInArray(features_type, MOMENTARY_SWITCH) ||
+                findEnumInArray(features_type, COVER_SWITCH)) {
+                hasSwitch = true;
+            }
+            if (findEnumInArray(features_type, DEW_HEATER)) {
+                hasDew = true;
+            }
+            if (findEnumInArray(features_type, INTERVALOMETER)) {
+                hasIntervalometer = true;
+            }
+            if (findEnumInArray(features_type, ANALOG_OUTPUT)) {
+                hasOutput = true;
+            }
+        } else {
+            LOG_DEBUG("Auxiliary Feature not found, disabling Feature Tab(s)");
+            capabilities &= ~AUX_INTERFACE;
         }
     } else {
         LOG_DEBUG("Auxiliary Feature not found, disabling Feature Tab(s)");
@@ -1286,7 +1303,6 @@ int OnStep_Aux::OSUpdateFocuser()
     int error_or_fail = getCommandIntResponse(PortFD, &value_int, value, OS_get_focuser_position);
     if (error_or_fail > 1) {
         FocusAbsPosNP[0].setValue( value_int);
-        //         double current = FocusAbsPosNP[0].getValue();
         FocusAbsPosNP.apply();
         LOGF_DEBUG("Current focuser: %d, %f", value_int, FocusAbsPosNP[0].getValue());
     }
@@ -1571,11 +1587,6 @@ bool OnStep_Aux::Disconnect()
     return status;
 }
 
-//*******************
-// Required overrides
-//******************/
-void ISPoll(void *p);
-
 //void OnStep_Aux::ISGetProperties(const char *dev)
 //{
 //    FI::ISGetProperties(dev);
@@ -1586,7 +1597,139 @@ void ISPoll(void *p);
 ****************************/
 void OnStep_Aux::TimerHit()
 {
-
+    char cmd[CMD_MAX_LEN] = {0};
+    char response[RB_MAX_LEN] = {0};
+    int intResponse = 0;
+    int error_or_fail = 0;
+    if (hasSwitch) {
+        for (int feature = 0; feature < max_features; feature++) {
+            if (features_enabled[feature]) {
+                switch (features_type[feature]) {
+                case SWITCH:
+                case MOMENTARY_SWITCH:
+                case COVER_SWITCH:
+                    snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_feature_state_part, (feature + 1), OS_command_terminator);
+                    error_or_fail = getCommandIntResponse(PortFD, &intResponse, response, cmd);
+                    if (error_or_fail >0 ) {
+                        if (intResponse == 0) {
+                            switch (feature) {
+                            case 0:
+                                Switch1S[OFF_SWITCH].s = ISS_ON;
+                                Switch1S[ON_SWITCH].s = ISS_OFF;
+                                Switch1SP.s = IPS_OK;
+                                IDSetSwitch(&Switch1SP, nullptr);
+                                break;
+                            case 1:
+                                Switch2S[OFF_SWITCH].s = ISS_ON;
+                                Switch2S[ON_SWITCH].s = ISS_OFF;
+                                Switch2SP.s = IPS_OK;
+                                IDSetSwitch(&Switch2SP, nullptr);
+                                break;
+                            case 2:
+                                Switch3S[OFF_SWITCH].s = ISS_ON;
+                                Switch3S[ON_SWITCH].s = ISS_OFF;
+                                Switch3SP.s = IPS_OK;
+                                IDSetSwitch(&Switch3SP, nullptr);
+                                break;
+                            case 3:
+                                Switch4S[OFF_SWITCH].s = ISS_ON;
+                                Switch4S[ON_SWITCH].s = ISS_OFF;
+                                Switch4SP.s = IPS_OK;
+                                IDSetSwitch(&Switch4SP, nullptr);
+                                break;
+                            case 4:
+                                Switch5S[OFF_SWITCH].s = ISS_ON;
+                                Switch5S[ON_SWITCH].s = ISS_OFF;
+                                Switch5SP.s = IPS_OK;
+                                IDSetSwitch(&Switch5SP, nullptr);
+                                break;
+                            case 5:
+                                Switch6S[OFF_SWITCH].s = ISS_ON;
+                                Switch6S[ON_SWITCH].s = ISS_OFF;
+                                Switch6SP.s = IPS_OK;
+                                IDSetSwitch(&Switch6SP, nullptr);
+                                break;
+                            case 6:
+                                Switch7S[OFF_SWITCH].s = ISS_ON;
+                                Switch7S[ON_SWITCH].s = ISS_OFF;
+                                Switch7SP.s = IPS_OK;
+                                IDSetSwitch(&Switch7SP, nullptr);
+                                break;
+                            case 7:
+                                Switch8S[OFF_SWITCH].s = ISS_ON;
+                                Switch8S[ON_SWITCH].s = ISS_OFF;
+                                Switch8SP.s = IPS_OK;
+                                IDSetSwitch(&Switch8SP, nullptr);
+                                break;
+                            default:
+                                break;
+                            }
+                        } else if (intResponse == 1) {
+                            switch (feature) {
+                            case 0:
+                                Switch1S[OFF_SWITCH].s = ISS_OFF;
+                                Switch1S[ON_SWITCH].s = ISS_ON;
+                                Switch1SP.s = IPS_OK;
+                                IDSetSwitch(&Switch1SP, nullptr);
+                                break;
+                            case 1:
+                                Switch2S[OFF_SWITCH].s = ISS_OFF;
+                                Switch2S[ON_SWITCH].s = ISS_ON;
+                                Switch2SP.s = IPS_OK;
+                                IDSetSwitch(&Switch2SP, nullptr);
+                                break;
+                            case 2:
+                                Switch3S[OFF_SWITCH].s = ISS_OFF;
+                                Switch3S[ON_SWITCH].s = ISS_ON;
+                                Switch3SP.s = IPS_OK;
+                                IDSetSwitch(&Switch3SP, nullptr);
+                                break;
+                            case 3:
+                                Switch4S[OFF_SWITCH].s = ISS_OFF;
+                                Switch4S[ON_SWITCH].s = ISS_ON;
+                                Switch4SP.s = IPS_OK;
+                                IDSetSwitch(&Switch4SP, nullptr);
+                                break;
+                            case 4:
+                                Switch5S[OFF_SWITCH].s = ISS_OFF;
+                                Switch5S[ON_SWITCH].s = ISS_ON;
+                                Switch5SP.s = IPS_OK;
+                                IDSetSwitch(&Switch5SP, nullptr);
+                                break;
+                            case 5:
+                                Switch6S[OFF_SWITCH].s = ISS_OFF;
+                                Switch6S[ON_SWITCH].s = ISS_ON;
+                                Switch6SP.s = IPS_OK;
+                                IDSetSwitch(&Switch6SP, nullptr);
+                                break;
+                            case 6:
+                                Switch7S[OFF_SWITCH].s = ISS_OFF;
+                                Switch7S[ON_SWITCH].s = ISS_ON;
+                                Switch7SP.s = IPS_OK;
+                                IDSetSwitch(&Switch7SP, nullptr);
+                                break;
+                            case 7:
+                                Switch8S[OFF_SWITCH].s = ISS_OFF;
+                                Switch8S[ON_SWITCH].s = ISS_ON;
+                                Switch8SP.s = IPS_OK;
+                                IDSetSwitch(&Switch8SP, nullptr);
+                                break;
+                            default:
+                                break;
+                            }
+                        } else {
+                            LOGF_ERROR("Invalid response to get bool feature status: %d", intResponse);
+                        }
+                    }
+                    break;
+                case DEW_HEATER:
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+    }
 }
 
 /***************************************
@@ -2009,4 +2152,3 @@ void OnStep_Aux::clearBlock()
 {
     waitingForResponse = false;
 }
-

@@ -36,6 +36,8 @@
 #include <unistd.h>
 #include <termios.h>
 #include <stdlib.h>
+#include <vector>
+#include <algorithm>
 
 #define RB_MAX_LEN 64
 #define CMD_MAX_LEN 32
@@ -280,7 +282,19 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
 
   private:
     bool Handshake();
-      void SlowTimerHit();
+    void SlowTimerHit();
+
+    /***********************************************
+    * Helper function to check for enum in an array
+    * ********************************************/
+    template<typename EnumType, typename ArrayType, std::size_t N>
+    bool findEnumInArray(const ArrayType (&array_name)[N], EnumType enumValue) {
+        auto it = std::find_if(std::begin(array_name), std::end(array_name),
+                               [enumValue](ArrayType value) {
+                                   return value == static_cast<ArrayType>(enumValue);
+                               });
+        return it != std::end(array_name);
+    }
 
     static constexpr const float minimum_OS_fw = 10.25;
     static constexpr const int conversion_error = -10000;
@@ -290,9 +304,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     // For Serial and TCP connections
     Connection::Serial *serialConnection { nullptr };
     Connection::TCP *tcpConnection { nullptr };
-
     int PortFD { -1 };
-
     uint8_t osConnection { CONNECTION_SERIAL | CONNECTION_TCP };
 
     // Capability queries on connection
@@ -300,6 +312,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     bool hasFocuser = false;
     bool hasRotator = false;
     bool hasWeather = false;
+    bool hasFeature = false;
+    // These four are all subsets of hasFeature
     bool hasSwitch = false;
     bool hasDew = false;
     bool hasIntervalometer = false;
@@ -424,8 +438,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     //----------------------
 
     enum {
-        ON_SWITCH,
         OFF_SWITCH,
+        ON_SWITCH,
         SWITCH_TOGGLE_COUNT
     };
 
