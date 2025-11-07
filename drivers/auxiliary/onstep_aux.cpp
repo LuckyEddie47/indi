@@ -36,7 +36,6 @@
 
 
 /* To do
- * dew names, handlers
  * intervalometer all
  * outputs all
  */
@@ -234,8 +233,8 @@ bool OnStep_Aux::initProperties()
     IUFillText(&Dew1_nameT[0], "DEW_1_NAME", "Name", "");
     IUFillSwitchVector(&Dew1SP, Dew1_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable1", "Enable",
                        DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Dew1_enableS[ON_SWITCH], "Enable1_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Dew1_enableS[OFF_SWITCH], "Enable1_OFF", "OFF", ISS_ON);
+    IUFillSwitch(&Dew1_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Dew1_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew1NP, Dew1_zeroN, 1, getDeviceName(), "Dew_1_SETTINGS", "Settings degC",
                        DEW_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew1_zeroN[1],"DEW1_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
@@ -249,8 +248,8 @@ bool OnStep_Aux::initProperties()
     IUFillText(&Dew2_nameT[0], "DEW_2_NAME", "Name", "");
     IUFillSwitchVector(&Dew2SP, Dew2_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable2", "Enable",
                        DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Dew2_enableS[ON_SWITCH], "Enable2_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Dew2_enableS[OFF_SWITCH], "Enable1_OFF", "OFF", ISS_ON);
+    IUFillSwitch(&Dew2_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Dew2_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew2NP, Dew2_zeroN, 1, getDeviceName(), "Dew_2_SETTINGS", "Settings degC",
                        DEW_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew2_zeroN[1],"DEW2_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
@@ -264,8 +263,8 @@ bool OnStep_Aux::initProperties()
     IUFillText(&Dew3_nameT[0], "DEW_3_NAME", "Name", "");
     IUFillSwitchVector(&Dew3SP, Dew3_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable3", "Enable",
                        DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Dew3_enableS[ON_SWITCH], "Enable3_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Dew3_enableS[OFF_SWITCH], "Enable1_OFF", "OFF", ISS_ON);
+    IUFillSwitch(&Dew3_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Dew3_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew3NP, Dew3_zeroN, 1, getDeviceName(), "Dew_3_SETTINGS", "Settings degC",
                        DEW_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew3_zeroN[1],"DEW3_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
@@ -279,8 +278,8 @@ bool OnStep_Aux::initProperties()
     IUFillText(&Dew4_nameT[0], "DEW_4_NAME", "Name", "");
     IUFillSwitchVector(&Dew4SP, Dew4_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable4", "Enable",
                        DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Dew4_enableS[ON_SWITCH], "Enable4_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Dew4_enableS[OFF_SWITCH], "Enable1_OFF", "OFF", ISS_ON);
+    IUFillSwitch(&Dew4_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Dew4_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew4NP, Dew4_zeroN, 1, getDeviceName(), "Dew_4_SETTINGS", "Settings degC",
                        DEW_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew4_zeroN[1],"DEW4_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
@@ -294,8 +293,8 @@ bool OnStep_Aux::initProperties()
     IUFillText(&Dew5_nameT[0], "DEW_5_NAME", "Name", "");
     IUFillSwitchVector(&Dew5SP, Dew5_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable5", "Enable",
                        DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Dew5_enableS[ON_SWITCH], "Enable5_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Dew5_enableS[OFF_SWITCH], "Enable1_OFF", "OFF", ISS_ON);
+    IUFillSwitch(&Dew5_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Dew5_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew5NP, Dew5_zeroN, 1, getDeviceName(), "Dew_5_SETTINGS", "Settings degC",
                        DEW_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew5_zeroN[1],"DEW5_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
@@ -306,8 +305,8 @@ bool OnStep_Aux::initProperties()
     IUFillText(&Dew6_nameT[0], "DEW_6_NAME", "Name", "");
     IUFillSwitchVector(&Dew6SP, Dew6_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable6", "Enable",
                        DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Dew6_enableS[ON_SWITCH], "Enable6_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Dew6_enableS[OFF_SWITCH], "Enable1_OFF", "OFF", ISS_ON);
+    IUFillSwitch(&Dew6_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Dew6_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew6NP, Dew6_zeroN, 1, getDeviceName(), "Dew_6_SETTINGS", "Settings degC",
                        DEW_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew6_zeroN[1],"DEW6_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
@@ -321,8 +320,8 @@ bool OnStep_Aux::initProperties()
     IUFillText(&Dew7_nameT[0], "DEW_6_NAME", "Name", "");
     IUFillSwitchVector(&Dew7SP, Dew7_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable7", "Enable",
                        DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Dew7_enableS[ON_SWITCH], "Enable7_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Dew7_enableS[OFF_SWITCH], "Enable1_OFF", "OFF", ISS_ON);
+    IUFillSwitch(&Dew7_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Dew7_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew7NP, Dew6_zeroN, 1, getDeviceName(), "Dew_7_SETTINGS", "Settings degC",
                        DEW_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew7_zeroN[1],"DEW7_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
@@ -336,8 +335,8 @@ bool OnStep_Aux::initProperties()
     IUFillText(&Dew8_nameT[0], "DEW_8_NAME", "Name", "");
     IUFillSwitchVector(&Dew8SP, Dew8_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable8", "Enable",
                        DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
-    IUFillSwitch(&Dew8_enableS[ON_SWITCH], "Enable8_ON", "ON", ISS_OFF);
-    IUFillSwitch(&Dew8_enableS[OFF_SWITCH], "Enable1_OFF", "OFF", ISS_ON);
+    IUFillSwitch(&Dew8_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Dew8_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew8NP, Dew8_zeroN, 1, getDeviceName(), "Dew_8_SETTINGS", "Settings degC",
                        DEW_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew8_zeroN[1],"DEW8_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
@@ -885,11 +884,11 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
             IUUpdateSwitch(&Switch1SP, states, names, n);
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "DEVICE1_ON") == 0) {
-                    sprintf(cmd, "%s1,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    sprintf(cmd, "%s1,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
                     IDSetSwitch(&Switch1SP, nullptr);
                     return sendOSCommand(cmd);
                 } else if (strcmp(names[i], "DEVICE1_OFF") == 0) {
-                    sprintf(cmd, "%s1,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    sprintf(cmd, "%s1,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
                     IDSetSwitch(&Switch1SP, nullptr);
                     return sendOSCommand(cmd);
                 }
@@ -900,11 +899,11 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
             IUUpdateSwitch(&Switch2SP, states, names, n);
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "DEVICE2_ON") == 0) {
-                    sprintf(cmd, "%s2,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    sprintf(cmd, "%s2,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
                     IDSetSwitch(&Switch2SP, nullptr);
                     return sendOSCommand(cmd);
                 } else if (strcmp(names[i], "DEVICE2_OFF") == 0) {
-                    sprintf(cmd, "%s2,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    sprintf(cmd, "%s2,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
                     IDSetSwitch(&Switch2SP, nullptr);
                     return sendOSCommand(cmd);
                 }
@@ -915,11 +914,11 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
             IUUpdateSwitch(&Switch3SP, states, names, n);
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "DEVICE3_ON") == 0) {
-                    sprintf(cmd, "%s3,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    sprintf(cmd, "%s3,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
                     IDSetSwitch(&Switch3SP, nullptr);
                     return sendOSCommand(cmd);
                 } else if (strcmp(names[i], "DEVICE3_OFF") == 0) {
-                    sprintf(cmd, "%s3,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    sprintf(cmd, "%s3,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
                     IDSetSwitch(&Switch3SP, nullptr);
                     return sendOSCommand(cmd);
                 }
@@ -930,11 +929,11 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
             IUUpdateSwitch(&Switch4SP, states, names, n);
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "DEVICE4_ON") == 0) {
-                    sprintf(cmd, "%s4,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    sprintf(cmd, "%s4,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
                     IDSetSwitch(&Switch4SP, nullptr);
                     return sendOSCommand(cmd);
                 } else if (strcmp(names[i], "DEVICE4_OFF") == 0) {
-                    sprintf(cmd, "%s4,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    sprintf(cmd, "%s4,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
                     IDSetSwitch(&Switch4SP, nullptr);
                     return sendOSCommand(cmd);
                 }
@@ -945,11 +944,11 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
             IUUpdateSwitch(&Switch5SP, states, names, n);
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "DEVICE5_ON") == 0) {
-                    sprintf(cmd, "%s5,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    sprintf(cmd, "%s5,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
                     IDSetSwitch(&Switch5SP, nullptr);
                     return sendOSCommand(cmd);
                 } else if (strcmp(names[i], "DEVICE5_OFF") == 0) {
-                    sprintf(cmd, "%s5,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    sprintf(cmd, "%s5,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
                     IDSetSwitch(&Switch5SP, nullptr);
                     return sendOSCommand(cmd);
                 }
@@ -960,11 +959,11 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
             IUUpdateSwitch(&Switch6SP, states, names, n);
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "DEVICE6_ON") == 0) {
-                    sprintf(cmd, "%s6,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    sprintf(cmd, "%s6,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
                     IDSetSwitch(&Switch6SP, nullptr);
                     return sendOSCommand(cmd);
                 } else if (strcmp(names[i], "DEVICE6_OFF") == 0) {
-                    sprintf(cmd, "%s6,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    sprintf(cmd, "%s6,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
                     IDSetSwitch(&Switch6SP, nullptr);
                     return sendOSCommand(cmd);
                 }
@@ -975,11 +974,11 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
             IUUpdateSwitch(&Switch7SP, states, names, n);
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "DEVICE7_ON") == 0) {
-                    sprintf(cmd, "%s7,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    sprintf(cmd, "%s7,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
                     IDSetSwitch(&Switch7SP, nullptr);
                     return sendOSCommand(cmd);
                 } else if (strcmp(names[i], "DEVICE7_OFF") == 0) {
-                    sprintf(cmd, "%s7,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    sprintf(cmd, "%s7,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
                     IDSetSwitch(&Switch7SP, nullptr);
                     return sendOSCommand(cmd);
                 }
@@ -990,11 +989,11 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
             IUUpdateSwitch(&Switch8SP, states, names, n);
             for (int i = 0; i < n; i++) {
                 if (strcmp(names[i], "DEVICE8_ON") == 0) {
-                    sprintf(cmd, "%s8,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_ENABLE, OS_command_terminator);
+                    sprintf(cmd, "%s8,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
                     IDSetSwitch(&Switch8SP, nullptr);
                     return sendOSCommand(cmd);
                 } else if (strcmp(names[i], "DEVICE8_OFF") == 0) {
-                    sprintf(cmd, "%s8,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part,SWITCH_DISABLE, OS_command_terminator);
+                    sprintf(cmd, "%s8,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
                     IDSetSwitch(&Switch8SP, nullptr);
                     return sendOSCommand(cmd);
                 }
@@ -1003,8 +1002,117 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
             return false;
         }
 
-
-
+        // Dew heaters
+        //------------
+        if (strcmp(Dew1SP.name, name) == 0) {
+            IUUpdateSwitch(&Dew1SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s1,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew1SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s1,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew1SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&Dew1SP, nullptr);
+            return false;
+        } else if (strcmp(Dew2SP.name, name) == 0) {
+            IUUpdateSwitch(&Dew2SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s2,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew2SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s2,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew2SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&Dew2SP, nullptr);
+            return false;
+        } else if (strcmp(Dew3SP.name, name) == 0) {
+            IUUpdateSwitch(&Dew3SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s3,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew3SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s3,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew3SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+        } else if (strcmp(Dew4SP.name, name) == 0) {
+            IUUpdateSwitch(&Dew4SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s4,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew4SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s4,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew4SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+        } else if (strcmp(Dew5SP.name, name) == 0) {
+            IUUpdateSwitch(&Dew5SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s5,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew5SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s5,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew5SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+        } else if (strcmp(Dew6SP.name, name) == 0) {
+            IUUpdateSwitch(&Dew6SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s6,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew6SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s6,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew6SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+        } else if (strcmp(Dew7SP.name, name) == 0) {
+            IUUpdateSwitch(&Dew7SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s7,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew7SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s7,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew7SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+        } else if (strcmp(Dew8SP.name, name) == 0) {
+            IUUpdateSwitch(&Dew8SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s8,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew8SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s8,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Dew8SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+        }
 
 
 //        // Output devices
@@ -1193,6 +1301,96 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
         return true;
     }
     // end Focus T° Compensation
+
+    if (!strcmp(name, Dew1NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "DEW1_ZERO_POINT")) {
+                sprintf(cmd, "%s1,%s%f%s", OS_set_feature_part, OS_set_dew_zero_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "DEW1_SPAN")) {
+                sprintf(cmd, "%s1,%s%f%s", OS_set_feature_part, OS_set_dew_span_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Dew1NP.s = IPS_OK;
+    } else if (!strcmp(name, Dew2NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "DEW2_ZERO_POINT")) {
+                sprintf(cmd, "%s2,%s%f%s", OS_set_feature_part, OS_set_dew_zero_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "DEW2_SPAN")) {
+                sprintf(cmd, "%s2,%s%f%s", OS_set_feature_part, OS_set_dew_span_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Dew2NP.s = IPS_OK;
+    } else if (!strcmp(name, Dew3NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "DEW3_ZERO_POINT")) {
+                sprintf(cmd, "%s3,%s%f%s", OS_set_feature_part, OS_set_dew_zero_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "DEW3_SPAN")) {
+                sprintf(cmd, "%s3,%s%f%s", OS_set_feature_part, OS_set_dew_span_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Dew3NP.s = IPS_OK;
+    } else if (!strcmp(name, Dew4NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "DEW4_ZERO_POINT")) {
+                sprintf(cmd, "%s4,%s%f%s", OS_set_feature_part, OS_set_dew_zero_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "DEW4_SPAN")) {
+                sprintf(cmd, "%s4,%s%f%s", OS_set_feature_part, OS_set_dew_span_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Dew4NP.s = IPS_OK;
+    } else if (!strcmp(name, Dew5NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "DEW5_ZERO_POINT")) {
+                sprintf(cmd, "%s5,%s%f%s", OS_set_feature_part, OS_set_dew_zero_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "DEW5_SPAN")) {
+                sprintf(cmd, "%s5,%s%f%s", OS_set_feature_part, OS_set_dew_span_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Dew1NP.s = IPS_OK;
+    } else if (!strcmp(name, Dew6NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "DEW6_ZERO_POINT")) {
+                sprintf(cmd, "%s6,%s%f%s", OS_set_feature_part, OS_set_dew_zero_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "DEW6_SPAN")) {
+                sprintf(cmd, "%s6,%s%f%s", OS_set_feature_part, OS_set_dew_span_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Dew6NP.s = IPS_OK;
+    } else if (!strcmp(name, Dew7NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "DEW7_ZERO_POINT")) {
+                sprintf(cmd, "%s7,%s%f%s", OS_set_feature_part, OS_set_dew_zero_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "DEW7_SPAN")) {
+                sprintf(cmd, "%s7,%s%f%s", OS_set_feature_part, OS_set_dew_span_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Dew7NP.s = IPS_OK;
+    } else if (!strcmp(name, Dew8NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "DEW8_ZERO_POINT")) {
+                sprintf(cmd, "%s8,%s%f%s", OS_set_feature_part, OS_set_dew_zero_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "DEW8_SPAN")) {
+                sprintf(cmd, "%s8,%s%f%s", OS_set_feature_part, OS_set_dew_span_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Dew8NP.s = IPS_OK;
+    }
 
     if (strstr(name, "WEATHER_")) {
         return WI::processNumber(dev, name, values, names, n);
