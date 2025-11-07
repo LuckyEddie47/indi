@@ -492,6 +492,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     INumberVectorProperty Dew1NP;
     INumber Dew1_zeroN[1];
     INumber Dew1_spanN[1];
+    ITextVectorProperty Dew1deltaTP;
+    IText Dew1_deltaT[1];
     ITextVectorProperty Dew2TP;
     IText Dew2_nameT[1] {};
     ISwitchVectorProperty Dew2SP;
@@ -499,6 +501,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     INumberVectorProperty Dew2NP;
     INumber Dew2_zeroN[1];
     INumber Dew2_spanN[1];
+    ITextVectorProperty Dew2deltaTP;
+    IText Dew2_deltaT[1];
     ITextVectorProperty Dew3TP;
     IText Dew3_nameT[1] {};
     ISwitchVectorProperty Dew3SP;
@@ -506,6 +510,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     INumberVectorProperty Dew3NP;
     INumber Dew3_zeroN[1];
     INumber Dew3_spanN[1];
+    ITextVectorProperty Dew3deltaTP;
+    IText Dew3_deltaT[1];
     ITextVectorProperty Dew4TP;
     IText Dew4_nameT[1] {};
     ISwitchVectorProperty Dew4SP;
@@ -513,6 +519,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     INumberVectorProperty Dew4NP;
     INumber Dew4_zeroN[1];
     INumber Dew4_spanN[1];
+    ITextVectorProperty Dew4deltaTP;
+    IText Dew4_deltaT[1];
     ITextVectorProperty Dew5TP;
     IText Dew5_nameT[1] {};
     ISwitchVectorProperty Dew5SP;
@@ -520,6 +528,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     INumberVectorProperty Dew5NP;
     INumber Dew5_zeroN[1];
     INumber Dew5_spanN[1];
+    ITextVectorProperty Dew5deltaTP;
+    IText Dew5_deltaT[1];
     ITextVectorProperty Dew6TP;
     IText Dew6_nameT[1] {};
     ISwitchVectorProperty Dew6SP;
@@ -527,6 +537,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     INumberVectorProperty Dew6NP;
     INumber Dew6_zeroN[1];
     INumber Dew6_spanN[1];
+    ITextVectorProperty Dew6deltaTP;
+    IText Dew6_deltaT[1];
     ITextVectorProperty Dew7TP;
     IText Dew7_nameT[1] {};
     ISwitchVectorProperty Dew7SP;
@@ -534,6 +546,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     INumberVectorProperty Dew7NP;
     INumber Dew7_zeroN[1];
     INumber Dew7_spanN[1];
+    ITextVectorProperty Dew7deltaTP;
+    IText Dew7_deltaT[1];
     ITextVectorProperty Dew8TP;
     IText Dew8_nameT[1] {};
     ISwitchVectorProperty Dew8SP;
@@ -541,6 +555,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     INumberVectorProperty Dew8NP;
     INumber Dew8_zeroN[1];
     INumber Dew8_spanN[1];
+    ITextVectorProperty Dew8deltaTP;
+    IText Dew8_deltaT[1];
 
     // Debug only
     ITextVectorProperty Arbitary_CommandTP;
