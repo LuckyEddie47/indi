@@ -31,19 +31,6 @@
 #include <unistd.h>
 #include <mutex>
 
-
-
-
-
-/* To do
- * intervalometer all
- * outputs all
- */
-
-
-
-
-
 // Debug only - required for attaching debugger
 //  #include <signal.h>
 //  #include <unistd.h>
@@ -345,6 +332,134 @@ bool OnStep_Aux::initProperties()
                      DEW_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew8_deltaT[0], "DEW_8_DELTA", "Temp-dew", "");
 
+    // INTERVALOMETER_TAB
+    IUFillTextVector(&Inter1TP, Inter1_nameT, 1, getDeviceName(), "Inter_1_NAME", "Intervalometer 1",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter1_nameT[0], "INTER_1_NAME", "Name", "");
+    IUFillSwitchVector(&Inter1SP, Inter1_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable1", "Enable",
+                       INTERVALOMETER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Inter1_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Inter1_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
+    IUFillNumberVector(&Inter1NP, Inter1_expN, 1, getDeviceName(), "Inter_1_SETTINGS", "Settings secs",
+                       INTERVALOMETER_TAB, IP_RW, 60, IPS_OK);
+    IUFillNumber(&Inter1_expN[1],"INTER1_EXP","Exposure","%.0f", 0.1, 3600.0, 0.1, 30);
+    IUFillNumber(&Inter1_delayN[1],"INTER1_DELAY","Delay","%.0f", 1.0, 3600.0, 1, 1);
+    IUFillNumber(&Inter1_countN[1],"INTER1_COUNT","Count","%d", 1, 255, 1, 10);
+    IUFillTextVector(&Inter1doneTP, Inter1_doneT, 1, getDeviceName(), "Inter_1_DONE", "Current count",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter1_doneT[0], "INTER1_DONE", "Count", "");
+
+    IUFillTextVector(&Inter2TP, Inter2_nameT, 1, getDeviceName(), "Inter_2_NAME", "Intervalometer 2",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter2_nameT[0], "INTER_2_NAME", "Name", "");
+    IUFillSwitchVector(&Inter2SP, Inter2_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable2", "Enable",
+                       INTERVALOMETER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Inter2_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Inter2_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
+    IUFillNumberVector(&Inter2NP, Inter2_expN, 1, getDeviceName(), "Inter_2_SETTINGS", "Settings secs",
+                       INTERVALOMETER_TAB, IP_RW, 60, IPS_OK);
+    IUFillNumber(&Inter2_expN[1],"INTER2_EXP","Exposure","%.0f", 0.1, 3600.0, 0.1, 30);
+    IUFillNumber(&Inter2_delayN[1],"INTER2_DELAY","Delay","%.0f", 1.0, 3600.0, 1, 1);
+    IUFillNumber(&Inter2_countN[1],"INTER2_COUNT","Count","%d", 1, 255, 1, 10);
+    IUFillTextVector(&Inter2doneTP, Inter2_doneT, 1, getDeviceName(), "Inter_2_DONE", "Current count",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter2_doneT[0], "INTER2_DONE", "Count", "");
+
+    IUFillTextVector(&Inter3TP, Inter3_nameT, 1, getDeviceName(), "Inter_3_NAME", "Intervalometer 3",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter3_nameT[0], "INTER_3_NAME", "Name", "");
+    IUFillSwitchVector(&Inter3SP, Inter3_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable3", "Enable",
+                       INTERVALOMETER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Inter3_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Inter3_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
+    IUFillNumberVector(&Inter3NP, Inter3_expN, 1, getDeviceName(), "Inter_3_SETTINGS", "Settings secs",
+                       INTERVALOMETER_TAB, IP_RW, 60, IPS_OK);
+    IUFillNumber(&Inter3_expN[1],"INTER3_EXP","Exposure","%.0f", 0.1, 3600.0, 0.1, 30);
+    IUFillNumber(&Inter3_delayN[1],"INTER3_DELAY","Delay","%.0f", 1.0, 3600.0, 1, 1);
+    IUFillNumber(&Inter3_countN[1],"INTER3_COUNT","Count","%d", 1, 255, 1, 10);
+    IUFillTextVector(&Inter3doneTP, Inter3_doneT, 1, getDeviceName(), "Inter_3_DONE", "Current count",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter3_doneT[0], "INTER3_DONE", "Count", "");
+
+    IUFillTextVector(&Inter4TP, Inter4_nameT, 1, getDeviceName(), "Inter_4_NAME", "Intervalometer 4",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter4_nameT[0], "INTER_4_NAME", "Name", "");
+    IUFillSwitchVector(&Inter4SP, Inter4_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable4", "Enable",
+                       INTERVALOMETER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Inter4_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Inter4_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
+    IUFillNumberVector(&Inter4NP, Inter4_expN, 1, getDeviceName(), "Inter_4_SETTINGS", "Settings secs",
+                       INTERVALOMETER_TAB, IP_RW, 60, IPS_OK);
+    IUFillNumber(&Inter4_expN[1],"Inter4_EXP","Exposure","%.0f", 0.1, 3600.0, 0.1, 30);
+    IUFillNumber(&Inter4_delayN[1],"Inter4_DELAY","Delay","%.0f", 1.0, 3600.0, 1, 1);
+    IUFillNumber(&Inter4_countN[1],"Inter4_COUNT","Count","%d", 1, 255, 1, 10);
+    IUFillTextVector(&Inter4doneTP, Inter4_doneT, 1, getDeviceName(), "Inter_4_DONE", "Current count",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter4_doneT[0], "INTER4_DONE", "Count", "");
+
+    IUFillTextVector(&Inter5TP, Inter5_nameT, 1, getDeviceName(), "Inter_5_NAME", "Intervalometer 5",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter5_nameT[0], "INTER_5_NAME", "Name", "");
+    IUFillSwitchVector(&Inter5SP, Inter5_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable5", "Enable",
+                       INTERVALOMETER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Inter5_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Inter5_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
+    IUFillNumberVector(&Inter5NP, Inter5_expN, 1, getDeviceName(), "Inter_5_SETTINGS", "Settings secs",
+                       INTERVALOMETER_TAB, IP_RW, 60, IPS_OK);
+    IUFillNumber(&Inter5_expN[1],"Inter5_EXP","Exposure","%.0f", 0.1, 3600.0, 0.1, 30);
+    IUFillNumber(&Inter5_delayN[1],"Inter5_DELAY","Delay","%.0f", 1.0, 3600.0, 1, 1);
+    IUFillNumber(&Inter5_countN[1],"Inter5_COUNT","Count","%d", 1, 255, 1, 10);
+    IUFillTextVector(&Inter5doneTP, Inter5_doneT, 1, getDeviceName(), "Inter_5_DONE", "Current count",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter5_doneT[0], "INTER5_DONE", "Count", "");
+
+    IUFillTextVector(&Inter6TP, Inter6_nameT, 1, getDeviceName(), "Inter_6_NAME", "Intervalometer 6",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter6_nameT[0], "INTER_6_NAME", "Name", "");
+    IUFillSwitchVector(&Inter6SP, Inter6_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable6", "Enable",
+                       INTERVALOMETER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Inter6_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Inter6_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
+    IUFillNumberVector(&Inter6NP, Inter6_expN, 1, getDeviceName(), "Inter_6_SETTINGS", "Settings secs",
+                       INTERVALOMETER_TAB, IP_RW, 60, IPS_OK);
+    IUFillNumber(&Inter6_expN[1],"INTER6_EXP","Exposure","%.0f", 0.1, 3600.0, 0.1, 30);
+    IUFillNumber(&Inter6_delayN[1],"INTER6_DELAY","Delay","%.0f", 1.0, 3600.0, 1, 1);
+    IUFillNumber(&Inter6_countN[1],"INTER6_COUNT","Count","%d", 1, 255, 1, 10);
+    IUFillTextVector(&Inter6doneTP, Inter6_doneT, 1, getDeviceName(), "Inter_6_DONE", "Current count",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter6_doneT[0], "INTER6_DONE", "Count", "");
+
+    IUFillTextVector(&Inter7TP, Inter7_nameT, 1, getDeviceName(), "Inter_7_NAME", "Intervalometer 7",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter7_nameT[0], "INTER_7_NAME", "Name", "");
+    IUFillSwitchVector(&Inter7SP, Inter7_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable7", "Enable",
+                       INTERVALOMETER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Inter7_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Inter7_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
+    IUFillNumberVector(&Inter7NP, Inter7_expN, 1, getDeviceName(), "Inter_7_SETTINGS", "Settings secs",
+                       INTERVALOMETER_TAB, IP_RW, 60, IPS_OK);
+    IUFillNumber(&Inter7_expN[1],"Inter7_EXP","Exposure","%.0f", 0.1, 3600.0, 0.1, 30);
+    IUFillNumber(&Inter7_delayN[1],"Inter7_DELAY","Delay","%.0f", 1.0, 3600.0, 1, 1);
+    IUFillNumber(&Inter7_countN[1],"Inter7_COUNT","Count","%d", 1, 255, 1, 10);
+    IUFillTextVector(&Inter7doneTP, Inter7_doneT, 1, getDeviceName(), "Inter_7_DONE", "Current count",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter7_doneT[0], "INTER7_DONE", "Count", "");
+
+    IUFillTextVector(&Inter8TP, Inter8_nameT, 1, getDeviceName(), "Inter_8_NAME", "Intervalometer 8",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter8_nameT[0], "INTER_8_NAME", "Name", "");
+    IUFillSwitchVector(&Inter8SP, Inter8_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable8", "Enable",
+                       INTERVALOMETER_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&Inter8_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
+    IUFillSwitch(&Inter8_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
+    IUFillNumberVector(&Inter8NP, Inter8_expN, 1, getDeviceName(), "Inter_8_SETTINGS", "Settings secs",
+                       INTERVALOMETER_TAB, IP_RW, 60, IPS_OK);
+    IUFillNumber(&Inter8_expN[1],"INTER8_EXP","Exposure","%.0f", 0.1, 3600.0, 0.1, 30);
+    IUFillNumber(&Inter8_delayN[1],"INTER8_DELAY","Delay","%.0f", 1.0, 3600.0, 1, 1);
+    IUFillNumber(&Inter8_countN[1],"INTER8_COUNT","Count","%d", 1, 255, 1, 10);
+    IUFillTextVector(&Inter8doneTP, Inter8_doneT, 1, getDeviceName(), "Inter_8_DONE", "Current count",
+                     INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&Inter8_doneT[0], "INTER8_DONE", "Count", "");
 
     // MANUAL_TAB
     //-----------
@@ -512,10 +627,6 @@ void OnStep_Aux::GetCapabilites()
         capabilities &= ~WEATHER_INTERFACE;
     }
 
-
-    // Split feature discovery to switches / dew / power / outputs each with own tab
-
-
     // Discover features
     memset(response, 0, RB_MAX_LEN);
     error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_features);
@@ -561,6 +672,9 @@ void OnStep_Aux::GetCapabilites()
                         } else if (features_type[feature] == DEW_HEATER) {
                             IUSaveText(&Dew1_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew1TP, nullptr);
+                        } else if (features_type[feature] == INTERVALOMETER) {
+                            IUSaveText(&Inter1_nameT[0], features_name[feature].c_str());
+                            IDSetText(&Inter1TP, nullptr);
                         }
                         break;
                     case 1:
@@ -570,6 +684,9 @@ void OnStep_Aux::GetCapabilites()
                         } else if (features_type[feature] == DEW_HEATER) {
                             IUSaveText(&Dew2_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew2TP, nullptr);
+                        } else if (features_type[feature] == INTERVALOMETER) {
+                            IUSaveText(&Inter2_nameT[0], features_name[feature].c_str());
+                            IDSetText(&Inter2TP, nullptr);
                         }
                         break;
                     case 2:
@@ -579,6 +696,9 @@ void OnStep_Aux::GetCapabilites()
                         } else if (features_type[feature] == DEW_HEATER) {
                             IUSaveText(&Dew3_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew3TP, nullptr);
+                        } else if (features_type[feature] == INTERVALOMETER) {
+                            IUSaveText(&Inter3_nameT[0], features_name[feature].c_str());
+                            IDSetText(&Inter3TP, nullptr);
                         }
                         break;
                     case 3:
@@ -588,6 +708,9 @@ void OnStep_Aux::GetCapabilites()
                         } else if (features_type[feature] == DEW_HEATER) {
                             IUSaveText(&Dew4_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew4TP, nullptr);
+                        } else if (features_type[feature] == INTERVALOMETER) {
+                            IUSaveText(&Inter4_nameT[0], features_name[feature].c_str());
+                            IDSetText(&Inter4TP, nullptr);
                         }
                         break;
                     case 4:
@@ -597,6 +720,9 @@ void OnStep_Aux::GetCapabilites()
                         } else if (features_type[feature] == DEW_HEATER) {
                             IUSaveText(&Dew5_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew5TP, nullptr);
+                        } else if (features_type[feature] == INTERVALOMETER) {
+                            IUSaveText(&Inter5_nameT[0], features_name[feature].c_str());
+                            IDSetText(&Inter5TP, nullptr);
                         }
                         break;
                     case 5:
@@ -606,6 +732,9 @@ void OnStep_Aux::GetCapabilites()
                         } else if (features_type[feature] == DEW_HEATER) {
                             IUSaveText(&Dew6_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew6TP, nullptr);
+                        } else if (features_type[feature] == INTERVALOMETER) {
+                            IUSaveText(&Inter6_nameT[0], features_name[feature].c_str());
+                            IDSetText(&Inter6TP, nullptr);
                         }
                         break;
                     case 6:
@@ -615,6 +744,9 @@ void OnStep_Aux::GetCapabilites()
                         } else if (features_type[feature] == DEW_HEATER) {
                             IUSaveText(&Dew7_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew7TP, nullptr);
+                        } else if (features_type[feature] == INTERVALOMETER) {
+                            IUSaveText(&Inter7_nameT[0], features_name[feature].c_str());
+                            IDSetText(&Inter7TP, nullptr);
                         }
                         break;
                     case 7:
@@ -624,6 +756,9 @@ void OnStep_Aux::GetCapabilites()
                         } else if (features_type[feature] == DEW_HEATER) {
                             IUSaveText(&Dew8_nameT[0], features_name[feature].c_str());
                             IDSetText(&Dew8TP, nullptr);
+                        } else if (features_type[feature] == INTERVALOMETER) {
+                            IUSaveText(&Inter8_nameT[0], features_name[feature].c_str());
+                            IDSetText(&Inter8TP, nullptr);
                         }
                         break;
                     default:
@@ -697,7 +832,7 @@ bool OnStep_Aux::updateProperties()
             WI::updateProperties();
         }
 
-        if (hasSwitch) {
+        if (hasFeature) {
             for (int OSfeature = 0; OSfeature < max_features; OSfeature++) {
                 if (features_enabled[OSfeature] == 1) {
                     if (features_type[OSfeature] == SWITCH ||
@@ -792,6 +927,59 @@ bool OnStep_Aux::updateProperties()
                         default:
                             break;
                         }
+                    } else if (features_type[OSfeature] == INTERVALOMETER) {
+                        switch (OSfeature) {
+                        case 0:
+                            defineProperty(&Inter1TP);
+                            defineProperty(&Inter1SP);
+                            defineProperty(&Inter1NP);
+                            defineProperty(&Inter1doneTP);
+                            break;
+                        case 1:
+                            defineProperty(&Inter2TP);
+                            defineProperty(&Inter2SP);
+                            defineProperty(&Inter2NP);
+                            defineProperty(&Inter2doneTP);
+                            break;
+                        case 2:
+                            defineProperty(&Inter3TP);
+                            defineProperty(&Inter3SP);
+                            defineProperty(&Inter3NP);
+                            defineProperty(&Inter3doneTP);
+                            break;
+                        case 3:
+                            defineProperty(&Inter4TP);
+                            defineProperty(&Inter4SP);
+                            defineProperty(&Inter4NP);
+                            defineProperty(&Inter4doneTP);
+                            break;
+                        case 4:
+                            defineProperty(&Inter5TP);
+                            defineProperty(&Inter5SP);
+                            defineProperty(&Inter5NP);
+                            defineProperty(&Inter5doneTP);
+                            break;
+                        case 5:
+                            defineProperty(&Inter6TP);
+                            defineProperty(&Inter6SP);
+                            defineProperty(&Inter6NP);
+                            defineProperty(&Inter6doneTP);
+                            break;
+                        case 6:
+                            defineProperty(&Inter7TP);
+                            defineProperty(&Inter7SP);
+                            defineProperty(&Inter7NP);
+                            defineProperty(&Inter7doneTP);
+                            break;
+                        case 7:
+                            defineProperty(&Inter8TP);
+                            defineProperty(&Inter8SP);
+                            defineProperty(&Inter8NP);
+                            defineProperty(&Inter8doneTP);
+                            break;
+                        default:
+                            break;
+                        }
                     }
                 }
             }
@@ -859,6 +1047,39 @@ bool OnStep_Aux::updateProperties()
         deleteProperty(Dew8SP.name);
         deleteProperty(Dew8NP.name);
         deleteProperty(Dew8deltaTP.name);
+
+        deleteProperty(Inter1TP.name);
+        deleteProperty(Inter1SP.name);
+        deleteProperty(Inter1NP.name);
+        deleteProperty(Inter1doneTP.name);
+        deleteProperty(Inter2TP.name);
+        deleteProperty(Inter2SP.name);
+        deleteProperty(Inter2NP.name);
+        deleteProperty(Inter2doneTP.name);
+        deleteProperty(Inter3TP.name);
+        deleteProperty(Inter3SP.name);
+        deleteProperty(Inter3NP.name);
+        deleteProperty(Inter3doneTP.name);
+        deleteProperty(Inter4TP.name);
+        deleteProperty(Inter4SP.name);
+        deleteProperty(Inter4NP.name);
+        deleteProperty(Inter4doneTP.name);
+        deleteProperty(Inter5TP.name);
+        deleteProperty(Inter5SP.name);
+        deleteProperty(Inter5NP.name);
+        deleteProperty(Inter5doneTP.name);
+        deleteProperty(Inter6TP.name);
+        deleteProperty(Inter6SP.name);
+        deleteProperty(Inter6NP.name);
+        deleteProperty(Inter6doneTP.name);
+        deleteProperty(Inter7TP.name);
+        deleteProperty(Inter7SP.name);
+        deleteProperty(Inter7NP.name);
+        deleteProperty(Inter7doneTP.name);
+        deleteProperty(Inter8TP.name);
+        deleteProperty(Inter8SP.name);
+        deleteProperty(Inter8NP.name);
+        deleteProperty(Inter8doneTP.name);
 
         // Debug only
         deleteProperty(Arbitary_CommandTP.name);
@@ -1114,146 +1335,117 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
             }
         }
 
-
-//        // Output devices
-//        //---------------
-//        if (strcmp(Output1SP.name, name) == 0) {
-//            IUUpdateSwitch(&Output1SP, states, names, n);
-//            for (int i = 0; i < n; i++) {
-//                if (strcmp(names[i], "OUTPUT1_ON") == 0) {
-//                    char set_output_1_on_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_1_on_cmd, "%s1,V1%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output1SP, nullptr);
-//                    return sendOsaCommand(set_output_1_on_cmd);
-//                } else if (strcmp(names[i], "OUTPUT1_OFF") == 0) {
-//                    char set_output_1_off_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_1_off_cmd, "%s1,V0%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output1SP, nullptr);
-//                    return sendOsaCommand(set_output_1_off_cmd);
-//                }
-//            }
-//            IDSetSwitch(&Output1SP, nullptr);
-//            return false;
-//        } else if (strcmp(Output2SP.name, name) == 0) {
-//            IUUpdateSwitch(&Output2SP, states, names, n);
-//            for (int i = 0; i < n; i++) {
-//                if (strcmp(names[i], "OUTPUT2_ON") == 0) {
-//                    char set_output_2_on_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_2_on_cmd, "%s2,V1%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output2SP, nullptr);
-//                    return sendOsaCommand(set_output_2_on_cmd);
-//                } else if (strcmp(names[i], "OUTPUT2_OFF") == 0) {
-//                    char set_output_2_off_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_2_off_cmd, "%s2,V0%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output2SP, nullptr);
-//                    return sendOsaCommand(set_output_2_off_cmd);
-//                }
-//            }
-//            IDSetSwitch(&Output2SP, nullptr);
-//            return false;
-//        } else if (strcmp(Output3SP.name, name) == 0) {
-//            IUUpdateSwitch(&Output3SP, states, names, n);
-//            for (int i = 0; i < n; i++) {
-//                if (strcmp(names[i], "OUTPUT3_ON") == 0) {
-//                    char set_output_3_on_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_3_on_cmd, "%s3,V1%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output3SP, nullptr);
-//                    return sendOsaCommand(set_output_3_on_cmd);
-//                } else if (strcmp(names[i], "OUTPUT3_OFF") == 0) {
-//                    char set_output_3_off_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_3_off_cmd, "%s3,V0%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output3SP, nullptr);
-//                    return sendOsaCommand(set_output_3_off_cmd);
-//                }
-//            }
-//            IDSetSwitch(&Output3SP, nullptr);
-//            return false;
-//        } else if (strcmp(Output4SP.name, name) == 0) {
-//            IUUpdateSwitch(&Output4SP, states, names, n);
-//            for (int i = 0; i < n; i++) {
-//                if (strcmp(names[i], "OUTPUT4_ON") == 0) {
-//                    char set_output_4_on_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_4_on_cmd, "%s4,V1%s", Osa_setFeaturePart,  Osa_command_terminator);
-//                    IDSetSwitch(&Output4SP, nullptr);
-//                    return sendOsaCommand(set_output_4_on_cmd);
-//                } else if (strcmp(names[i], "OUTPUT4_OFF") == 0) {
-//                    char set_output_4_off_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_4_off_cmd, "%s4,V0%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output4SP, nullptr);
-//                    return sendOsaCommand(set_output_4_off_cmd);
-//                }
-//            }
-//            IDSetSwitch(&Output4SP, nullptr);
-//            return false;
-//        } else if (strcmp(Output5SP.name, name) == 0) {
-//            IUUpdateSwitch(&Output5SP, states, names, n);
-//            for (int i = 0; i < n; i++) {
-//                if (strcmp(names[i], "OUTPUT5_ON") == 0) {
-//                    char set_output_5_on_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_5_on_cmd, "%s5,V1%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output5SP, nullptr);
-//                    return sendOsaCommand(set_output_5_on_cmd);
-//                } else if (strcmp(names[i], "OUTPUT5_OFF") == 0) {
-//                    char set_output_5_off_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_5_off_cmd, "%s5,V0%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output5SP, nullptr);
-//                    return sendOsaCommand(set_output_5_off_cmd);
-//                }
-//            }
-//            IDSetSwitch(&Output5SP, nullptr);
-//            return false;
-//        } else if (strcmp(Output6SP.name, name) == 0) {
-//            IUUpdateSwitch(&Output6SP, states, names, n);
-//            for (int i = 0; i < n; i++) {
-//                if (strcmp(names[i], "OUTPUT6_ON") == 0) {
-//                    char set_output_6_on_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_6_on_cmd, "%s6,V1%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output6SP, nullptr);
-//                    return sendOsaCommand(set_output_6_on_cmd);
-//                } else if (strcmp(names[i], "OUTPUT6_OFF") == 0) {
-//                    char set_output_6_off_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_6_off_cmd, "%s6,V0%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output6SP, nullptr);
-//                    return sendOsaCommand(set_output_6_off_cmd);
-//                }
-//            }
-//            IDSetSwitch(&Output6SP, nullptr);
-//            return false;
-//        } else if (strcmp(Output7SP.name, name) == 0) {
-//            IUUpdateSwitch(&Output7SP, states, names, n);
-//            for (int i = 0; i < n; i++) {
-//                if (strcmp(names[i], "OUTPUT7_ON") == 0) {
-//                    char set_output_7_on_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_7_on_cmd, "%s7,V1%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output7SP, nullptr);
-//                    return sendOsaCommand(set_output_7_on_cmd);
-//                } else if (strcmp(names[i], "OUTPUT7_OFF") == 0) {
-//                    char set_output_7_off_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_7_off_cmd, "%s7,V0%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output7SP, nullptr);
-//                    return sendOsaCommand(set_output_7_off_cmd);
-//                }
-//            }
-//            IDSetSwitch(&Output7SP, nullptr);
-//            return false;
-//        } else if (strcmp(Output8SP.name, name) == 0) {
-//            IUUpdateSwitch(&Output8SP, states, names, n);
-//            for (int i = 0; i < n; i++) {
-//                if (strcmp(names[i], "OUTPUT8_ON") == 0) {
-//                    char set_output_8_on_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_8_on_cmd, "%s8,V1%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output8SP, nullptr);
-//                    return sendOsaCommand(set_output_8_on_cmd);
-//                } else if (strcmp(names[i], "OUTPUT8_OFF") == 0) {
-//                    char set_output_8_off_cmd[CMD_MAX_LEN];
-//                    sprintf(set_output_8_off_cmd, "%s8,V0%s", Osa_setFeaturePart, Osa_command_terminator);
-//                    IDSetSwitch(&Output8SP, nullptr);
-//                    return sendOsaCommand(set_output_8_off_cmd);
-//                }
-//            }
-//            IDSetSwitch(&Output8SP, nullptr);
-//            return false;
-//        }
+        // Intervalometers
+        //----------------
+        if (strcmp(Inter1SP.name, name) == 0) {
+            IUUpdateSwitch(&Inter1SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s1,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter1SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s1,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter1SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&Inter1SP, nullptr);
+            return false;
+        } else if (strcmp(Inter2SP.name, name) == 0) {
+            IUUpdateSwitch(&Inter2SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s2,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter2SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s2,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter2SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&Inter2SP, nullptr);
+            return false;
+        } else if (strcmp(Inter3SP.name, name) == 0) {
+            IUUpdateSwitch(&Inter3SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s3,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter3SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s3,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter3SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+        } else if (strcmp(Inter4SP.name, name) == 0) {
+            IUUpdateSwitch(&Inter4SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s4,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter4SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s4,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter4SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+        } else if (strcmp(Inter5SP.name, name) == 0) {
+            IUUpdateSwitch(&Inter5SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s5,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter5SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s5,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter5SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+        } else if (strcmp(Inter6SP.name, name) == 0) {
+            IUUpdateSwitch(&Inter6SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s6,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter6SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s6,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter6SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+        } else if (strcmp(Inter7SP.name, name) == 0) {
+            IUUpdateSwitch(&Inter7SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s7,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter7SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s7,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter7SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+        } else if (strcmp(Inter8SP.name, name) == 0) {
+            IUUpdateSwitch(&Inter8SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "ENABLE_ON") == 0) {
+                    sprintf(cmd, "%s8,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter8SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "ENABLE_OFF") == 0) {
+                    sprintf(cmd, "%s8,%s%d%s", OS_set_feature_part, OS_set_feature_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&Inter8SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+        }
 
         return INDI::DefaultDevice::ISNewSwitch(dev, name, states, names, n);
     } else {
@@ -1302,6 +1494,8 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
     }
     // end Focus T° Compensation
 
+    // Dew Heaters
+    //------------
     if (!strcmp(name, Dew1NP.name)) {
         char cmd[CMD_MAX_LEN] = {0};
         for (int i = 0; i < n; i++) {
@@ -1392,6 +1586,114 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
         Dew8NP.s = IPS_OK;
     }
 
+    // Intervolometers
+    //----------------
+    if (!strcmp(name, Inter1NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "INTER1_EXP")) {
+                sprintf(cmd, "%s1,%s%f%s", OS_set_feature_part, OS_set_intervalometer_exposure_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER1_DELAY")) {
+                sprintf(cmd, "%s1,%s%f%s", OS_set_feature_part, OS_set_intervalometer_delay_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER1_COUNT")) {
+                sprintf(cmd, "%s1,%s%f%s", OS_set_feature_part, OS_set_intervalometer_count_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Inter1NP.s = IPS_OK;
+    } else if (!strcmp(name, Inter2NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "INTER2_EXP")) {
+                sprintf(cmd, "%s2,%s%f%s", OS_set_feature_part, OS_set_intervalometer_exposure_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER2_DELAY")) {
+                sprintf(cmd, "%s2,%s%f%s", OS_set_feature_part, OS_set_intervalometer_delay_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER2_COUNT")) {
+                sprintf(cmd, "%s2,%s%f%s", OS_set_feature_part, OS_set_intervalometer_count_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Inter2NP.s = IPS_OK;
+    } else if (!strcmp(name, Inter3NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "INTER3_EXP")) {
+                sprintf(cmd, "%s3,%s%f%s", OS_set_feature_part, OS_set_intervalometer_exposure_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER3_DELAY")) {
+                sprintf(cmd, "%s3,%s%f%s", OS_set_feature_part, OS_set_intervalometer_delay_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER3_COUNT")) {
+                sprintf(cmd, "%s3,%s%f%s", OS_set_feature_part, OS_set_intervalometer_count_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Inter3NP.s = IPS_OK;
+    } else if (!strcmp(name, Inter4NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "INTER4_EXP")) {
+                sprintf(cmd, "%s4,%s%f%s", OS_set_feature_part, OS_set_intervalometer_exposure_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER4_DELAY")) {
+                sprintf(cmd, "%s4,%s%f%s", OS_set_feature_part, OS_set_intervalometer_delay_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER4_COUNT")) {
+                sprintf(cmd, "%s4,%s%f%s", OS_set_feature_part, OS_set_intervalometer_count_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Inter4NP.s = IPS_OK;
+    } else if (!strcmp(name, Inter5NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "INTER5_EXP")) {
+                sprintf(cmd, "%s5,%s%f%s", OS_set_feature_part, OS_set_intervalometer_exposure_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER5_DELAY")) {
+                sprintf(cmd, "%s5,%s%f%s", OS_set_feature_part, OS_set_intervalometer_delay_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER5_COUNT")) {
+                sprintf(cmd, "%s5,%s%f%s", OS_set_feature_part, OS_set_intervalometer_count_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Inter5NP.s = IPS_OK;
+    } else if (!strcmp(name, Inter6NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "INTER6_EXP")) {
+                sprintf(cmd, "%s6,%s%f%s", OS_set_feature_part, OS_set_intervalometer_exposure_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER6_DELAY")) {
+                sprintf(cmd, "%s6,%s%f%s", OS_set_feature_part, OS_set_intervalometer_delay_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER6_COUNT")) {
+                sprintf(cmd, "%s6,%s%f%s", OS_set_feature_part, OS_set_intervalometer_count_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Inter6NP.s = IPS_OK;
+    } else if (!strcmp(name, Inter7NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "INTER7_EXP")) {
+                sprintf(cmd, "%s7,%s%f%s", OS_set_feature_part, OS_set_intervalometer_exposure_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER7_DELAY")) {
+                sprintf(cmd, "%s7,%s%f%s", OS_set_feature_part, OS_set_intervalometer_delay_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER7_COUNT")) {
+                sprintf(cmd, "%s7,%s%f%s", OS_set_feature_part, OS_set_intervalometer_count_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Inter7NP.s = IPS_OK;
+    } else if (!strcmp(name, Inter8NP.name)) {
+        char cmd[CMD_MAX_LEN] = {0};
+        for (int i = 0; i < n; i++) {
+            if (!strcmp(names[i], "INTER8_EXP")) {
+                sprintf(cmd, "%s8,%s%f%s", OS_set_feature_part, OS_set_intervalometer_exposure_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER8_DELAY")) {
+                sprintf(cmd, "%s8,%s%f%s", OS_set_feature_part, OS_set_intervalometer_delay_part, values[0], OS_command_terminator);
+            } else if (!strcmp(names[i], "INTER8_COUNT")) {
+                sprintf(cmd, "%s8,%s%f%s", OS_set_feature_part, OS_set_intervalometer_count_part, values[0], OS_command_terminator);
+            }
+        }
+        sendOSCommandBlind(cmd);
+        Inter8NP.s = IPS_OK;
+    }
+
     if (strstr(name, "WEATHER_")) {
         return WI::processNumber(dev, name, values, names, n);
     }
@@ -1439,17 +1741,6 @@ bool OnStep_Aux::ISNewText(const char *dev,const char *name,char *texts[],char *
     }
 }
 
-//void OnStep_Aux::TimerHit()
-//{
-//    if (!isConnected())
-//    {
-//        return;
-//    }
-//
-//    // Get temperatures etc.
-////    readSettings();
-//    timerIndex = SetTimer(getCurrentPollingPeriod());
-//}
 
 /*******************
  * Focuser functions
@@ -2151,6 +2442,162 @@ void OnStep_Aux::TimerHit()
                         };
                     }
                     break;
+                case INTERVALOMETER:
+                    snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_feature_state_part, (feature + 1), OS_command_terminator);
+                    error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, cmd);
+                    if (error_or_fail > 0 ) {
+                        float inter_exp = 0.0;
+                        float inter_delay = 0.0;
+                        int inter_count = 0;
+                        char inter_done[RB_MAX_LEN] = {0};
+                        bool valid = false;
+
+                        // First returned part is count of completed exposures
+                        char *split;
+                        split = strtok(response, ",");
+                        int value = conversion_error;
+                        try {
+                            value = std::stoi(split);
+                        } catch (const std::invalid_argument&) {
+                            LOGF_WARN("Invalid response to %s: %s", cmd, response);
+                        } catch (const std::out_of_range&) {
+                            LOGF_WARN("Invalid response to %s: %s", cmd, response);
+                        }
+                        if (value < 0 || value > 1) {
+                            LOGF_WARN("Invalid response to %s: %s", cmd, response);
+                        } else {
+                            indi_strlcpy(inter_done, split, sizeof(inter_done));
+                            valid = true;
+                        }
+
+                        // Second returned part is exposure time in secs
+                        if (valid) {
+                            split = strtok(response, ",");
+                            float fValue = static_cast<float>(conversion_error);
+                            try {
+                                fValue = std::stof(split);
+                            } catch (const std::invalid_argument&) {
+                                LOGF_WARN("Invalid response to %s: %s", cmd, response);
+                            } catch (const std::out_of_range&) {
+                                LOGF_WARN("Invalid response to %s: %s", cmd, response);
+                            }
+                            if (fValue < -5.0 || fValue > 20.0) {
+                                LOGF_WARN("Invalid response to %s: %s", cmd, response);
+                                valid = false;
+                            } else {
+                                inter_exp = fValue;
+                            }
+                        }
+
+                        // Third returned part is delay time in secs
+                        if (valid) {
+                            split = strtok(response, ",");
+                            float fValue = static_cast<float>(conversion_error);
+                            try {
+                                fValue = std::stof(split);
+                            } catch (const std::invalid_argument&) {
+                                LOGF_WARN("Invalid response to %s: %s", cmd, response);
+                            } catch (const std::out_of_range&) {
+                                LOGF_WARN("Invalid response to %s: %s", cmd, response);
+                            }
+                            if (fValue < -5.0 || fValue > 20.0) {
+                                LOGF_WARN("Invalid response to %s: %s", cmd, response);
+                                valid = false;
+                            } else {
+                                inter_delay = fValue;
+                            }
+                        }
+
+                        // Forth returned part set count
+                        if (valid) {
+                            split = strtok(response, ",");
+                            float fValue = static_cast<float>(conversion_error);
+                            try {
+                                fValue = std::stof(split);
+                            } catch (const std::invalid_argument&) {
+                                LOGF_WARN("Invalid response to %s: %s", cmd, response);
+                            } catch (const std::out_of_range&) {
+                                LOGF_WARN("Invalid response to %s: %s", cmd, response);
+                            }
+                            if (fValue < -5.0 || fValue > 20.0) {
+                                LOGF_WARN("Invalid response to %s: %s", cmd, response);
+                                valid = false;
+                            } else {
+                                inter_count = fValue;
+                            }
+                        }
+
+                        if (valid) {
+                            switch (feature) {
+                            case 0:
+                                Inter1_expN[0].value = inter_exp;
+                                Inter1_delayN[0].value = inter_delay;
+                                Inter1_countN[0].value = inter_count;
+                                IDSetNumber(&Inter1NP, nullptr);
+                                Inter1_doneT[0].text = inter_done;
+                                IDSetText(&Inter1doneTP, nullptr);
+                                break;
+                            case 1:
+                                Inter2_expN[0].value = inter_exp;
+                                Inter2_delayN[0].value = inter_delay;
+                                Inter2_countN[0].value = inter_count;
+                                IDSetNumber(&Inter2NP, nullptr);
+                                Inter2_doneT[0].text = inter_done;
+                                IDSetText(&Inter2doneTP, nullptr);
+                                break;
+                            case 2:
+                                Inter3_expN[0].value = inter_exp;
+                                Inter3_delayN[0].value = inter_delay;
+                                Inter3_countN[0].value = inter_count;
+                                IDSetNumber(&Inter3NP, nullptr);
+                                Inter3_doneT[0].text = inter_done;
+                                IDSetText(&Inter3doneTP, nullptr);
+                                break;
+                            case 3:
+                                Inter4_expN[0].value = inter_exp;
+                                Inter4_delayN[0].value = inter_delay;
+                                Inter4_countN[0].value = inter_count;
+                                IDSetNumber(&Inter4NP, nullptr);
+                                Inter4_doneT[0].text = inter_done;
+                                IDSetText(&Inter4doneTP, nullptr);
+                                break;
+                            case 4:
+                                Inter5_expN[0].value = inter_exp;
+                                Inter5_delayN[0].value = inter_delay;
+                                Inter5_countN[0].value = inter_count;
+                                IDSetNumber(&Inter5NP, nullptr);
+                                Inter5_doneT[0].text = inter_done;
+                                IDSetText(&Inter5doneTP, nullptr);
+                                break;
+                            case 5:
+                                Inter6_expN[0].value = inter_exp;
+                                Inter6_delayN[0].value = inter_delay;
+                                Inter6_countN[0].value = inter_count;
+                                IDSetNumber(&Inter6NP, nullptr);
+                                Inter6_doneT[0].text = inter_done;
+                                IDSetText(&Inter6doneTP, nullptr);
+                                break;
+                            case 6:
+                                Inter7_expN[0].value = inter_exp;
+                                Inter7_delayN[0].value = inter_delay;
+                                Inter7_countN[0].value = inter_count;
+                                IDSetNumber(&Inter7NP, nullptr);
+                                Inter7_doneT[0].text = inter_done;
+                                IDSetText(&Inter7doneTP, nullptr);
+                                break;
+                            case 7:
+                                Inter8_expN[0].value = inter_exp;
+                                Inter8_delayN[0].value = inter_delay;
+                                Inter8_countN[0].value = inter_count;
+                                IDSetNumber(&Inter8NP, nullptr);
+                                Inter8_doneT[0].text = inter_done;
+                                IDSetText(&Inter8doneTP, nullptr);
+                                break;
+                            default:
+                                break;
+                            }
+                        }
+                    }
                 default:
                     break;
                 }

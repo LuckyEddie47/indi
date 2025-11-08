@@ -220,7 +220,7 @@ An unterminated 0 is returned from unconfigured items
 #define OS_set_dew_span_part "S"
 #define OS_set_intervalometer_exposure_part "E"
 #define OS_set_intervalometer_delay_part "D"
-#define OS_set_intervalometer_targetCount_part = "C"
+#define OS_set_intervalometer_count_part "C"
 // Returns 0 on failure, 1 on sucess
 
 
@@ -557,6 +557,89 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     INumber Dew8_spanN[1];
     ITextVectorProperty Dew8deltaTP;
     IText Dew8_deltaT[1];
+
+    // Intervalometer tab controls
+    //----------------------------
+    ITextVectorProperty Inter1TP;
+    IText Inter1_nameT[1] {};
+    ISwitchVectorProperty Inter1SP;
+    ISwitch Inter1_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Inter1NP;
+    INumber Inter1_expN[1];
+    INumber Inter1_delayN[1];
+    INumber Inter1_countN[1];
+    ITextVectorProperty Inter1doneTP;
+    IText Inter1_doneT[1];
+    ITextVectorProperty Inter2TP;
+    IText Inter2_nameT[1] {};
+    ISwitchVectorProperty Inter2SP;
+    ISwitch Inter2_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Inter2NP;
+    INumber Inter2_expN[1];
+    INumber Inter2_delayN[1];
+    INumber Inter2_countN[1];
+    ITextVectorProperty Inter2doneTP;
+    IText Inter2_doneT[1];
+    ITextVectorProperty Inter3TP;
+    IText Inter3_nameT[1] {};
+    ISwitchVectorProperty Inter3SP;
+    ISwitch Inter3_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Inter3NP;
+    INumber Inter3_expN[1];
+    INumber Inter3_delayN[1];
+    INumber Inter3_countN[1];
+    ITextVectorProperty Inter3doneTP;
+    IText Inter3_doneT[1];
+    ITextVectorProperty Inter4TP;
+    IText Inter4_nameT[1] {};
+    ISwitchVectorProperty Inter4SP;
+    ISwitch Inter4_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Inter4NP;
+    INumber Inter4_expN[1];
+    INumber Inter4_delayN[1];
+    INumber Inter4_countN[1];
+    ITextVectorProperty Inter4doneTP;
+    IText Inter4_doneT[1];
+    ITextVectorProperty Inter5TP;
+    IText Inter5_nameT[1] {};
+    ISwitchVectorProperty Inter5SP;
+    ISwitch Inter5_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Inter5NP;
+    INumber Inter5_expN[1];
+    INumber Inter5_delayN[1];
+    INumber Inter5_countN[1];
+    ITextVectorProperty Inter5doneTP;
+    IText Inter5_doneT[1];
+    ITextVectorProperty Inter6TP;
+    IText Inter6_nameT[1] {};
+    ISwitchVectorProperty Inter6SP;
+    ISwitch Inter6_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Inter6NP;
+    INumber Inter6_expN[1];
+    INumber Inter6_delayN[1];
+    INumber Inter6_countN[1];
+    ITextVectorProperty Inter6doneTP;
+    IText Inter6_doneT[1];
+    ITextVectorProperty Inter7TP;
+    IText Inter7_nameT[1] {};
+    ISwitchVectorProperty Inter7SP;
+    ISwitch Inter7_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Inter7NP;
+    INumber Inter7_expN[1];
+    INumber Inter7_delayN[1];
+    INumber Inter7_countN[1];
+    ITextVectorProperty Inter7doneTP;
+    IText Inter7_doneT[1];
+    ITextVectorProperty Inter8TP;
+    IText Inter8_nameT[1] {};
+    ISwitchVectorProperty Inter8SP;
+    ISwitch Inter8_enableS[SWITCH_TOGGLE_COUNT];
+    INumberVectorProperty Inter8NP;
+    INumber Inter8_expN[1];
+    INumber Inter8_delayN[1];
+    INumber Inter8_countN[1];
+    ITextVectorProperty Inter8doneTP;
+    IText Inter8_doneT[1];
 
     // Debug only
     ITextVectorProperty Arbitary_CommandTP;
