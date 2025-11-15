@@ -274,11 +274,9 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     virtual bool Connect() override;
     virtual bool Disconnect() override;
     virtual bool saveConfigItems(FILE *fp) override;
-
     virtual IPState updateWeather() override;
-//    virtual void Init_Outputs();
-
     virtual void TimerHit() override;
+    virtual bool SetUSBPort(size_t port, bool enabled) override;
     // Timer for slow updates, once per minute
     INDI::Timer SlowTimer;
 

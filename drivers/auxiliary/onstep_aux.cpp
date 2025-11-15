@@ -1533,12 +1533,12 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
     if (!dev || strcmp(dev, getDeviceName()))
         return false;
 
-    // Focus T° Compensation
+    // Focuser
+    //--------
     if (!strcmp(name, TFCCoefficientNP.name)) {
         // :FC[sn.n]# Set focuser temperature compensation coefficient in µ/°C
         if (abs(values[0]) < 1000) {    //Range is -999.999 .. + 999.999
             char cmd[CMD_MAX_LEN] = {0};
-//            snprintf(cmd, 15, ":FC%+3.5f#", values[0]);
             snprintf(cmd, 15, "%s%+3.5f%s", OS_get_focuser_temp_comp_coef, values[0], OS_command_terminator);
             sendOSCommandBlind(cmd);
             TFCCoefficientNP.s = IPS_OK;
@@ -1555,7 +1555,6 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
         // :FD[n]#    Set focuser temperature compensation deadband amount (in steps or microns)
         if ((values[0] >= 1) && (values[0] <= 32768)) {  //Range is 1 .. 32767
             char cmd[CMD_MAX_LEN] = {0};
-//            snprintf(cmd, 15, ":FD%d#", (int)values[0]);
             snprintf(cmd, 15, "%s%d%s", OS_get_focuser_deadband, (int)values[0], OS_command_terminator);
             sendOSCommandBlind(cmd);
             TFCDeadbandNP.s = IPS_OK;
@@ -1566,7 +1565,6 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
         }
         return true;
     }
-    // end Focus T° Compensation
 
     // Dew Heaters
     //------------
@@ -1768,6 +1766,19 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
         Inter8NP.s = IPS_OK;
     }
 
+    // Process Focuser-related switches via FocusInterface
+    if (strstr(name, "FOCUS_"))
+        return FI::processNumber(dev, name, values, names, n);
+
+    // Process Rotator-related switches via RotatorInterface
+    if (strstr(name, "ROTATOR"))
+        return RI::processNumber(dev, name, values, names, n);
+
+    // Process Power-related switches via PowerInterface
+    if (PI::processNumber(dev, name, values, names, n))
+        return true;
+
+    // ProcessWeatherr-related switches via WeatherInterface
     if (strstr(name, "WEATHER_")) {
         return WI::processNumber(dev, name, values, names, n);
     }
@@ -2077,14 +2088,14 @@ int OnStep_Aux::OSUpdateRotator()
 IPState OnStep_Aux::MoveRotator(double angle)
 {
     char cmd[CMD_MAX_LEN] = {0};
-    char OS_moveRotator_response[RB_MAX_LEN] = {0};
+    char response[RB_MAX_LEN] = {0};
     int d, m, s;
     getSexComponents(angle, &d, &m, &s);
 
     snprintf(cmd, sizeof(cmd), "%s%.03d:%02d:%02d%s", OS_set_rotator_angle_part, d, m, s, OS_command_terminator);
     LOGF_INFO("Move Rotator: %s", cmd);
 
-    int OS_moveRotator_error_or_fail = getCommandSingleCharResponse(PortFD, OS_moveRotator_response, cmd);
+    int OS_moveRotator_error_or_fail = getCommandSingleCharResponse(PortFD, response, cmd);
 
     if (OS_moveRotator_error_or_fail > 1) {
         return IPS_BUSY;
@@ -2127,6 +2138,21 @@ bool OnStep_Aux::SetRotatorBacklashEnabled(bool enabled)
     INDI_UNUSED(enabled);
     return true;
     //     As it's always enabled, which would mean setting it like SetRotatorBacklash to 0, and losing any saved values. So for now, leave it as is (always enabled)
+}
+
+bool OnStep_Aux::SetUSBPort(size_t port, bool enabled)
+{
+    char cmd[CMD_MAX_LEN] = {0};
+    char data[RB_MAX_LEN] = {0};
+    int response = 0;
+    snprintf(cmd, sizeof(cmd), "%s%d%s%d%s", OS_set_USBport_part , static_cast<int>(port),
+             OS_set_USBport_enabled_part, enabled, OS_command_terminator);
+    int error_or_fail = getCommandIntFromCharResponse(PortFD, data, &response, cmd);
+    if ((error_or_fail > 0) && (response)) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 
