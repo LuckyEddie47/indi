@@ -223,6 +223,28 @@ An unterminated 0 is returned from unconfigured items
 #define OS_set_intervalometer_count_part "C"
 // Returns 0 on failure, 1 on sucess
 
+// USB_switcher plugin commands
+//-----------------------------
+
+// Get defined USB ports
+#define OS_get_defined_USBports ":GUY0#"
+// Returns: 00000000# 1 if defined, or 0 if undefined
+
+// Get USB port names - pass 1-8
+#define OS_get_USBport_name_part ":GUY"
+// Returns USB port name
+
+// Get USB port state - pass 1-8
+#define OS_get_USBport_state_part ":GUX"
+// Returns 0 or 1 for Off / On
+
+// Set feature state
+// :SUX[n]parameters where n = USBport number 1-8
+// :SUX0parameters = switch all enambled USB ports
+// Parameters = V0 or V1 for Off / On
+#define OS_set_USBport_part ":SUX"
+#define OS_set_USBport_enabled_part "V"
+// Returns 0 on failure, 1 on sucess
 
 // For dynamically assembled commands
 //-----------------------------------
@@ -318,9 +340,9 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     bool hasDew = false;
     bool hasIntervalometer = false;
     bool hasOutput = false;
+    bool hasUSB = false;
 
-    // Not until OnStepX plugins ready
-    //    bool hasUSB = false;
+    // Not until OnStepX plugin ready
     //    bool hasDCout = false;
 
 
@@ -374,7 +396,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     ISwitchVectorProperty OSFocusSelectSP;
     ISwitch OSFocusSelectS[9];
 
-    //Rotator - Some handled by RotatorInterface, but that's mostly for rotation only, absolute, and... very limited.
+    // Rotator - Some handled by RotatorInterface, but that's mostly for rotation only, absolute, and... very limited.
     ISwitchVectorProperty OSRotatorRateSP;
     ISwitch OSRotatorRateS[4]; //Set rate
 
@@ -640,6 +662,12 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     INumber Inter8_countN[1];
     ITextVectorProperty Inter8doneTP;
     IText Inter8_doneT[1];
+
+    // USB tab controls
+    //-----------------
+    static const int max_USBports = 8;
+    int USBports_enabled[max_USBports] = {0};
+    std::string USBports_name[max_USBports];
 
     // Debug only
     ITextVectorProperty Arbitary_CommandTP;

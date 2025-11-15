@@ -26,7 +26,6 @@
 #include "indicom.h"
 
 #include <cstring>
-#include <memory>
 #include <termios.h>
 #include <unistd.h>
 #include <mutex>
@@ -40,7 +39,7 @@
 #define ROTATOR_TAB "Rotator"
 #define WEATHER_TAB "Weather"
 #define SWITCH_TAB "Switches"
-#define DEW_TAB "Dew Heaters"
+#define DEW_HEATERS_TAB "Dew Heaters"
 #define INTERVALOMETER_TAB "Intervalometers"
 #define OUTPUT_TAB "Ouputs"
 #define MANUAL_TAB "Manual"
@@ -91,8 +90,8 @@ bool OnStep_Aux::initProperties()
     //--------------------------------------------
     addAuxControls();
 
-    // FOCUS_TAB
-    //----------
+    // FOCUSER_INTERFACE
+    //------------------
     FI::initProperties(FOCUS_TAB);
 
     FocusRelPosNP[0].min = 0.;
@@ -128,8 +127,8 @@ bool OnStep_Aux::initProperties()
     IUFillNumber(&TFCDeadbandN[0], "TFC Deadband", "TFC Deadband µm", "%g", 1, 32767, 1, 5);
     IUFillNumberVector(&TFCDeadbandNP, TFCDeadbandN, 1, getDeviceName(), "TFC Deadband", "", FOCUS_TAB, IP_RW, 0, IPS_IDLE);
 
-    // ROTATOR_TAB
-    //------------
+    // ROTATOR_INTERFACE
+    //------------------
     RI::initProperties(ROTATOR_TAB);
 
     IUFillSwitch(&OSRotatorDerotateS[0], "Derotate_OFF", "OFF", ISS_OFF);
@@ -138,14 +137,18 @@ bool OnStep_Aux::initProperties()
                        IP_RW,
                        ISR_ATMOST1, 0, IPS_IDLE);
 
-    // WEATHER_TAB
-    //------------
+    // WEATHER_INTERFACE
+    //------------------
     WI::initProperties(WEATHER_TAB, WEATHER_TAB);
     addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40, 50, 15);
     addParameter("WEATHER_HUMIDITY", "Humidity %", 0, 100, 15);
     addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
     addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 50, 15); // From OnStep
     setCriticalParameter("WEATHER_TEMPERATURE");
+
+    // POWER_INTERFACE
+    //----------------
+    // Handles in GetCapabilities, once we know if we have any relevent features
 
     // SWITCH_TAB
     //----------------------
@@ -213,126 +216,127 @@ bool OnStep_Aux::initProperties()
     IUFillSwitch(&Switch8S[ON_SWITCH], "DEVICE8_ON", "ON", ISS_OFF);
     IUFillSwitch(&Switch8S[OFF_SWITCH], "DEVICE8_OFF", "OFF", ISS_ON);
 
-    // DEW TAB
-    //--------
+    // DEW HEATERS TAB
+    //----------------
     IUFillTextVector(&Dew1TP, Dew1_nameT, 1, getDeviceName(), "Dew_1_NAME", "Dew 1",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew1_nameT[0], "DEW_1_NAME", "Name", "");
     IUFillSwitchVector(&Dew1SP, Dew1_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable1", "Enable",
-                       DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Dew1_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
     IUFillSwitch(&Dew1_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew1NP, Dew1_zeroN, 1, getDeviceName(), "Dew_1_SETTINGS", "Settings degC",
-                       DEW_TAB, IP_RW, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew1_zeroN[1],"DEW1_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
     IUFillNumber(&Dew1_spanN[1],"DEW1_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
     IUFillTextVector(&Dew1deltaTP, Dew1_deltaT, 1, getDeviceName(), "Dew_1_FEEDBACK", "Delta degC",
-                       DEW_TAB, IP_RO, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew1_deltaT[0], "DEW_1_DELTA", "Temp-dew", "");
 
     IUFillTextVector(&Dew2TP, Dew2_nameT, 1, getDeviceName(), "Dew_2_NAME", "Dew 2",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew2_nameT[0], "DEW_2_NAME", "Name", "");
     IUFillSwitchVector(&Dew2SP, Dew2_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable2", "Enable",
-                       DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Dew2_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
     IUFillSwitch(&Dew2_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew2NP, Dew2_zeroN, 1, getDeviceName(), "Dew_2_SETTINGS", "Settings degC",
-                       DEW_TAB, IP_RW, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew2_zeroN[1],"DEW2_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
     IUFillNumber(&Dew2_spanN[1],"DEW2_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
     IUFillTextVector(&Dew2deltaTP, Dew2_deltaT, 1, getDeviceName(), "Dew_2_FEEDBACK", "Delta degC",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew2_deltaT[0], "DEW_2_DELTA", "Temp-dew", "");
 
     IUFillTextVector(&Dew3TP, Dew3_nameT, 1, getDeviceName(), "Dew_3_NAME", "Dew 3",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew3_nameT[0], "DEW_3_NAME", "Name", "");
     IUFillSwitchVector(&Dew3SP, Dew3_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable3", "Enable",
-                       DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Dew3_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
     IUFillSwitch(&Dew3_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew3NP, Dew3_zeroN, 1, getDeviceName(), "Dew_3_SETTINGS", "Settings degC",
-                       DEW_TAB, IP_RW, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew3_zeroN[1],"DEW3_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
     IUFillNumber(&Dew3_spanN[1],"DEW3_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
     IUFillTextVector(&Dew3deltaTP, Dew3_deltaT, 1, getDeviceName(), "Dew_3_FEEDBACK", "Delta degC",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew3_deltaT[0], "DEW_3_DELTA", "Temp-dew", "");
 
     IUFillTextVector(&Dew4TP, Dew4_nameT, 1, getDeviceName(), "Dew_4_NAME", "Dew 4",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew4_nameT[0], "DEW_4_NAME", "Name", "");
     IUFillSwitchVector(&Dew4SP, Dew4_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable4", "Enable",
-                       DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Dew4_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
     IUFillSwitch(&Dew4_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew4NP, Dew4_zeroN, 1, getDeviceName(), "Dew_4_SETTINGS", "Settings degC",
-                       DEW_TAB, IP_RW, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew4_zeroN[1],"DEW4_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
     IUFillNumber(&Dew4_spanN[1],"DEW4_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
     IUFillTextVector(&Dew4deltaTP, Dew4_deltaT, 1, getDeviceName(), "Dew_4_FEEDBACK", "Delta degC",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew4_deltaT[0], "DEW_4_DELTA", "Temp-dew", "");
 
     IUFillTextVector(&Dew5TP, Dew5_nameT, 1, getDeviceName(), "Dew_5_NAME", "Dew 5",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew5_nameT[0], "DEW_5_NAME", "Name", "");
     IUFillSwitchVector(&Dew5SP, Dew5_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable5", "Enable",
-                       DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Dew5_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
     IUFillSwitch(&Dew5_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew5NP, Dew5_zeroN, 1, getDeviceName(), "Dew_5_SETTINGS", "Settings degC",
-                       DEW_TAB, IP_RW, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew5_zeroN[1],"DEW5_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
     IUFillNumber(&Dew5_spanN[1],"DEW5_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
 
     IUFillTextVector(&Dew6TP, Dew6_nameT, 1, getDeviceName(), "Dew_6_NAME", "Dew 6",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew6_nameT[0], "DEW_6_NAME", "Name", "");
     IUFillSwitchVector(&Dew6SP, Dew6_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable6", "Enable",
-                       DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Dew6_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
     IUFillSwitch(&Dew6_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew6NP, Dew6_zeroN, 1, getDeviceName(), "Dew_6_SETTINGS", "Settings degC",
-                       DEW_TAB, IP_RW, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew6_zeroN[1],"DEW6_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
     IUFillNumber(&Dew6_spanN[1],"DEW6_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
     IUFillTextVector(&Dew6deltaTP, Dew6_deltaT, 1, getDeviceName(), "Dew_6_FEEDBACK", "Delta degC",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew6_deltaT[0], "DEW_6_DELTA", "Temp-dew", "");
 
     IUFillTextVector(&Dew7TP, Dew7_nameT, 1, getDeviceName(), "Dew_7_NAME", "Dew 7",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew7_nameT[0], "DEW_6_NAME", "Name", "");
     IUFillSwitchVector(&Dew7SP, Dew7_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable7", "Enable",
-                       DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Dew7_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
     IUFillSwitch(&Dew7_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew7NP, Dew6_zeroN, 1, getDeviceName(), "Dew_7_SETTINGS", "Settings degC",
-                       DEW_TAB, IP_RW, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew7_zeroN[1],"DEW7_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
     IUFillNumber(&Dew7_spanN[1],"DEW7_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
     IUFillTextVector(&Dew7deltaTP, Dew7_deltaT, 1, getDeviceName(), "Dew_7_FEEDBACK", "Delta degC",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew7_deltaT[0], "DEW_7_DELTA", "Temp-dew", "");
 
     IUFillTextVector(&Dew8TP, Dew8_nameT, 1, getDeviceName(), "Dew_8_NAME", "Dew 8",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew8_nameT[0], "DEW_8_NAME", "Name", "");
     IUFillSwitchVector(&Dew8SP, Dew8_enableS, SWITCH_TOGGLE_COUNT, getDeviceName(), "Enable8", "Enable",
-                       DEW_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&Dew8_enableS[ON_SWITCH], "ENABLE_ON", "ON", ISS_OFF);
     IUFillSwitch(&Dew8_enableS[OFF_SWITCH], "ENABLE_OFF", "OFF", ISS_ON);
     IUFillNumberVector(&Dew8NP, Dew8_zeroN, 1, getDeviceName(), "Dew_8_SETTINGS", "Settings degC",
-                       DEW_TAB, IP_RW, 60, IPS_OK);
+                       DEW_HEATERS_TAB, IP_RW, 60, IPS_OK);
     IUFillNumber(&Dew8_zeroN[1],"DEW8_ZERO_POINT","Zero point","%.0f", -5, 20, 0.1, 5);
     IUFillNumber(&Dew8_spanN[1],"DEW8_SPAN","Span range","%.0f", 0, 20, 0.1, 5);
     IUFillTextVector(&Dew8deltaTP, Dew8_deltaT, 1, getDeviceName(), "Dew_8_FEEDBACK", "Delta degC",
-                     DEW_TAB, IP_RO, 60, IPS_OK);
+                     DEW_HEATERS_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Dew8_deltaT[0], "DEW_8_DELTA", "Temp-dew", "");
 
     // INTERVALOMETER_TAB
+    //-------------------
     IUFillTextVector(&Inter1TP, Inter1_nameT, 1, getDeviceName(), "Inter_1_NAME", "Intervalometer 1",
                      INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Inter1_nameT[0], "INTER_1_NAME", "Name", "");
@@ -461,9 +465,9 @@ bool OnStep_Aux::initProperties()
                      INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Inter8_doneT[0], "INTER8_DONE", "Count", "");
 
+
     // MANUAL_TAB
     //-----------
-
     // Debug only
     IUFillTextVector(&Arbitary_CommandTP, Arbitary_CommandT, 1, getDeviceName(), "ARBITARY_COMMAND", "Command",
                      MANUAL_TAB, IP_RW, 60, IPS_IDLE);
@@ -791,7 +795,61 @@ void OnStep_Aux::GetCapabilites()
         capabilities &= ~AUX_INTERFACE;
     }
 
-    //    PI::SetCapability(POWER_HAS_USB_TOGGLE);
+    // Discover USB ports
+    // Only for OnStepX-plugin USB_switcher - otherwise use Features type SWITCH
+    memset(response, 0, RB_MAX_LEN);
+    error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_defined_USBports);
+    if (error_or_fail > 0) {
+        int value = conversion_error;
+        try {
+            value = std::stoi(response);
+        } catch (const std::invalid_argument&) {
+            LOGF_WARN("Invalid response to %s: %s", OS_get_defined_USBports, response);
+        } catch (const std::out_of_range&) {
+            LOGF_WARN("Invalid response to %s: %s", OS_get_defined_USBports, response);
+        }
+        int USBportCount = 0;
+        if (value > 0 ) {
+            hasUSB = true;
+            LOG_DEBUG("USB Port(s) found, enabling USB Tab");
+            std::string USBports = response;
+            for (uint digit = 0; digit < max_USBports; digit++) {
+                USBports_enabled[digit] = USBports[digit] - '0';
+                if (USBports_enabled[digit]) {
+                    USBportCount++;
+                }
+            }
+            // Get USB port names
+            for (int USBport = 0; USBport < max_USBports; USBport++) {
+                memset(response, 0, RB_MAX_LEN);
+                char cmd[CMD_MAX_LEN] = {0};
+                if (USBports_enabled[USBport]) {
+                    snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_USBport_name_part, (USBport + 1), OS_command_terminator);
+                    error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, cmd);
+                    if (error_or_fail > 0) {
+                        if (strcmp(response, "N/A") != 0) {
+                            USBports_name[USBport] = response;
+                        }
+                    }
+                }
+            }
+
+            PI::SetCapability(POWER_HAS_USB_TOGGLE);
+            PI::initProperties(USB_TAB, 0, 0, 0, 0, USBportCount);
+            if (PI::USBPortLabelsTP.size() == static_cast<ulong>(USBportCount)) {
+                for (int USBport = 0; USBport <= USBportCount; USBport++) {
+                    PI::USBPortLabelsTP[USBport].setLabel(USBports_name[USBport]);
+                }
+            }
+        } else {
+               LOG_WARN("No USBs found, disabling USB Tab");
+            capabilities &= ~POWER_INTERFACE;
+        }
+    } else {
+        LOG_WARN("No USBs found, disabling USB Tab");
+        capabilities &= ~POWER_INTERFACE;
+    }
+
 
     setDriverInterface(capabilities);
     syncDriverInfo();
@@ -983,6 +1041,10 @@ bool OnStep_Aux::updateProperties()
                     }
                 }
             }
+        }
+
+        if (hasUSB) {
+            PI::updateProperties();
         }
 
         // Debug only
@@ -1446,6 +1508,18 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
                 }
             }
         }
+
+        // Process Focus-related switches via FocusInterface
+        if (strstr(name, "FOCUS"))
+            return FI::processSwitch(dev, name, states, names, n);
+
+        // Process Rotator-related switches via RotatorInterface
+        if (strstr(name, "ROTATOR"))
+            return RI::processSwitch(dev, name, states, names, n);
+
+        // Process Power-related switches via PowerInterface
+        if (PI::processSwitch(dev, name, states, names, n))
+            return true;
 
         return INDI::DefaultDevice::ISNewSwitch(dev, name, states, names, n);
     } else {
