@@ -2145,12 +2145,7 @@ bool OnStep_Aux::SetUSBPort(size_t port, bool enabled)
     int response = 0;
     snprintf(cmd, sizeof(cmd), "%s%d,%s%d%s", OS_set_USBport_part , static_cast<int>(port),
              OS_set_USBport_enabled_part, enabled, OS_command_terminator);
-    int error_or_fail = getCommandIntFromCharResponse(PortFD, data, &response, cmd);
-
-    LOGF_DEBUG("cmd:%s", cmd);
-    LOGF_DEBUG("error_or_fail:%d", error_or_fail);
-    LOGF_DEBUG("response:%d", response);
-
+    int error_or_fail = getCommandIntResponse(PortFD, &response, data, cmd);
     if ((error_or_fail > 0) && (response)) {
         return true;
     } else {
