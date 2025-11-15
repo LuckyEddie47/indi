@@ -2143,7 +2143,7 @@ bool OnStep_Aux::SetUSBPort(size_t port, bool enabled)
     char cmd[CMD_MAX_LEN] = {0};
     char data[RB_MAX_LEN] = {0};
     int response = 0;
-    snprintf(cmd, sizeof(cmd), "%s%d%s%d%s", OS_set_USBport_part , static_cast<int>(port),
+    snprintf(cmd, sizeof(cmd), "%s%d,%s%d%s", OS_set_USBport_part , static_cast<int>(port),
              OS_set_USBport_enabled_part, enabled, OS_command_terminator);
     int error_or_fail = getCommandIntFromCharResponse(PortFD, data, &response, cmd);
 
