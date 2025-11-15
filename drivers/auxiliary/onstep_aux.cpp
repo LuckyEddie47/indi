@@ -768,8 +768,6 @@ void OnStep_Aux::GetCapabilites()
                     default:
                         break;
                     }
-                } else {
-                    LOG_WARN("Failed to get feature definition");
                 }
             }
             if (findEnumInArray(features_type, SWITCH) ||
@@ -2148,6 +2146,11 @@ bool OnStep_Aux::SetUSBPort(size_t port, bool enabled)
     snprintf(cmd, sizeof(cmd), "%s%d%s%d%s", OS_set_USBport_part , static_cast<int>(port),
              OS_set_USBport_enabled_part, enabled, OS_command_terminator);
     int error_or_fail = getCommandIntFromCharResponse(PortFD, data, &response, cmd);
+
+    LOGF_DEBUG("cmd:%s", cmd);
+    LOGF_DEBUG("error_or_fail:%d", error_or_fail);
+    LOGF_DEBUG("response:%d", response);
+
     if ((error_or_fail > 0) && (response)) {
         return true;
     } else {
