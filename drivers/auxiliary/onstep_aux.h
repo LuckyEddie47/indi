@@ -668,6 +668,39 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     std::string USBports_name[max_USBports];
     int USBportCount = 0;
 
+    ISwitchVectorProperty USB1SP;
+    ISwitch USB1S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty USB2SP;
+    ISwitch USB2S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty USB3SP;
+    ISwitch USB3S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty USB4SP;
+    ISwitch USB4S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty USB5SP;
+    ISwitch USB5S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty USB6SP;
+    ISwitch USB6S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty USB7SP;
+    ISwitch USB7S[SWITCH_TOGGLE_COUNT];
+    ISwitchVectorProperty USB8SP;
+    ISwitch USB8S[SWITCH_TOGGLE_COUNT];
+    ITextVectorProperty USB1_nameTP;
+    IText USB1_nameT[1] {};
+    ITextVectorProperty USB2_nameTP;
+    IText USB2_nameT[1] {};
+    ITextVectorProperty USB3_nameTP;
+    IText USB3_nameT[1] {};
+    ITextVectorProperty USB4_nameTP;
+    IText USB4_nameT[1] {};
+    ITextVectorProperty USB5_nameTP;
+    IText USB5_nameT[1] {};
+    ITextVectorProperty USB6_nameTP;
+    IText USB6_nameT[1] {};
+    ITextVectorProperty USB7_nameTP;
+    IText USB7_nameT[1] {};
+    ITextVectorProperty USB8_nameTP;
+    IText USB8_nameT[1] {};
+
     // Debug only
     ITextVectorProperty Arbitary_CommandTP;
     IText Arbitary_CommandT[1];

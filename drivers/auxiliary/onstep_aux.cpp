@@ -41,6 +41,7 @@
 #define SWITCH_TAB "Switches"
 #define DEW_HEATERS_TAB "Dew Heaters"
 #define INTERVALOMETER_TAB "Intervalometers"
+#define USB_TAB "USB Ports"
 #define OUTPUT_TAB "Ouputs"
 #define MANUAL_TAB "Manual"
 
@@ -465,6 +466,71 @@ bool OnStep_Aux::initProperties()
                      INTERVALOMETER_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&Inter8_doneT[0], "INTER8_DONE", "Count", "");
 
+    // USB Tab
+    //--------
+    IUFillTextVector(&USB1_nameTP, USB1_nameT, 1, getDeviceName(),  "USB_1_NAME",  "USB 1",
+                     USB_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&USB1_nameT[0],  "USB_1_NAME", "Name", "");
+    IUFillSwitchVector(&USB1SP, USB1S, SWITCH_TOGGLE_COUNT, getDeviceName(),  "USB1",  "USB 1",
+                       USB_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&USB1S[ON_SWITCH],  "USB1_ON", "ON", ISS_OFF);
+    IUFillSwitch(&USB1S[OFF_SWITCH],  "USB1_OFF", "OFF", ISS_ON);
+
+    IUFillTextVector(&USB2_nameTP, USB2_nameT, 1, getDeviceName(),  "USB_2_NAME",  "USB 2",
+                     USB_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&USB2_nameT[0],  "USB_2_NAME", "Name", "");
+    IUFillSwitchVector(&USB2SP, USB2S, SWITCH_TOGGLE_COUNT, getDeviceName(),  "USB2",  "USB 2",
+                       USB_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&USB2S[ON_SWITCH],  "USB2_ON", "ON", ISS_OFF);
+    IUFillSwitch(&USB2S[OFF_SWITCH],  "USB2_OFF", "OFF", ISS_ON);
+
+    IUFillTextVector(&USB3_nameTP, USB3_nameT, 1, getDeviceName(),  "USB_3_NAME",  "USB 3",
+                     USB_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&USB3_nameT[0],  "USB_3_NAME", "Name", "");
+    IUFillSwitchVector(&USB3SP, USB3S, SWITCH_TOGGLE_COUNT, getDeviceName(),  "USB3",  "USB 3",
+                       USB_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&USB3S[ON_SWITCH],  "USB3_ON", "ON", ISS_OFF);
+    IUFillSwitch(&USB3S[OFF_SWITCH],  "USB3_OFF", "OFF", ISS_ON);
+
+    IUFillTextVector(&USB4_nameTP, USB4_nameT, 1, getDeviceName(),  "USB_4_NAME",  "USB 4",
+                     USB_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&USB4_nameT[0],  "USB_4_NAME", "Name", "");
+    IUFillSwitchVector(&USB4SP, USB4S, SWITCH_TOGGLE_COUNT, getDeviceName(),  "USB4",  "USB 4",
+                       USB_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&USB4S[ON_SWITCH],  "USB4_ON", "ON", ISS_OFF);
+    IUFillSwitch(&USB4S[OFF_SWITCH],  "USB4_OFF", "OFF", ISS_ON);
+
+    IUFillTextVector(&USB5_nameTP, USB5_nameT, 1, getDeviceName(),  "USB_5_NAME",  "USB 5",
+                     USB_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&USB5_nameT[0],  "USB_5_NAME", "Name", "");
+    IUFillSwitchVector(&USB5SP, USB5S, SWITCH_TOGGLE_COUNT, getDeviceName(),  "USB5",  "USB 5",
+                       USB_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&USB5S[ON_SWITCH],  "USB5_ON", "ON", ISS_OFF);
+    IUFillSwitch(&USB5S[OFF_SWITCH],  "USB5_OFF", "OFF", ISS_ON);
+
+    IUFillTextVector(&USB6_nameTP, USB6_nameT, 1, getDeviceName(),  "USB_6_NAME",  "USB 6",
+                     USB_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&USB6_nameT[0],  "USB_6_NAME", "Name", "");
+    IUFillSwitchVector(&USB6SP, USB6S, SWITCH_TOGGLE_COUNT, getDeviceName(),  "USB6",  "USB 6",
+                       USB_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&USB6S[ON_SWITCH],  "USB6_ON", "ON", ISS_OFF);
+    IUFillSwitch(&USB6S[OFF_SWITCH],  "USB6_OFF", "OFF", ISS_ON);
+
+    IUFillTextVector(&USB7_nameTP, USB7_nameT, 1, getDeviceName(),  "USB_7_NAME",  "USB 7",
+                     USB_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&USB7_nameT[0],  "USB_7_NAME", "Name", "");
+    IUFillSwitchVector(&USB7SP, USB7S, SWITCH_TOGGLE_COUNT, getDeviceName(),  "USB7",  "USB 7",
+                       USB_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&USB7S[ON_SWITCH],  "USB7_ON", "ON", ISS_OFF);
+    IUFillSwitch(&USB7S[OFF_SWITCH],  "USB7_OFF", "OFF", ISS_ON);
+
+    IUFillTextVector(&USB8_nameTP, USB8_nameT, 1, getDeviceName(),  "USB_8_NAME",  "USB 8",
+                     USB_TAB, IP_RO, 60, IPS_OK);
+    IUFillText(&USB8_nameT[0],  "USB_8_NAME", "Name", "");
+    IUFillSwitchVector(&USB8SP, USB8S, SWITCH_TOGGLE_COUNT, getDeviceName(),  "USB8",  "USB 8",
+                       USB_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&USB8S[ON_SWITCH],  "USB8_ON", "ON", ISS_OFF);
+    IUFillSwitch(&USB8S[OFF_SWITCH],  "USB8_OFF", "OFF", ISS_ON);
 
     // MANUAL_TAB
     //-----------
@@ -828,8 +894,45 @@ void OnStep_Aux::GetCapabilites()
                             USBports_name[USBport] = response;
                         }
                     }
+                    switch(USBport) {
+                    case 0:
+                        IUSaveText(&USB1_nameT[0], USBports_name[USBport].c_str());
+                        IDSetText(&USB1_nameTP, nullptr);
+                        break;
+                    case 1:
+                        IUSaveText(&USB2_nameT[0], USBports_name[USBport].c_str());
+                        IDSetText(&USB2_nameTP, nullptr);
+                        break;
+                    case 2:
+                        IUSaveText(&USB3_nameT[0], USBports_name[USBport].c_str());
+                        IDSetText(&USB3_nameTP, nullptr);
+                        break;
+                    case 3:
+                        IUSaveText(&USB4_nameT[0], USBports_name[USBport].c_str());
+                        IDSetText(&USB4_nameTP, nullptr);
+                        break;
+                    case 4:
+                        IUSaveText(&USB5_nameT[0], USBports_name[USBport].c_str());
+                        IDSetText(&USB5_nameTP, nullptr);
+                        break;
+                    case 5:
+                        IUSaveText(&USB6_nameT[0], USBports_name[USBport].c_str());
+                        IDSetText(&USB6_nameTP, nullptr);
+                        break;
+                    case 6:
+                        IUSaveText(&USB7_nameT[0], USBports_name[USBport].c_str());
+                        IDSetText(&USB7_nameTP, nullptr);
+                        break;
+                    case 7:
+                        IUSaveText(&USB8_nameT[0], USBports_name[USBport].c_str());
+                        IDSetText(&USB8_nameTP, nullptr);
+                        break;
+                    default:
+                        break;
+                    }
                 }
             }
+
 
 //            PI::SetCapability(POWER_HAS_USB_TOGGLE);
 //            PI::initProperties(USB_TAB, 0, 0, 0, 0, USBportCount);
@@ -1039,6 +1142,48 @@ bool OnStep_Aux::updateProperties()
             }
         }
 
+        if (hasUSB) {
+            for (int USBport = 0; USBport < max_USBports; USBport++) {
+                if (USBports_enabled[USBport] == 1) {
+                    switch (USBport) {
+                    case 0:
+                        defineProperty(&USB1_nameTP);
+                        defineProperty(&USB1SP);
+                        break;
+                    case 1:
+                        defineProperty(&USB2_nameTP);
+                        defineProperty(&USB2SP);
+                        break;
+                    case 2:
+                        defineProperty(&USB3_nameTP);
+                        defineProperty(&USB3SP);
+                        break;
+                    case 3:
+                        defineProperty(&USB4_nameTP);
+                        defineProperty(&USB4SP);
+                        break;
+                    case 4:
+                        defineProperty(&USB5_nameTP);
+                        defineProperty(&USB5SP);
+                        break;
+                    case 5:
+                        defineProperty(&USB6_nameTP);
+                        defineProperty(&USB6SP);
+                        break;
+                    case 6:
+                        defineProperty(&USB7_nameTP);
+                        defineProperty(&USB7SP);
+                        break;
+                    case 7:
+                        defineProperty(&USB8_nameTP);
+                        defineProperty(&USB8SP);
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            }
+        }
 //        if (hasUSB) {
 //            PI::updateProperties();
 //            deleteProperty(PI::OverVoltageProtectionNP.getName());
@@ -1140,6 +1285,23 @@ bool OnStep_Aux::updateProperties()
         deleteProperty(Inter8SP.name);
         deleteProperty(Inter8NP.name);
         deleteProperty(Inter8doneTP.name);
+
+        deleteProperty(USB1SP.name);
+        deleteProperty(USB1_nameTP.name);
+        deleteProperty(USB2SP.name);
+        deleteProperty(USB2_nameTP.name);
+        deleteProperty(USB3SP.name);
+        deleteProperty(USB3_nameTP.name);
+        deleteProperty(USB4SP.name);
+        deleteProperty(USB4_nameTP.name);
+        deleteProperty(USB5SP.name);
+        deleteProperty(USB5_nameTP.name);
+        deleteProperty(USB6SP.name);
+        deleteProperty(USB6_nameTP.name);
+        deleteProperty(USB7SP.name);
+        deleteProperty(USB7_nameTP.name);
+        deleteProperty(USB8SP.name);
+        deleteProperty(USB8_nameTP.name);
 
 //        deleteProperty(PI::OverVoltageProtectionNP.getName());
 //        deleteProperty(PI::PowerOffOnDisconnectSP.getName());
@@ -1509,6 +1671,131 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
                 }
             }
         }
+
+        // USB Ports
+        //----------
+        if (strcmp(USB1SP.name, name) == 0) {
+            IUUpdateSwitch(&USB1SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "USB1_ON") == 0) {
+                    sprintf(cmd, "%s1,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&USB1SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "USB1_OFF") == 0) {
+                    sprintf(cmd, "%s1,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&USB1SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&USB1SP, nullptr);
+            return false;
+        } else if (strcmp(USB2SP.name, name) == 0) {
+            IUUpdateSwitch(&USB2SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "USB2_ON") == 0) {
+                    sprintf(cmd, "%s2,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&USB2SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "USB2_OFF") == 0) {
+                    sprintf(cmd, "%s2,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&USB2SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&USB2SP, nullptr);
+            return false;
+        } else if (strcmp(USB3SP.name, name) == 0) {
+            IUUpdateSwitch(&USB3SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "USB3_ON") == 0) {
+                    sprintf(cmd, "%s3,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&USB3SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "USB3_OFF") == 0) {
+                    sprintf(cmd, "%s3,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&USB3SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&USB3SP, nullptr);
+            return false;
+        } else if (strcmp(USB4SP.name, name) == 0) {
+            IUUpdateSwitch(&USB4SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "USB4_ON") == 0) {
+                    sprintf(cmd, "%s4,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&USB4SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "USB4_OFF") == 0) {
+                    sprintf(cmd, "%s4,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&USB4SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&USB4SP, nullptr);
+            return false;
+        } else if (strcmp(USB5SP.name, name) == 0) {
+            IUUpdateSwitch(&USB5SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "USB5_ON") == 0) {
+                    sprintf(cmd, "%s5,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&USB5SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "USB5_OFF") == 0) {
+                    sprintf(cmd, "%s5,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&USB5SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&USB5SP, nullptr);
+            return false;
+        } else if (strcmp(USB6SP.name, name) == 0) {
+            IUUpdateSwitch(&USB6SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "USB6_ON") == 0) {
+                    sprintf(cmd, "%s6,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&USB6SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "USB6_OFF") == 0) {
+                    sprintf(cmd, "%s6,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&USB6SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&USB6SP, nullptr);
+            return false;
+        } else if (strcmp(USB7SP.name, name) == 0) {
+            IUUpdateSwitch(&USB7SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "USB7_ON") == 0) {
+                    sprintf(cmd, "%s7,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&USB7SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "USB7_OFF") == 0) {
+                    sprintf(cmd, "%s7,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&USB7SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&USB7SP, nullptr);
+            return false;
+        } else if (strcmp(USB8SP.name, name) == 0) {
+            IUUpdateSwitch(&USB8SP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "USB8_ON") == 0) {
+                    sprintf(cmd, "%s8,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&USB8SP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "USB8_OFF") == 0) {
+                    sprintf(cmd, "%s8,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&USB8SP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&USB8SP, nullptr);
+            return false;
+        }
+
 
         // Process Focus-related switches via FocusInterface
         if (strstr(name, "FOCUS"))
@@ -2709,12 +2996,119 @@ void OnStep_Aux::TimerHit()
             if (USBports_enabled[USBport]) {
                 memset(response, 0, RB_MAX_LEN);
                 memset(cmd, 0, CMD_MAX_LEN);
-                error_or_fail = 0;
+                int intResponse = 0;
+                int error_or_fail = 0;
                 snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_USBport_state_part, (USBport + 1), OS_command_terminator);
-                error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, cmd);
+                error_or_fail = getCommandIntFromCharResponse(PortFD, response, &intResponse, cmd);
                 if (error_or_fail > 0) {
-                    if (strcmp(response, "N/A") != 0) {
-//                        PI::USBPortSP[USBport].setState(response);
+                    if (intResponse == 0) {
+                        switch (USBport) {
+                        case 0:
+                            USB1S[OFF_SWITCH].s = ISS_ON;
+                            USB1S[ON_SWITCH].s = ISS_OFF;
+                            USB1SP.s = IPS_OK;
+                            IDSetSwitch(&USB1SP, nullptr);
+                            break;
+                        case 1:
+                            USB2S[OFF_SWITCH].s = ISS_ON;
+                            USB2S[ON_SWITCH].s = ISS_OFF;
+                            USB2SP.s = IPS_OK;
+                            IDSetSwitch(&USB2SP, nullptr);
+                            break;
+                        case 2:
+                            USB3S[OFF_SWITCH].s = ISS_ON;
+                            USB3S[ON_SWITCH].s = ISS_OFF;
+                            USB3SP.s = IPS_OK;
+                            IDSetSwitch(&USB3SP, nullptr);
+                            break;
+                        case 3:
+                            USB4S[OFF_SWITCH].s = ISS_ON;
+                            USB4S[ON_SWITCH].s = ISS_OFF;
+                            USB4SP.s = IPS_OK;
+                            IDSetSwitch(&USB4SP, nullptr);
+                            break;
+                        case 4:
+                            USB5S[OFF_SWITCH].s = ISS_ON;
+                            USB5S[ON_SWITCH].s = ISS_OFF;
+                            USB5SP.s = IPS_OK;
+                            IDSetSwitch(&USB5SP, nullptr);
+                            break;
+                        case 5:
+                            USB6S[OFF_SWITCH].s = ISS_ON;
+                            USB6S[ON_SWITCH].s = ISS_OFF;
+                            USB6SP.s = IPS_OK;
+                            IDSetSwitch(&USB6SP, nullptr);
+                            break;
+                        case 6:
+                            USB7S[OFF_SWITCH].s = ISS_ON;
+                            USB7S[ON_SWITCH].s = ISS_OFF;
+                            USB7SP.s = IPS_OK;
+                            IDSetSwitch(&USB7SP, nullptr);
+                            break;
+                        case 7:
+                            USB8S[OFF_SWITCH].s = ISS_ON;
+                            USB8S[ON_SWITCH].s = ISS_OFF;
+                            USB8SP.s = IPS_OK;
+                            IDSetSwitch(&USB8SP, nullptr);
+                            break;
+                        default:
+                            break;
+                        }
+                    } else if (intResponse == 1) {
+                        switch (USBport) {
+                        case 0:
+                            USB1S[OFF_SWITCH].s = ISS_OFF;
+                            USB1S[ON_SWITCH].s = ISS_ON;
+                            USB1SP.s = IPS_OK;
+                            IDSetSwitch(&USB1SP, nullptr);
+                            break;
+                        case 1:
+                            USB2S[OFF_SWITCH].s = ISS_OFF;
+                            USB2S[ON_SWITCH].s = ISS_ON;
+                            USB2SP.s = IPS_OK;
+                            IDSetSwitch(&USB2SP, nullptr);
+                            break;
+                        case 2:
+                            USB3S[OFF_SWITCH].s = ISS_OFF;
+                            USB3S[ON_SWITCH].s = ISS_ON;
+                            USB3SP.s = IPS_OK;
+                            IDSetSwitch(&USB3SP, nullptr);
+                            break;
+                        case 3:
+                            USB4S[OFF_SWITCH].s = ISS_OFF;
+                            USB4S[ON_SWITCH].s = ISS_ON;
+                            USB4SP.s = IPS_OK;
+                            IDSetSwitch(&USB4SP, nullptr);
+                            break;
+                        case 4:
+                            USB5S[OFF_SWITCH].s = ISS_OFF;
+                            USB5S[ON_SWITCH].s = ISS_ON;
+                            USB5SP.s = IPS_OK;
+                            IDSetSwitch(&USB5SP, nullptr);
+                            break;
+                        case 5:
+                            USB6S[OFF_SWITCH].s = ISS_OFF;
+                            USB6S[ON_SWITCH].s = ISS_ON;
+                            USB6SP.s = IPS_OK;
+                            IDSetSwitch(&USB6SP, nullptr);
+                            break;
+                        case 6:
+                            USB7S[OFF_SWITCH].s = ISS_OFF;
+                            USB7S[ON_SWITCH].s = ISS_ON;
+                            USB7SP.s = IPS_OK;
+                            IDSetSwitch(&USB7SP, nullptr);
+                            break;
+                        case 7:
+                            USB8S[OFF_SWITCH].s = ISS_OFF;
+                            USB8S[ON_SWITCH].s = ISS_ON;
+                            USB8SP.s = IPS_OK;
+                            IDSetSwitch(&USB8SP, nullptr);
+                            break;
+                        default:
+                            break;
+                        }
+                    } else {
+                        LOGF_ERROR("Invalid response to get USB status: %d", intResponse);
                     }
                 }
             }
