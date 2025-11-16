@@ -30,7 +30,7 @@
 #include "indifocuserinterface.h"
 #include "indirotatorinterface.h"
 #include "indiweatherinterface.h"
-#include "indipowerinterface.h"
+//#include "indipowerinterface.h"
 
 #include <cstring>
 #include <unistd.h>
@@ -255,7 +255,7 @@ OnStep lexicon end
 *****************/
 
 class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, public INDI::RotatorInterface,
-                   public INDI::WeatherInterface, public INDI::PowerInterface
+                   public INDI::WeatherInterface//, public INDI::PowerInterface
 
 {
   public:
@@ -276,7 +276,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     virtual bool saveConfigItems(FILE *fp) override;
     virtual IPState updateWeather() override;
     virtual void TimerHit() override;
-    virtual bool SetUSBPort(size_t port, bool enabled) override;
+//    virtual bool SetUSBPort(size_t port, bool enabled) override;
     // Timer for slow updates, once per minute
     INDI::Timer SlowTimer;
 

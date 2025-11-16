@@ -50,7 +50,7 @@ std::unique_ptr<OnStep_Aux> OnStepAux(new OnStep_Aux());
 // Mutex for communications
 std::mutex osCommsLock;
 
-OnStep_Aux::OnStep_Aux() : INDI::DefaultDevice(), FI(this),  RI(this), WI(this), PI(this)
+OnStep_Aux::OnStep_Aux() : INDI::DefaultDevice(), FI(this),  RI(this), WI(this)//, PI(this)
 {
 // Debug only
 // Halts the process at this point. Allows remote debugger to attach which is required
@@ -831,13 +831,13 @@ void OnStep_Aux::GetCapabilites()
                 }
             }
 
-            PI::SetCapability(POWER_HAS_USB_TOGGLE);
-            PI::initProperties(USB_TAB, 0, 0, 0, 0, USBportCount);
-            if (PI::USBPortLabelsTP.size() == static_cast<ulong>(USBportCount)) {
-                for (int USBport = 0; USBport <= USBportCount; USBport++) {
-                    PI::USBPortLabelsTP[USBport].setLabel(USBports_name[USBport]);
-                }
-            }
+//            PI::SetCapability(POWER_HAS_USB_TOGGLE);
+//            PI::initProperties(USB_TAB, 0, 0, 0, 0, USBportCount);
+//            if (PI::USBPortLabelsTP.size() == static_cast<ulong>(USBportCount)) {
+//                for (int USBport = 0; USBport <= USBportCount; USBport++) {
+//                    PI::USBPortLabelsTP[USBport].setLabel(USBports_name[USBport]);
+//                }
+//            }
         } else {
                LOG_WARN("No USBs found, disabling USB Tab");
             capabilities &= ~POWER_INTERFACE;
@@ -1039,11 +1039,11 @@ bool OnStep_Aux::updateProperties()
             }
         }
 
-        if (hasUSB) {
-            PI::updateProperties();
-            deleteProperty(PI::OverVoltageProtectionNP.getName());
-            deleteProperty(PI::PowerOffOnDisconnectSP.getName());
-        }
+//        if (hasUSB) {
+//            PI::updateProperties();
+//            deleteProperty(PI::OverVoltageProtectionNP.getName());
+//            deleteProperty(PI::PowerOffOnDisconnectSP.getName());
+//        }
 
         // Debug only
         defineProperty(&Arbitary_CommandTP);
@@ -1141,8 +1141,8 @@ bool OnStep_Aux::updateProperties()
         deleteProperty(Inter8NP.name);
         deleteProperty(Inter8doneTP.name);
 
-        deleteProperty(PI::OverVoltageProtectionNP.getName());
-        deleteProperty(PI::PowerOffOnDisconnectSP.getName());
+//        deleteProperty(PI::OverVoltageProtectionNP.getName());
+//        deleteProperty(PI::PowerOffOnDisconnectSP.getName());
 
         // Debug only
         deleteProperty(Arbitary_CommandTP.name);
@@ -1519,8 +1519,8 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
             return RI::processSwitch(dev, name, states, names, n);
 
         // Process Power-related switches via PowerInterface
-        if (PI::processSwitch(dev, name, states, names, n))
-            return true;
+//        if (PI::processSwitch(dev, name, states, names, n))
+//            return true;
 
         return INDI::DefaultDevice::ISNewSwitch(dev, name, states, names, n);
     } else {
@@ -1776,8 +1776,8 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
         return RI::processNumber(dev, name, values, names, n);
 
     // Process Power-related switches via PowerInterface
-    if (PI::processNumber(dev, name, values, names, n))
-        return true;
+//    if (PI::processNumber(dev, name, values, names, n))
+//        return true;
 
     // ProcessWeatherr-related switches via WeatherInterface
     if (strstr(name, "WEATHER_")) {
@@ -2141,20 +2141,20 @@ bool OnStep_Aux::SetRotatorBacklashEnabled(bool enabled)
     //     As it's always enabled, which would mean setting it like SetRotatorBacklash to 0, and losing any saved values. So for now, leave it as is (always enabled)
 }
 
-bool OnStep_Aux::SetUSBPort(size_t port, bool enabled)
-{
-    char cmd[CMD_MAX_LEN] = {0};
-    char data[RB_MAX_LEN] = {0};
-    int response = 0;
-    snprintf(cmd, sizeof(cmd), "%s%d,%s%d%s", OS_set_USBport_part , static_cast<int>(port),
-             OS_set_USBport_enabled_part, enabled, OS_command_terminator);
-    int error_or_fail = getCommandIntResponse(PortFD, &response, data, cmd);
-    if ((error_or_fail > 0) && (response)) {
-        return true;
-    } else {
-        return false;
-    }
-}
+//bool OnStep_Aux::SetUSBPort(size_t port, bool enabled)
+//{
+//    char cmd[CMD_MAX_LEN] = {0};
+//    char data[RB_MAX_LEN] = {0};
+//    int response = 0;
+//    snprintf(cmd, sizeof(cmd), "%s%d,%s%d%s", OS_set_USBport_part , static_cast<int>(port),
+//             OS_set_USBport_enabled_part, enabled, OS_command_terminator);
+//    int error_or_fail = getCommandIntResponse(PortFD, &response, data, cmd);
+//    if ((error_or_fail > 0) && (response)) {
+//        return true;
+//    } else {
+//        return false;
+//    }
+//}
 
 
 /***********************************************************
@@ -2714,12 +2714,12 @@ void OnStep_Aux::TimerHit()
                 error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, cmd);
                 if (error_or_fail > 0) {
                     if (strcmp(response, "N/A") != 0) {
-                        PI::USBPortSP[USBport].setState(response);
+//                        PI::USBPortSP[USBport].setState(response);
                     }
                 }
             }
         }
-        PI::USBPortSP.setState(IPS_IDLE);
+//        PI::USBPortSP.setState(IPS_IDLE);
     }
 }
 
@@ -2807,7 +2807,7 @@ bool OnStep_Aux::saveConfigItems(FILE *fp)
     FI::saveConfigItems(fp);
     WI::saveConfigItems(fp);
     RI::saveConfigItems(fp);
-    PI::saveConfigItems(fp);
+//    PI::saveConfigItems(fp);
     return true;
 }
 
