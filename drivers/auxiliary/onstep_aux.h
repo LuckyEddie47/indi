@@ -666,6 +666,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     static const int max_USBports = 8;
     int USBports_enabled[max_USBports] = {0};
     std::string USBports_name[max_USBports];
+    int USBportCount = 0;
 
     // Debug only
     ITextVectorProperty Arbitary_CommandTP;

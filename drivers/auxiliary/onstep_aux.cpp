@@ -806,7 +806,6 @@ void OnStep_Aux::GetCapabilites()
         } catch (const std::out_of_range&) {
             LOGF_WARN("Invalid response to %s: %s", OS_get_defined_USBports, response);
         }
-        int USBportCount = 0;
         if (value > 0 ) {
             hasUSB = true;
             LOG_DEBUG("USB Port(s) found, enabling USB Tab");
@@ -2164,11 +2163,6 @@ bool OnStep_Aux::Connect()
         return false;
     }
 
-//    if (!Handshake()) {
-//        LOG_ERROR("Failed to communicate with OnStep Aux");
-//        return false;
-//    }
-
     // Start polling timer (e.g., every 1000ms)
     SetTimer(getCurrentPollingPeriod());
 
@@ -2707,13 +2701,21 @@ void OnStep_Aux::TimerHit()
         }
     }
     if (hasUSB) {
-        memset(response, 0, RB_MAX_LEN);
-        memset(cmd, 0, CMD_MAX_LEN);
-        intResponse = 0;
-        error_or_fail = 0;
-        for (int USBport = 0; USBport < max_USBports; USBport++) {
-
+        for (int USBport = 0; USBport < USBportCount; USBport++) {
+            if (USBports_enabled[USBport]) {
+                memset(response, 0, RB_MAX_LEN);
+                memset(cmd, 0, CMD_MAX_LEN);
+                error_or_fail = 0;
+                snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_USBport_state_part, (USBport + 1), OS_command_terminator);
+                error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, cmd);
+                if (error_or_fail > 0) {
+                    if (strcmp(response, "N/A") != 0) {
+                        PI::USBPortSP[USBport].setState(response);
+                    }
+                }
+            }
         }
+        PI::USBPortSP.setState(IPS_IDLE);
     }
 }
 
