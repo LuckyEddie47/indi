@@ -2164,10 +2164,10 @@ bool OnStep_Aux::Connect()
         return false;
     }
 
-    if (!Handshake()) {
-        LOG_ERROR("Failed to communicate with OnStep Aux");
-        return false;
-    }
+//    if (!Handshake()) {
+//        LOG_ERROR("Failed to communicate with OnStep Aux");
+//        return false;
+//    }
 
     // Start polling timer (e.g., every 1000ms)
     SetTimer(getCurrentPollingPeriod());
@@ -2192,6 +2192,10 @@ bool OnStep_Aux::Disconnect()
 /****************************
 * Poll properties for updates
 ****************************/
+
+
+//Need to add USB port status
+
 void OnStep_Aux::TimerHit()
 {
     char cmd[CMD_MAX_LEN] = {0};
@@ -2700,6 +2704,15 @@ void OnStep_Aux::TimerHit()
                     break;
                 }
             }
+        }
+    }
+    if (hasUSB) {
+        memset(response, 0, RB_MAX_LEN);
+        memset(cmd, 0, CMD_MAX_LEN);
+        intResponse = 0;
+        error_or_fail = 0;
+        for (int USBport = 0; USBport < max_USBports; USBport++) {
+
         }
     }
 }
