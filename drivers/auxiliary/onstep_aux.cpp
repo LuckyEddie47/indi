@@ -1042,6 +1042,7 @@ bool OnStep_Aux::updateProperties()
         if (hasUSB) {
             PI::updateProperties();
             deleteProperty(PI::OverVoltageProtectionNP.getName());
+            deleteProperty(PI::PowerOffOnDisconnectSP.getName());
         }
 
         // Debug only
@@ -1141,6 +1142,7 @@ bool OnStep_Aux::updateProperties()
         deleteProperty(Inter8doneTP.name);
 
         deleteProperty(PI::OverVoltageProtectionNP.getName());
+        deleteProperty(PI::PowerOffOnDisconnectSP.getName());
 
         // Debug only
         deleteProperty(Arbitary_CommandTP.name);
