@@ -864,7 +864,6 @@ void OnStep_Aux::GetCapabilites()
 bool OnStep_Aux::updateProperties()
 {
     DefaultDevice::updateProperties();
-
     if (isConnected()) {
         loadConfig(true);
 
@@ -1042,6 +1041,7 @@ bool OnStep_Aux::updateProperties()
 
         if (hasUSB) {
             PI::updateProperties();
+            deleteProperty(PI::OverVoltageProtectionNP.getName());
         }
 
         // Debug only
@@ -1139,6 +1139,8 @@ bool OnStep_Aux::updateProperties()
         deleteProperty(Inter8SP.name);
         deleteProperty(Inter8NP.name);
         deleteProperty(Inter8doneTP.name);
+
+        deleteProperty(PI::OverVoltageProtectionNP.getName());
 
         // Debug only
         deleteProperty(Arbitary_CommandTP.name);
