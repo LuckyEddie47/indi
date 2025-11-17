@@ -468,6 +468,11 @@ bool OnStep_Aux::initProperties()
 
     // USB Tab
     //--------
+    IUFillSwitchVector(&USBallSP, USBallS, SWITCH_TOGGLE_COUNT, getDeviceName(),  "USBall",  "USB ALL",
+                       USB_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
+    IUFillSwitch(&USBallS[ON_SWITCH],  "USBALL_ON", "ON", ISS_OFF);
+    IUFillSwitch(&USB1S[OFF_SWITCH],  "USBALL_OFF", "OFF", ISS_ON);
+
     IUFillTextVector(&USB1_nameTP, USB1_nameT, 1, getDeviceName(),  "USB_1_NAME",  "USB 1",
                      USB_TAB, IP_RO, 60, IPS_OK);
     IUFillText(&USB1_nameT[0],  "USB_1_NAME", "Name", "");
@@ -1183,6 +1188,7 @@ bool OnStep_Aux::updateProperties()
                     }
                 }
             }
+            defineProperty(&USBallSP);
         }
 //        if (hasUSB) {
 //            PI::updateProperties();
@@ -1302,6 +1308,7 @@ bool OnStep_Aux::updateProperties()
         deleteProperty(USB7_nameTP.name);
         deleteProperty(USB8SP.name);
         deleteProperty(USB8_nameTP.name);
+        deleteProperty(USBallSP.name);
 
 //        deleteProperty(PI::OverVoltageProtectionNP.getName());
 //        deleteProperty(PI::PowerOffOnDisconnectSP.getName());
@@ -1793,6 +1800,21 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
                 }
             }
             IDSetSwitch(&USB8SP, nullptr);
+            return false;
+        }  else if (strcmp(USBallSP.name, name) == 0) {
+            IUUpdateSwitch(&USBallSP, states, names, n);
+            for (int i = 0; i < n; i++) {
+                if (strcmp(names[i], "USBALL_ON") == 0) {
+                    sprintf(cmd, "%s0,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_ENABLE, OS_command_terminator);
+                    IDSetSwitch(&USBallSP, nullptr);
+                    return sendOSCommand(cmd);
+                } else if (strcmp(names[i], "USBALL_OFF") == 0) {
+                    sprintf(cmd, "%s0,%s%d%s", OS_set_USBport_part, OS_set_USBport_enabled_part, SWITCH_DISABLE, OS_command_terminator);
+                    IDSetSwitch(&USBallSP, nullptr);
+                    return sendOSCommand(cmd);
+                }
+            }
+            IDSetSwitch(&USBallSP, nullptr);
             return false;
         }
 

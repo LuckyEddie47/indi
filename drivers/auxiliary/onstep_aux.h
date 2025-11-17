@@ -668,6 +668,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     std::string USBports_name[max_USBports];
     int USBportCount = 0;
 
+    ISwitchVectorProperty USBallSP;
+    ISwitch USBallS[SWITCH_TOGGLE_COUNT];
     ISwitchVectorProperty USB1SP;
     ISwitch USB1S[SWITCH_TOGGLE_COUNT];
     ISwitchVectorProperty USB2SP;
