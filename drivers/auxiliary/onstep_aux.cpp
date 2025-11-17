@@ -471,7 +471,7 @@ bool OnStep_Aux::initProperties()
     IUFillSwitchVector(&USBallSP, USBallS, SWITCH_TOGGLE_COUNT, getDeviceName(),  "USBall",  "USB ALL",
                        USB_TAB, IP_RW, ISR_1OFMANY, 60, IPS_OK);
     IUFillSwitch(&USBallS[ON_SWITCH],  "USBALL_ON", "ON", ISS_OFF);
-    IUFillSwitch(&USB1S[OFF_SWITCH],  "USBALL_OFF", "OFF", ISS_ON);
+    IUFillSwitch(&USBallS[OFF_SWITCH],  "USBALL_OFF", "OFF", ISS_ON);
 
     IUFillTextVector(&USB1_nameTP, USB1_nameT, 1, getDeviceName(),  "USB_1_NAME",  "USB 1",
                      USB_TAB, IP_RO, 60, IPS_OK);
@@ -1148,6 +1148,7 @@ bool OnStep_Aux::updateProperties()
         }
 
         if (hasUSB) {
+            defineProperty(&USBallSP);
             for (int USBport = 0; USBport < max_USBports; USBport++) {
                 if (USBports_enabled[USBport] == 1) {
                     switch (USBport) {
@@ -1188,7 +1189,6 @@ bool OnStep_Aux::updateProperties()
                     }
                 }
             }
-            defineProperty(&USBallSP);
         }
 //        if (hasUSB) {
 //            PI::updateProperties();
@@ -1292,6 +1292,7 @@ bool OnStep_Aux::updateProperties()
         deleteProperty(Inter8NP.name);
         deleteProperty(Inter8doneTP.name);
 
+        deleteProperty(USBallSP.name);
         deleteProperty(USB1SP.name);
         deleteProperty(USB1_nameTP.name);
         deleteProperty(USB2SP.name);
@@ -1308,7 +1309,6 @@ bool OnStep_Aux::updateProperties()
         deleteProperty(USB7_nameTP.name);
         deleteProperty(USB8SP.name);
         deleteProperty(USB8_nameTP.name);
-        deleteProperty(USBallSP.name);
 
 //        deleteProperty(PI::OverVoltageProtectionNP.getName());
 //        deleteProperty(PI::PowerOffOnDisconnectSP.getName());
