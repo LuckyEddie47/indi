@@ -19,6 +19,19 @@
 
 */
 
+
+
+
+/*
+ * To do:
+ * Add FW info to Main Tab
+ * Test
+ *
+ */
+
+
+
+
 #include "onstep_aux.h"
 #include "connectionplugins/connectiontcp.h"
 #include "connectionplugins/connectionserial.h"
@@ -60,7 +73,6 @@ OnStep_Aux::OnStep_Aux() : INDI::DefaultDevice(), FI(this),  RI(this), WI(this)/
 // Debug only end
 
     setVersion(0, 1);
-    SlowTimer.callOnTimeout(std::bind(&OnStep_Aux::SlowTimerHit, this));
 }
 
 /**********************************************
@@ -71,7 +83,6 @@ bool OnStep_Aux::initProperties()
 {
     DefaultDevice::initProperties();
     setDriverInterface(FOCUSER_INTERFACE | ROTATOR_INTERFACE | WEATHER_INTERFACE | POWER_INTERFACE | AUX_INTERFACE);
-
 
     // MAIN_CONTROL_TAB
     //-----------------
@@ -146,10 +157,6 @@ bool OnStep_Aux::initProperties()
     addParameter("WEATHER_BAROMETER", "Pressure (hPa)", 0, 1500, 15);
     addParameter("WEATHER_DEWPOINT", "Dew Point (C)", 0, 50, 15); // From OnStep
     setCriticalParameter("WEATHER_TEMPERATURE");
-
-    // POWER_INTERFACE
-    //----------------
-    // Handles in GetCapabilities, once we know if we have any relevent features
 
     // SWITCH_TAB
     //----------------------
@@ -937,15 +944,6 @@ void OnStep_Aux::GetCapabilites()
                     }
                 }
             }
-
-
-//            PI::SetCapability(POWER_HAS_USB_TOGGLE);
-//            PI::initProperties(USB_TAB, 0, 0, 0, 0, USBportCount);
-//            if (PI::USBPortLabelsTP.size() == static_cast<ulong>(USBportCount)) {
-//                for (int USBport = 0; USBport <= USBportCount; USBport++) {
-//                    PI::USBPortLabelsTP[USBport].setLabel(USBports_name[USBport]);
-//                }
-//            }
         } else {
                LOG_WARN("No USBs found, disabling USB Tab");
             capabilities &= ~POWER_INTERFACE;
@@ -955,17 +953,11 @@ void OnStep_Aux::GetCapabilites()
         capabilities &= ~POWER_INTERFACE;
     }
 
-
     setDriverInterface(capabilities);
     syncDriverInfo();
 
     // Start polling timer (e.g., every 1000ms)
     SetTimer(getCurrentPollingPeriod());
-
-    // Start the slow timer for weather updates
-    SlowTimer.start(60000);
-    // Call the slow property update once as this is startup and we want to populate now
-    SlowTimerHit();
 }
 
 
@@ -1190,11 +1182,6 @@ bool OnStep_Aux::updateProperties()
                 }
             }
         }
-//        if (hasUSB) {
-//            PI::updateProperties();
-//            deleteProperty(PI::OverVoltageProtectionNP.getName());
-//            deleteProperty(PI::PowerOffOnDisconnectSP.getName());
-//        }
 
         // Debug only
         defineProperty(&Arbitary_CommandTP);
@@ -1310,16 +1297,12 @@ bool OnStep_Aux::updateProperties()
         deleteProperty(USB8SP.name);
         deleteProperty(USB8_nameTP.name);
 
-//        deleteProperty(PI::OverVoltageProtectionNP.getName());
-//        deleteProperty(PI::PowerOffOnDisconnectSP.getName());
-
         // Debug only
         deleteProperty(Arbitary_CommandTP.name);
         // Debug only end
 
         return false;
     }
-
     return true;
 }
 
@@ -1827,10 +1810,6 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
         if (strstr(name, "ROTATOR"))
             return RI::processSwitch(dev, name, states, names, n);
 
-        // Process Power-related switches via PowerInterface
-//        if (PI::processSwitch(dev, name, states, names, n))
-//            return true;
-
         return INDI::DefaultDevice::ISNewSwitch(dev, name, states, names, n);
     } else {
         return false;
@@ -2083,10 +2062,6 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
     // Process Rotator-related switches via RotatorInterface
     if (strstr(name, "ROTATOR"))
         return RI::processNumber(dev, name, values, names, n);
-
-    // Process Power-related switches via PowerInterface
-//    if (PI::processNumber(dev, name, values, names, n))
-//        return true;
 
     // ProcessWeatherr-related switches via WeatherInterface
     if (strstr(name, "WEATHER_")) {
@@ -2450,22 +2425,6 @@ bool OnStep_Aux::SetRotatorBacklashEnabled(bool enabled)
     //     As it's always enabled, which would mean setting it like SetRotatorBacklash to 0, and losing any saved values. So for now, leave it as is (always enabled)
 }
 
-//bool OnStep_Aux::SetUSBPort(size_t port, bool enabled)
-//{
-//    char cmd[CMD_MAX_LEN] = {0};
-//    char data[RB_MAX_LEN] = {0};
-//    int response = 0;
-//    snprintf(cmd, sizeof(cmd), "%s%d,%s%d%s", OS_set_USBport_part , static_cast<int>(port),
-//             OS_set_USBport_enabled_part, enabled, OS_command_terminator);
-//    int error_or_fail = getCommandIntResponse(PortFD, &response, data, cmd);
-//    if ((error_or_fail > 0) && (response)) {
-//        return true;
-//    } else {
-//        return false;
-//    }
-//}
-
-
 /***********************************************************
 ** Client is asking us to establish connection to the device
 ************************************************************/
@@ -2491,18 +2450,9 @@ bool OnStep_Aux::Disconnect()
     return status;
 }
 
-//void OnStep_Aux::ISGetProperties(const char *dev)
-//{
-//    FI::ISGetProperties(dev);
-//}
-
 /****************************
 * Poll properties for updates
 ****************************/
-
-
-//Need to add USB port status
-
 void OnStep_Aux::TimerHit()
 {
     char cmd[CMD_MAX_LEN] = {0};
@@ -3134,16 +3084,38 @@ void OnStep_Aux::TimerHit()
                     }
                 }
             }
-        }
-//        PI::USBPortSP.setState(IPS_IDLE);
-    }
-}
+        } // End USB port switches
 
-/***************************************
-* Poll properties for updates per minute
-****************************************/
-void OnStep_Aux::SlowTimerHit()
-{
+        // Check if ALL defined USB ports are On/Off and use to set USBall switches
+        int USBportsOn = 0;
+        for (int USBport = 0; USBport < max_USBports; USBport++) {
+            if (USBports_enabled[USBport] == 1) {
+                memset(response, 0, RB_MAX_LEN);
+                memset(cmd, 0, CMD_MAX_LEN);
+                int intResponse = 0;
+                int error_or_fail = 0;
+                snprintf(cmd, sizeof(cmd), "%s%d%s", OS_get_USBport_state_part, (USBport + 1), OS_command_terminator);
+                error_or_fail = getCommandIntFromCharResponse(PortFD, response, &intResponse, cmd);
+                if (error_or_fail > 0) {
+                    if (intResponse == 1) {
+                        USBportsOn++;
+                    }
+                }
+            }
+        }
+        if (USBportsOn == 0) {
+            USBallS[OFF_SWITCH].s = ISS_ON;
+            USBallS[ON_SWITCH].s = ISS_OFF;
+            USBallSP.s = IPS_OK;
+            IDSetSwitch(&USBallSP, nullptr);
+        } else if (USBportsOn == USBportCount) {
+            USBallS[OFF_SWITCH].s = ISS_OFF;
+            USBallS[ON_SWITCH].s = ISS_ON;
+            USBallSP.s = IPS_OK;
+            IDSetSwitch(&USBallSP, nullptr);
+        }
+        // End USBall
+    }
 }
 
 const char *OnStep_Aux::getDefaultName()
@@ -3223,7 +3195,6 @@ bool OnStep_Aux::saveConfigItems(FILE *fp)
     FI::saveConfigItems(fp);
     WI::saveConfigItems(fp);
     RI::saveConfigItems(fp);
-//    PI::saveConfigItems(fp);
     return true;
 }
 

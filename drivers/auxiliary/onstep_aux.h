@@ -255,7 +255,7 @@ OnStep lexicon end
 *****************/
 
 class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, public INDI::RotatorInterface,
-                   public INDI::WeatherInterface//, public INDI::PowerInterface
+                   public INDI::WeatherInterface
 
 {
   public:
@@ -263,7 +263,6 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     virtual ~OnStep_Aux() = default;
 
     virtual bool initProperties() override;
-//    virtual void ISGetProperties(const char *dev) override;
     virtual bool updateProperties() override;
     virtual bool ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n) override;
     virtual bool ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n) override;
@@ -276,9 +275,6 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     virtual bool saveConfigItems(FILE *fp) override;
     virtual IPState updateWeather() override;
     virtual void TimerHit() override;
-//    virtual bool SetUSBPort(size_t port, bool enabled) override;
-    // Timer for slow updates, once per minute
-    INDI::Timer SlowTimer;
 
     typedef enum {
         CONNECTION_NONE = 1 << 0,
@@ -338,6 +334,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     bool hasDew = false;
     bool hasIntervalometer = false;
     bool hasOutput = false;
+
     bool hasUSB = false;
 
     // Not until OnStepX plugin ready
