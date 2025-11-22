@@ -69,7 +69,7 @@ OnStep_Aux::OnStep_Aux() : INDI::DefaultDevice(), FI(this),  RI(this), WI(this)/
 // Debug only
 // Halts the process at this point. Allows remote debugger to attach which is required
 // when launching the driver from a client eg. Ekos
-//  kill(getpid(), SIGSTOP);
+// kill(getpid(), SIGSTOP);
 // Debug only end
 
     setVersion(0, 1);
@@ -955,9 +955,6 @@ void OnStep_Aux::GetCapabilites()
 
     setDriverInterface(capabilities);
     syncDriverInfo();
-
-    // Start polling timer (e.g., every 1000ms)
-    SetTimer(getCurrentPollingPeriod());
 }
 
 
@@ -965,6 +962,7 @@ bool OnStep_Aux::updateProperties()
 {
     DefaultDevice::updateProperties();
     if (isConnected()) {
+        SetTimer(getCurrentPollingPeriod());
         loadConfig(true);
 
         if (hasFocuser) {
@@ -1300,7 +1298,6 @@ bool OnStep_Aux::updateProperties()
         // Debug only
         deleteProperty(Arbitary_CommandTP.name);
         // Debug only end
-
         return false;
     }
     return true;
@@ -3115,6 +3112,12 @@ void OnStep_Aux::TimerHit()
             IDSetSwitch(&USBallSP, nullptr);
         }
         // End USBall
+    }
+    // Timer loop control
+    if (isConnected()) {
+        SetTimer(getCurrentPollingPeriod());
+    } else {
+        return; //  No need to reset timer if we are not connected anymore
     }
 }
 
