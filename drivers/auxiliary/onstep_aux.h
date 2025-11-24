@@ -30,7 +30,6 @@
 #include "indifocuserinterface.h"
 #include "indirotatorinterface.h"
 #include "indiweatherinterface.h"
-//#include "indipowerinterface.h"
 
 #include <cstring>
 #include <unistd.h>
@@ -312,7 +311,6 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
         return it != std::end(array_name);
     }
 
-//    static constexpr const float minimum_OS_fw = 10.25;
     static constexpr const int conversion_error = -10000;
     long int OSTimeoutSeconds = 0;
     long int OSTimeoutMicroSeconds = 100000;
@@ -337,13 +335,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
 
     bool hasUSB = false;
 
-    // Not until OnStepX plugin ready
-    //    bool hasDCout = false;
-
-
     // Command sequence enforcement
     bool waitingForResponse = false;
-
 
     // FocuserInterface
     IPState MoveFocuser(FocusDirection dir, int speed, uint16_t duration) override;
@@ -367,10 +360,6 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
 
     ITextVectorProperty VersionTP;
     IText VersionT[1] {};
-
-//    // OnStep Status controls
-//    ITextVectorProperty OnstepStatTP;
-//    IText OnstepStat[11] {};
 
     // Focuser controls
     ISwitchVectorProperty OSFocus1InitializeSP;
@@ -453,7 +442,6 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
 
     // Switches tab controls
     //----------------------
-
     enum {
         OFF_SWITCH,
         ON_SWITCH,
@@ -501,7 +489,6 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
 
     // Dew Heaters tab controls
     //-------------------------
-
     ITextVectorProperty Dew1TP;
     IText Dew1_nameT[1] {};
     ISwitchVectorProperty Dew1SP;
@@ -701,8 +688,8 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     IText USB8_nameT[1] {};
 
     // Debug only
-    ITextVectorProperty Arbitary_CommandTP;
-    IText Arbitary_CommandT[1];
+    // ITextVectorProperty Arbitary_CommandTP;
+    // IText Arbitary_CommandT[1];
     // Debug only end
 
 };

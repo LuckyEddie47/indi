@@ -19,19 +19,6 @@
 
 */
 
-
-
-
-/*
- * To do:
- * Add FW info to Main Tab
- * Test
- *
- */
-
-
-
-
 #include "onstep_aux.h"
 #include "connectionplugins/connectiontcp.h"
 #include "connectionplugins/connectionserial.h"
@@ -86,15 +73,8 @@ bool OnStep_Aux::initProperties()
 
     // MAIN_CONTROL_TAB
     //-----------------
-//    IUFillText(&ObjectInfoT[0], "Info", "", "");
-//    IUFillTextVector(&ObjectInfoTP, ObjectInfoT, 1, getDeviceName(), "Object Info", "", MAIN_CONTROL_TAB,
-//                     IP_RO, 0, IPS_IDLE);
-
     IUFillText(&VersionT[0], "Version", "", "");
-//    IUFillText(&VersionT[1], "Time", "", "");
-//    IUFillText(&VersionT[2], "Number", "", "");
-//    IUFillText(&VersionT[3], "Name", "", "");
-    IUFillTextVector(&VersionTP, VersionT, 0, getDeviceName(), "Firmware Info", "", MAIN_CONTROL_TAB, IP_RO, 0, IPS_IDLE);
+    IUFillTextVector(&VersionTP, VersionT, 1, getDeviceName(), "Firmware Info", "", MAIN_CONTROL_TAB, IP_RO, 0, IPS_IDLE);
 
     // CONNECTION_TAB
     // OPTIONS_TAB
@@ -547,9 +527,9 @@ bool OnStep_Aux::initProperties()
     // MANUAL_TAB
     //-----------
     // Debug only
-    IUFillTextVector(&Arbitary_CommandTP, Arbitary_CommandT, 1, getDeviceName(), "ARBITARY_COMMAND", "Command",
-                     MANUAL_TAB, IP_RW, 60, IPS_IDLE);
-    IUFillText(&Arbitary_CommandT[0], "ARBITARY_COMMANDT", "Response:", ":GVP#");
+    // IUFillTextVector(&Arbitary_CommandTP, Arbitary_CommandT, 1, getDeviceName(), "ARBITARY_COMMAND", "Command",
+    //                  MANUAL_TAB, IP_RW, 60, IPS_IDLE);
+    // IUFillText(&Arbitary_CommandT[0], "ARBITARY_COMMANDT", "Response:", ":GVP#");
     // Debug only end
 
     // Connection and handshake registration
@@ -624,17 +604,10 @@ void OnStep_Aux::GetCapabilites()
     if (error_or_fail > 1) {
         IUSaveText(&VersionT[0], response);
         IDSetText(&VersionTP, nullptr);
-
-
-//        IUSaveText(&Status_ItemsT[STATUS_FIRMWARE], response);
-//        IDSetText(&Status_ItemsTP, nullptr);
         LOGF_DEBUG("OnStepX version: %s", response);
     } else {
         LOG_ERROR("OnStepX version not retrieved");
     }
- //   if (std::stof(response) < minimum_OS_fw) {
- //       LOGF_WARN("OnStepX version %s is lower than this driver expects (%1.1f). Behaviour is unknown.", response, minimum_OS_fw);
- //   }
 
     // Discover focuser
     memset(response, 0, RB_MAX_LEN);
@@ -961,7 +934,6 @@ void OnStep_Aux::GetCapabilites()
     syncDriverInfo();
 }
 
-
 bool OnStep_Aux::updateProperties()
 {
     DefaultDevice::updateProperties();
@@ -1188,7 +1160,7 @@ bool OnStep_Aux::updateProperties()
         }
 
         // Debug only
-        defineProperty(&Arbitary_CommandTP);
+        // defineProperty(&Arbitary_CommandTP);
         // Debug only end
 
     } else {
@@ -1304,13 +1276,12 @@ bool OnStep_Aux::updateProperties()
         deleteProperty(USB8_nameTP.name);
 
         // Debug only
-        deleteProperty(Arbitary_CommandTP.name);
+        // deleteProperty(Arbitary_CommandTP.name);
         // Debug only end
         return false;
     }
     return true;
 }
-
 
 bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
 {
@@ -1806,7 +1777,6 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
             return false;
         }
 
-
         // Process Focus-related switches via FocusInterface
         if (strstr(name, "FOCUS"))
             return FI::processSwitch(dev, name, states, names, n);
@@ -1823,7 +1793,6 @@ bool OnStep_Aux::ISNewSwitch(const char *dev, const char *name, ISState *states,
 
 bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
 {
-    
     if (!dev || strcmp(dev, getDeviceName()))
         return false;
 
@@ -2083,39 +2052,42 @@ bool OnStep_Aux::ISNewNumber(const char *dev, const char *name, double values[],
 bool OnStep_Aux::ISNewText(const char *dev,const char *name,char *texts[],char *names[],int n)
 {
     // Debug only - Manual tab, Arbitary command
-    if (dev != nullptr && strcmp(dev, getDeviceName()) == 0) {
-        if (!strcmp(Arbitary_CommandTP.name, name)) {
-            if (1 == n) {
-                char response[RB_MAX_LEN] = {0};
-                int error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, response, texts[0]);
-                if (error_or_fail > 0) {
-                    if (strcmp(response, "") == 0) {
-                        indi_strlcpy(response, "No response", sizeof(response));
-                    }
-                } else {
-                    char error_code[RB_MAX_LEN] = {0};
-                    if (error_or_fail == TTY_TIME_OUT) {
-                        indi_strlcpy(response, "No response", sizeof(response));
-                    } else {
-                        sprintf(error_code, "Error: %d", error_or_fail);
-                        indi_strlcpy(response, error_code, sizeof(response));
-                    }
-                }
-                // Replace the user entered string with the OCS response
-                indi_strlcpy(texts[0], response, RB_MAX_LEN);
-                IUUpdateText(&Arbitary_CommandTP, texts, names, n);
-                IDSetText(&Arbitary_CommandTP, nullptr);
-                return true;
-            }
-        }
-        return false;
+    // if (dev != nullptr && strcmp(dev, getDeviceName()) == 0) {
+    //     if (!strcmp(Arbitary_CommandTP.name, name)) {
+    //         if (1 == n) {
+    //             char response[RB_MAX_LEN] = {0};
+    //             int error_or_fail  = getCommandSingleCharErrorOrLongResponse(PortFD, response, texts[0]);
+    //             if (error_or_fail > 0) {
+    //                 if (strcmp(response, "") == 0) {
+    //                     indi_strlcpy(response, "No response", sizeof(response));
+    //                 }
+    //             } else {
+    //                 char error_code[RB_MAX_LEN] = {0};
+    //                 if (error_or_fail == TTY_TIME_OUT) {
+    //                     indi_strlcpy(response, "No response", sizeof(response));
+    //                 } else {
+    //                     sprintf(error_code, "Error: %d", error_or_fail);
+    //                     indi_strlcpy(response, error_code, sizeof(response));
+    //                 }
+    //             }
+    //             // Replace the user entered string with the OCS response
+    //             indi_strlcpy(texts[0], response, RB_MAX_LEN);
+    //             IUUpdateText(&Arbitary_CommandTP, texts, names, n);
+    //             IDSetText(&Arbitary_CommandTP, nullptr);
+    //             return true;
+    //         }
+    //     }
+    //     return false;
+    //
+    // } else {
+    //    return false;
+    // }
     // Debug only end
 
-    } else {
-        return false;
-    }
+    // Comment out next two lines if uncommenting the above Debug only block
+    INDI_UNUSED(dev); INDI_UNUSED(name); INDI_UNUSED(texts); INDI_UNUSED(names); INDI_UNUSED(n);
+    return false;
 }
-
 
 /*******************
  * Focuser functions
@@ -3118,6 +3090,11 @@ void OnStep_Aux::TimerHit()
             USBallS[ON_SWITCH].s = ISS_ON;
             USBallSP.s = IPS_OK;
             IDSetSwitch(&USBallSP, nullptr);
+        } else {
+            USBallS[OFF_SWITCH].s = ISS_OFF;
+            USBallS[ON_SWITCH].s = ISS_OFF;
+            USBallSP.s = IPS_OK;
+            IDSetSwitch(&USBallSP, nullptr);
         }
         // End USBall
     }
@@ -3209,7 +3186,6 @@ bool OnStep_Aux::saveConfigItems(FILE *fp)
     return true;
 }
 
-
 /*********************************************************************
  * Send command to OCS without checking (intended non-existent) return
  * *******************************************************************/
@@ -3225,6 +3201,7 @@ bool OnStep_Aux::sendOSCommandBlind(const char *cmd)
     std::unique_lock<std::mutex> guard(osCommsLock);
     tcflush(PortFD, TCIFLUSH);
     if ((error_type = tty_write_string(PortFD, cmd, &nbytes_write)) != TTY_OK) {
+        INDI_UNUSED(error_type);
         LOGF_ERROR("CHECK CONNECTION: Error sending command %s", cmd);
         clearBlock();
         return 0; //Fail if we can't write
@@ -3484,7 +3461,6 @@ int OnStep_Aux::getCommandIntFromCharResponse(int fd, char *data, int *response,
         return errorOrFail;
     }
 }
-
 
 /**********************
  * Flush the comms port
