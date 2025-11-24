@@ -86,15 +86,15 @@ bool OnStep_Aux::initProperties()
 
     // MAIN_CONTROL_TAB
     //-----------------
-    IUFillText(&ObjectInfoT[0], "Info", "", "");
-    IUFillTextVector(&ObjectInfoTP, ObjectInfoT, 1, getDeviceName(), "Object Info", "", MAIN_CONTROL_TAB,
-                     IP_RO, 0, IPS_IDLE);
+//    IUFillText(&ObjectInfoT[0], "Info", "", "");
+//    IUFillTextVector(&ObjectInfoTP, ObjectInfoT, 1, getDeviceName(), "Object Info", "", MAIN_CONTROL_TAB,
+//                     IP_RO, 0, IPS_IDLE);
 
-    IUFillText(&VersionT[0], "Date", "", "");
-    IUFillText(&VersionT[1], "Time", "", "");
-    IUFillText(&VersionT[2], "Number", "", "");
-    IUFillText(&VersionT[3], "Name", "", "");
-    IUFillTextVector(&VersionTP, VersionT, 4, getDeviceName(), "Firmware Info", "", MAIN_CONTROL_TAB, IP_RO, 0, IPS_IDLE);
+    IUFillText(&VersionT[0], "Version", "", "");
+//    IUFillText(&VersionT[1], "Time", "", "");
+//    IUFillText(&VersionT[2], "Number", "", "");
+//    IUFillText(&VersionT[3], "Name", "", "");
+    IUFillTextVector(&VersionTP, VersionT, 0, getDeviceName(), "Firmware Info", "", MAIN_CONTROL_TAB, IP_RO, 0, IPS_IDLE);
 
     // CONNECTION_TAB
     // OPTIONS_TAB
@@ -622,15 +622,19 @@ void OnStep_Aux::GetCapabilites()
     char response[RB_MAX_LEN] = {0};
     int error_or_fail = getCommandSingleCharErrorOrLongResponse(PortFD, response, OS_get_firmware);
     if (error_or_fail > 1) {
-        IUSaveText(&Status_ItemsT[STATUS_FIRMWARE], response);
-        IDSetText(&Status_ItemsTP, nullptr);
+        IUSaveText(&VersionT[0], response);
+        IDSetText(&VersionTP, nullptr);
+
+
+//        IUSaveText(&Status_ItemsT[STATUS_FIRMWARE], response);
+//        IDSetText(&Status_ItemsTP, nullptr);
         LOGF_DEBUG("OnStepX version: %s", response);
     } else {
         LOG_ERROR("OnStepX version not retrieved");
     }
-    if (std::stof(response) < minimum_OS_fw) {
-        LOGF_WARN("OnStepX version %s is lower than this driver expects (%1.1f). Behaviour is unknown.", response, minimum_OS_fw);
-    }
+ //   if (std::stof(response) < minimum_OS_fw) {
+ //       LOGF_WARN("OnStepX version %s is lower than this driver expects (%1.1f). Behaviour is unknown.", response, minimum_OS_fw);
+ //   }
 
     // Discover focuser
     memset(response, 0, RB_MAX_LEN);
@@ -965,6 +969,8 @@ bool OnStep_Aux::updateProperties()
         SetTimer(getCurrentPollingPeriod());
         loadConfig(true);
 
+        defineProperty(&VersionTP);
+
         if (hasFocuser) {
             defineProperty(&OSFocus1InitializeSP);
             // Focus T° Compensation
@@ -1186,6 +1192,8 @@ bool OnStep_Aux::updateProperties()
         // Debug only end
 
     } else {
+        deleteProperty(VersionTP.name);
+
         deleteProperty(OSFocus1InitializeSP.name);
         deleteProperty(FocusTemperatureNP.name);
         deleteProperty(TFCCompensationSP.name);

@@ -312,7 +312,7 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
         return it != std::end(array_name);
     }
 
-    static constexpr const float minimum_OS_fw = 10.25;
+//    static constexpr const float minimum_OS_fw = 10.25;
     static constexpr const int conversion_error = -10000;
     long int OSTimeoutSeconds = 0;
     long int OSTimeoutMicroSeconds = 100000;
@@ -366,11 +366,11 @@ class OnStep_Aux : public INDI::DefaultDevice, public INDI::FocuserInterface, pu
     IText ObjectInfoT[1] {};
 
     ITextVectorProperty VersionTP;
-    IText VersionT[5] {};
+    IText VersionT[1] {};
 
-    // OnStep Status controls
-    ITextVectorProperty OnstepStatTP;
-    IText OnstepStat[11] {};
+//    // OnStep Status controls
+//    ITextVectorProperty OnstepStatTP;
+//    IText OnstepStat[11] {};
 
     // Focuser controls
     ISwitchVectorProperty OSFocus1InitializeSP;
