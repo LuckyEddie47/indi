@@ -274,3 +274,23 @@ add_executable(indi_alpaca_telescope
 target_link_libraries(indi_alpaca_telescope indidriver ${HTTPLIB_LIBRARY})
 
 install(TARGETS indi_alpaca_telescope RUNTIME DESTINATION bin)
+
+# ########## OnStep X (mount) ##########
+add_executable(indi_onstepx
+    onstepx/main_mount.cpp
+    onstepx/OnStepXCore.cpp
+    onstepx/OnStepXMount.cpp)
+
+target_link_libraries(indi_onstepx AlignmentDriver indidriver)
+
+install(TARGETS indi_onstepx RUNTIME DESTINATION bin)
+
+# ########## OnStep X Controller (auxiliary, no mount) ##########
+add_executable(indi_onstepx_aux
+    onstepx/main_aux.cpp
+    onstepx/OnStepXCore.cpp
+    onstepx/OnStepXAux.cpp)
+
+target_link_libraries(indi_onstepx_aux indidriver)
+
+install(TARGETS indi_onstepx_aux RUNTIME DESTINATION bin)

@@ -383,6 +383,10 @@
             <driver name="Planewave">indi_planewave_telescope</driver>
             <version>0.1</version>
         </device>
+        <device label="OnStep X" manufacturer="OnStepX Project">
+            <driver name="OnStep X">indi_onstepx</driver>
+            <version>0.1</version>
+        </device>
     </devGroup>
     <devGroup group="Rotators">
         <device label="Rigelsys nFrame" manufacturer="Rigel Systems">
@@ -946,6 +950,10 @@
         <device label="Wake On Lan" manufacturer="Others">
             <driver name="Wake On Lan">indi_wake_on_lan</driver>
             <version>1.0</version>
+        </device>
+        <device label="OnStep X Controller" manufacturer="OnStepX Project">
+            <driver name="OnStep X Controller">indi_onstepx_aux</driver>
+            <version>0.1</version>
         </device>
     </devGroup>
     <devGroup group="Domes">
