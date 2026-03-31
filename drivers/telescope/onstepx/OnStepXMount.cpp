@@ -55,7 +55,32 @@ bool OnStepXMount::updateProperties()
 bool OnStepXMount::Handshake()
 {
     m_core.setFd(PortFD);
-    return false;
+
+    if (!m_core.probeController())
+    {
+        LOG_ERROR("Not an OnStepX controller. Aborting connection.");
+        return false;
+    }
+
+    if (!m_core.probeMount())
+    {
+        LOG_ERROR("No mount detected. For mount-less OnStepX use indi_onstepx_aux instead.");
+        return false;
+    }
+
+    const Capabilities &cap = m_core.caps();
+
+    uint32_t telescopeCaps =
+        TELESCOPE_CAN_GOTO | TELESCOPE_CAN_SYNC | TELESCOPE_CAN_PARK |
+        TELESCOPE_CAN_ABORT | TELESCOPE_HAS_TIME | TELESCOPE_HAS_LOCATION |
+        TELESCOPE_HAS_TRACK_MODE | TELESCOPE_CAN_CONTROL_TRACK;
+
+    if (cap.hasPierSide)
+        telescopeCaps |= TELESCOPE_HAS_PIER_SIDE;
+
+    SetTelescopeCapability(telescopeCaps, 4);
+
+    return true;
 }
 
 bool OnStepXMount::ReadScopeStatus()

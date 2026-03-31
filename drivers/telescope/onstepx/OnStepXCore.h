@@ -19,6 +19,7 @@
 #pragma once
 
 #include "OnStepXComm.h"
+#include "OnStepXCapabilities.h"
 
 namespace INDI { class DefaultDevice; }
 
@@ -36,8 +37,11 @@ class OnStepXCore
         bool probeController();   // Phase 1 — both binaries
         bool probeMount();        // Phase 2 — mount binary only
 
-        OnStepXComm &comm();
+        OnStepXComm          &comm();
+        const Capabilities   &caps() const;
 
     private:
-        OnStepXComm m_comm;
+        OnStepXComm          m_comm;
+        Capabilities         m_cap;
+        INDI::DefaultDevice *m_dev { nullptr };
 };

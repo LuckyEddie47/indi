@@ -157,6 +157,70 @@ void OnStepXComm::flushIO()
     doFlush();
 }
 
+// Send command; read exactly nbytes bytes (for binary protocols with no '#' terminator).
+bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, int timeout_ms)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_fd < 0)
+    {
+        OSX_COMM_LOGF_ERROR("sendCommandReadN: fd not set");
+        return false;
+    }
+
+    doFlush();
+
+    if (!writeCommand(cmd))
+    {
+        OSX_COMM_LOGF_ERROR("sendCommandReadN: write failed for cmd '%s'", cmd);
+        return false;
+    }
+
+    OSX_COMM_LOGF_DEBUG("CMD (readN=%d): %s", nbytes, cmd);
+
+    struct timespec start;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    int received = 0;
+    while (received < nbytes)
+    {
+        struct timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        long elapsed_ms = (now.tv_sec - start.tv_sec) * 1000L
+                        + (now.tv_nsec - start.tv_nsec) / 1000000L;
+        long remaining_ms = timeout_ms - elapsed_ms;
+
+        if (remaining_ms <= 0)
+        {
+            OSX_COMM_LOGF_ERROR("sendCommandReadN: timeout after %d/%d bytes for cmd '%s'",
+                                received, nbytes, cmd);
+            return false;
+        }
+
+        fd_set rfd;
+        FD_ZERO(&rfd);
+        FD_SET(m_fd, &rfd);
+        struct timeval tv { remaining_ms / 1000, (remaining_ms % 1000) * 1000L };
+
+        if (select(m_fd + 1, &rfd, nullptr, nullptr, &tv) <= 0)
+        {
+            OSX_COMM_LOGF_ERROR("sendCommandReadN: select timeout/error for cmd '%s'", cmd);
+            return false;
+        }
+
+        ssize_t n = read(m_fd, buf + received, nbytes - received);
+        if (n <= 0)
+        {
+            OSX_COMM_LOGF_ERROR("sendCommandReadN: read error for cmd '%s'", cmd);
+            return false;
+        }
+        received += static_cast<int>(n);
+    }
+
+    OSX_COMM_LOGF_DEBUG("REPLY (readN): %d bytes received", nbytes);
+    return true;
+}
+
 // ---------------------------------------------------------------------------
 // Private helpers — callers must already hold m_mutex
 // ---------------------------------------------------------------------------

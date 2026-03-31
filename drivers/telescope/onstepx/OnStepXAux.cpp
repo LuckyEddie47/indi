@@ -68,7 +68,13 @@ bool OnStepXAux::Handshake()
     else if (getActiveConnection() == m_tcpConnection)
         m_core.setFd(m_tcpConnection->getPortFD());
 
-    return false;
+    if (!m_core.probeController())
+    {
+        LOG_ERROR("Not an OnStepX controller. Aborting connection.");
+        return false;
+    }
+
+    return true;
 }
 
 bool OnStepXAux::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)

@@ -39,6 +39,9 @@ class OnStepXComm
         // Send command; read a single char reply with no '#' terminator.
         bool sendCommandSingleChar(const char *cmd, char &reply, int timeout_ms = 2000);
 
+        // Send command; read exactly nbytes bytes (no '#' terminator — for binary protocols).
+        bool sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, int timeout_ms = 2000);
+
         // Drain all pending input bytes from the fd.
         void flushIO();
 
