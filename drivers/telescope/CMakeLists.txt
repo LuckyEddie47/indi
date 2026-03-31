@@ -279,6 +279,7 @@ install(TARGETS indi_alpaca_telescope RUNTIME DESTINATION bin)
 add_executable(indi_onstepx
     onstepx/main_mount.cpp
     onstepx/OnStepXCore.cpp
+    onstepx/OnStepXComm.cpp
     onstepx/OnStepXMount.cpp)
 
 target_link_libraries(indi_onstepx AlignmentDriver indidriver)
@@ -289,6 +290,7 @@ install(TARGETS indi_onstepx RUNTIME DESTINATION bin)
 add_executable(indi_onstepx_aux
     onstepx/main_aux.cpp
     onstepx/OnStepXCore.cpp
+    onstepx/OnStepXComm.cpp
     onstepx/OnStepXAux.cpp)
 
 target_link_libraries(indi_onstepx_aux indidriver)

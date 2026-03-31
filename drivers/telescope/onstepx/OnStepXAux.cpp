@@ -21,6 +21,7 @@
 OnStepXAux::OnStepXAux()
 {
     setVersion(0, 1);
+    m_core.setDevice(this);
 }
 
 const char *OnStepXAux::getDefaultName()

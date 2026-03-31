@@ -18,17 +18,26 @@
 
 #pragma once
 
+#include "OnStepXComm.h"
+
+namespace INDI { class DefaultDevice; }
+
 class OnStepXCore
 {
     public:
         OnStepXCore() = default;
 
-        void setFd(int fd);
-        int  fd() const;
+        // Called once at startup by the owning INDI device.
+        void setDevice(INDI::DefaultDevice *dev);
 
-        bool probeController();
-        bool probeMount();
+        // Called from Handshake() after the connection plugin provides a valid fd.
+        void setFd(int fd);
+
+        bool probeController();   // Phase 1 — both binaries
+        bool probeMount();        // Phase 2 — mount binary only
+
+        OnStepXComm &comm();
 
     private:
-        int m_fd { -1 };
+        OnStepXComm m_comm;
 };

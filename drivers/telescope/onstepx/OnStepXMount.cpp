@@ -21,6 +21,7 @@
 OnStepXMount::OnStepXMount()
 {
     setVersion(0, 1);
+    m_core.setDevice(this);
     SetTelescopeCapability(
         TELESCOPE_CAN_GOTO       |
         TELESCOPE_CAN_SYNC       |

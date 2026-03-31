@@ -18,14 +18,14 @@
 
 #include "OnStepXCore.h"
 
-void OnStepXCore::setFd(int fd)
+void OnStepXCore::setDevice(INDI::DefaultDevice *dev)
 {
-    m_fd = fd;
+    m_comm.setDevice(dev);
 }
 
-int OnStepXCore::fd() const
+void OnStepXCore::setFd(int fd)
 {
-    return m_fd;
+    m_comm.setFd(fd);
 }
 
 bool OnStepXCore::probeController()
@@ -36,4 +36,9 @@ bool OnStepXCore::probeController()
 bool OnStepXCore::probeMount()
 {
     return false;
+}
+
+OnStepXComm &OnStepXCore::comm()
+{
+    return m_comm;
 }
