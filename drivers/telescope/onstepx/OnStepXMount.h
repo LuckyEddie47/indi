@@ -19,6 +19,7 @@
 #pragma once
 
 #include "OnStepXCore.h"
+#include "OnStepXLimits.h"
 #include "OnStepXSite.h"
 #include "OnStepXStatus.h"
 
@@ -58,6 +59,7 @@ class OnStepXMount : public INDI::Telescope,
         virtual bool MoveWE(INDI_DIR_WE dir, TelescopeMotionCommand command) override;
         virtual bool updateLocation(double latitude, double longitude, double elevation) override;
         virtual bool updateTime(ln_date *utc, double utc_offset) override;
+        virtual IPState ExecuteHomeAction(TelescopeHomeAction action) override;
 
     protected:
         // WeatherInterface — called by WI::checkWeatherUpdate() every polling cycle
@@ -81,9 +83,10 @@ class OnStepXMount : public INDI::Telescope,
 
         bool isEquatorial() const;
 
-        OnStepXCore  m_core;
-        OnStepXSite  m_site;
-        MountStatus  m_status;
+        OnStepXCore    m_core;
+        OnStepXLimits  m_limits;
+        OnStepXSite    m_site;
+        MountStatus    m_status;
 
         // Poll throttle — counts ReadScopeStatus calls
         int  m_pollCount { 0 };

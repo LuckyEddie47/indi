@@ -60,3 +60,18 @@ target_link_libraries(test_onstepxsite
 )
 
 add_test(test-onstepxsite test_onstepxsite)
+
+add_executable(test_onstepxlimits
+    test_onstepxlimits.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXLimits.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXComm.cpp"
+)
+
+target_link_libraries(test_onstepxlimits
+    indidriver
+    ${GTEST_LIBRARIES}
+    ${GMOCK_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+add_test(test-onstepxlimits test_onstepxlimits)

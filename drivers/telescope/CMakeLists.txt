@@ -280,6 +280,7 @@ add_executable(indi_onstepx
     onstepx/main_mount.cpp
     onstepx/OnStepXCore.cpp
     onstepx/OnStepXComm.cpp
+    onstepx/OnStepXLimits.cpp
     onstepx/OnStepXMount.cpp
     onstepx/OnStepXSite.cpp
     onstepx/OnStepXStatus.cpp)

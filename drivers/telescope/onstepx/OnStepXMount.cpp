@@ -44,17 +44,21 @@ OnStepXMount::OnStepXMount() : INDI::WeatherInterface(this)
 {
     setVersion(0, 1);
     m_core.setDevice(this);
+    m_limits.setDevice(this);
+    m_site.setDevice(this);
 
     // Provisional capability set — refined in Handshake() once probed.
     SetTelescopeCapability(
-        TELESCOPE_CAN_GOTO       |
-        TELESCOPE_CAN_SYNC       |
-        TELESCOPE_CAN_PARK       |
-        TELESCOPE_CAN_ABORT      |
-        TELESCOPE_HAS_TIME       |
-        TELESCOPE_HAS_LOCATION   |
-        TELESCOPE_HAS_TRACK_MODE |
-        TELESCOPE_CAN_CONTROL_TRACK,
+        TELESCOPE_CAN_GOTO        |
+        TELESCOPE_CAN_SYNC        |
+        TELESCOPE_CAN_PARK        |
+        TELESCOPE_CAN_ABORT       |
+        TELESCOPE_HAS_TIME        |
+        TELESCOPE_HAS_LOCATION    |
+        TELESCOPE_HAS_TRACK_MODE  |
+        TELESCOPE_CAN_CONTROL_TRACK |
+        TELESCOPE_CAN_HOME_FIND   |
+        TELESCOPE_CAN_HOME_SET,
         4);   // 4 slew rates
 }
 
@@ -83,6 +87,9 @@ bool OnStepXMount::initProperties()
     // Slew rate labels are set by the base class (inditelescope.cpp) when
     // SetTelescopeCapability(caps, 4) is called — no override needed here.
 
+    // Limits and home
+    m_limits.initProperties();
+
     // Weather interface — tab name, parameter group name
     WI::initProperties(WEATHER_TAB, WEATHER_TAB);
     addParameter("WEATHER_TEMPERATURE", "Temperature (C)",    -40,  80, 15);
@@ -110,7 +117,12 @@ bool OnStepXMount::updateProperties()
             InitAlignmentProperties(this);
 
         m_site.setComm(&m_core.comm());
-        m_site.setDevice(this);
+        m_limits.setComm(&m_core.comm());
+        m_limits.updateProperties(true, m_core.caps().hasHomeSense);
+    }
+    else
+    {
+        m_limits.updateProperties(false, false);
     }
 
     return true;
@@ -307,14 +319,28 @@ void OnStepXMount::updateTrackingState(const MountStatus &s)
 {
     if (s.parkState == MountStatus::ParkState::PARKED)
     {
+        if (TrackState == SCOPE_PARKING)
+            SetParked(true);     // Notify INDI park state machine — first transition only
         TrackState = SCOPE_PARKED;
         return;
     }
+
+    if (s.parkState == MountStatus::ParkState::FAILED)
+    {
+        if (TrackState == SCOPE_PARKING)
+        {
+            LOG_ERROR("Park failed");
+            TrackState = SCOPE_IDLE;
+        }
+        return;
+    }
+
     if (s.homing || s.parkState == MountStatus::ParkState::PARKING)
     {
         TrackState = SCOPE_SLEWING;
         return;
     }
+
     TrackState = s.tracking ? SCOPE_TRACKING : SCOPE_IDLE;
 }
 
@@ -664,6 +690,8 @@ bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *state
 {
     if (WI::processSwitch(dev, name, states, names, n))
         return true;
+    if (isConnected() && m_limits.handleSwitch(name, states, names, n))
+        return true;
     if (isConnected() && !isEquatorial())
         ProcessAlignmentSwitchProperties(this, name, states, names, n);
     return INDI::Telescope::ISNewSwitch(dev, name, states, names, n);
@@ -672,6 +700,8 @@ bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *state
 bool OnStepXMount::ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
 {
     if (WI::processNumber(dev, name, values, names, n))
+        return true;
+    if (isConnected() && m_limits.handleNumber(name, values, names, n))
         return true;
     if (isConnected() && !isEquatorial())
         ProcessAlignmentNumberProperties(this, name, values, names, n);
@@ -689,7 +719,24 @@ bool OnStepXMount::saveConfigItems(FILE *fp)
 {
     INDI::Telescope::saveConfigItems(fp);
     WI::saveConfigItems(fp);
+    m_limits.saveConfig(fp);
     if (!isEquatorial())
         SaveAlignmentConfigProperties(fp);
     return true;
+}
+
+// ---------------------------------------------------------------------------
+// ExecuteHomeAction
+// ---------------------------------------------------------------------------
+IPState OnStepXMount::ExecuteHomeAction(TelescopeHomeAction action)
+{
+    switch (action)
+    {
+        case HOME_FIND:
+            return m_limits.homeFind() ? IPS_BUSY : IPS_ALERT;
+        case HOME_SET:
+            return m_limits.homeSet() ? IPS_OK : IPS_ALERT;
+        default:
+            return IPS_ALERT;
+    }
 }
