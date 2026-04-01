@@ -281,6 +281,7 @@ add_executable(indi_onstepx
     onstepx/OnStepXCore.cpp
     onstepx/OnStepXComm.cpp
     onstepx/OnStepXMount.cpp
+    onstepx/OnStepXSite.cpp
     onstepx/OnStepXStatus.cpp)
 
 target_link_libraries(indi_onstepx AlignmentDriver indidriver)

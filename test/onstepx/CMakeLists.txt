@@ -44,3 +44,19 @@ target_link_libraries(test_onstepxstatus
 )
 
 add_test(test-onstepxstatus test_onstepxstatus)
+
+add_executable(test_onstepxsite
+    test_onstepxsite.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXSite.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXComm.cpp"
+)
+
+target_link_libraries(test_onstepxsite
+    indidriver
+    ${GTEST_LIBRARIES}
+    ${GMOCK_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+    nova
+)
+
+add_test(test-onstepxsite test_onstepxsite)

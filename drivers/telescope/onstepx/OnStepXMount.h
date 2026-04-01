@@ -19,13 +19,16 @@
 #pragma once
 
 #include "OnStepXCore.h"
+#include "OnStepXSite.h"
 #include "OnStepXStatus.h"
 
 #include <inditelescope.h>
 #include <alignment/AlignmentSubsystemForDrivers.h>
+#include <indiweatherinterface.h>
 
 class OnStepXMount : public INDI::Telescope,
-                     public INDI::AlignmentSubsystem::AlignmentSubsystemForDrivers
+                     public INDI::AlignmentSubsystem::AlignmentSubsystemForDrivers,
+                     public INDI::WeatherInterface
 {
     public:
         OnStepXMount();
@@ -56,6 +59,10 @@ class OnStepXMount : public INDI::Telescope,
         virtual bool updateLocation(double latitude, double longitude, double elevation) override;
         virtual bool updateTime(ln_date *utc, double utc_offset) override;
 
+    protected:
+        // WeatherInterface — called by WI::checkWeatherUpdate() every polling cycle
+        virtual IPState updateWeather() override;
+
     private:
         // Status refresh — sends :Gu# (preferred) or :GU# (fallback)
         bool refreshMountStatus();
@@ -66,15 +73,16 @@ class OnStepXMount : public INDI::Telescope,
         void updateSlewState(const MountStatus &s);
         void updateStatusText(const MountStatus &s);
 
-        // Stubs for throttled subsystems (implemented in later stages)
+        // Throttled subsystem updaters
         void updateFocuserStates()  {}
         void updateRotatorState()   {}
-        void updateWeatherState()   {}
+        void updateWeatherState();
         void updateFeatureStates()  {}
 
         bool isEquatorial() const;
 
         OnStepXCore  m_core;
+        OnStepXSite  m_site;
         MountStatus  m_status;
 
         // Poll throttle — counts ReadScopeStatus calls

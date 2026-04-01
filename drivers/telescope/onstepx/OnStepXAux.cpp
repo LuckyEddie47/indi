@@ -18,7 +18,12 @@
 
 #include "OnStepXAux.h"
 
-OnStepXAux::OnStepXAux()
+#include <cstdlib>
+#include <cstring>
+
+#define WEATHER_TAB "Weather"
+
+OnStepXAux::OnStepXAux() : INDI::WeatherInterface(this)
 {
     setVersion(0, 1);
     m_core.setDevice(this);
@@ -32,6 +37,12 @@ const char *OnStepXAux::getDefaultName()
 bool OnStepXAux::initProperties()
 {
     INDI::DefaultDevice::initProperties();
+
+    WI::initProperties(WEATHER_TAB, WEATHER_TAB);
+    addParameter("WEATHER_TEMPERATURE", "Temperature (C)",    -40,  80, 15);
+    addParameter("WEATHER_PRESSURE",    "Pressure (hPa)",     800, 1100, 15);
+    addParameter("WEATHER_HUMIDITY",    "Humidity (%)",         0,  100, 15);
+    addParameter("WEATHER_DEWPOINT",    "Dew Point (C)",      -40,   40, 15);
 
     m_serialConnection = new Connection::Serial(this);
     m_serialConnection->registerHandshake([&]()
@@ -58,6 +69,7 @@ bool OnStepXAux::initProperties()
 bool OnStepXAux::updateProperties()
 {
     INDI::DefaultDevice::updateProperties();
+    WI::updateProperties();
     return true;
 }
 
@@ -79,11 +91,15 @@ bool OnStepXAux::Handshake()
 
 bool OnStepXAux::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
 {
+    if (WI::processSwitch(dev, name, states, names, n))
+        return true;
     return INDI::DefaultDevice::ISNewSwitch(dev, name, states, names, n);
 }
 
 bool OnStepXAux::ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
 {
+    if (WI::processNumber(dev, name, values, names, n))
+        return true;
     return INDI::DefaultDevice::ISNewNumber(dev, name, values, names, n);
 }
 
@@ -94,7 +110,9 @@ bool OnStepXAux::ISNewText(const char *dev, const char *name, char *texts[], cha
 
 bool OnStepXAux::saveConfigItems(FILE *fp)
 {
-    return INDI::DefaultDevice::saveConfigItems(fp);
+    INDI::DefaultDevice::saveConfigItems(fp);
+    WI::saveConfigItems(fp);
+    return true;
 }
 
 void OnStepXAux::TimerHit()
@@ -102,5 +120,36 @@ void OnStepXAux::TimerHit()
     if (!isConnected())
         return;
 
+    WI::checkWeatherUpdate();
     SetTimer(getCurrentPollingPeriod());
+}
+
+// ---------------------------------------------------------------------------
+// updateWeather — WeatherInterface callback
+// ---------------------------------------------------------------------------
+IPState OnStepXAux::updateWeather()
+{
+    char reply[64];
+    bool any = false;
+
+    auto tryRead = [&](const char *cmd, const char *param) -> bool
+    {
+        if (!m_core.comm().sendCommand(cmd, reply))
+            return false;
+        if (reply[0] < '-' || (reply[0] > '9' && reply[0] != '.'))
+            return false;
+        char *end;
+        double val = std::strtod(reply, &end);
+        if (end == reply)
+            return false;
+        setParameterValue(param, val);
+        return true;
+    };
+
+    if (tryRead(":GX9A#", "WEATHER_TEMPERATURE")) any = true;
+    if (tryRead(":GX9B#", "WEATHER_PRESSURE"))    any = true;
+    if (tryRead(":GX9C#", "WEATHER_HUMIDITY"))     any = true;
+    if (tryRead(":GX9E#", "WEATHER_DEWPOINT"))     any = true;
+
+    return any ? IPS_OK : IPS_IDLE;
 }

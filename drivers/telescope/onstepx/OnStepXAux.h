@@ -20,10 +20,12 @@
 
 #include "OnStepXCore.h"
 #include <defaultdevice.h>
+#include <indiweatherinterface.h>
 #include "connectionplugins/connectionserial.h"
 #include "connectionplugins/connectiontcp.h"
 
-class OnStepXAux : public INDI::DefaultDevice
+class OnStepXAux : public INDI::DefaultDevice,
+                   public INDI::WeatherInterface
 {
     public:
         OnStepXAux();
@@ -39,6 +41,7 @@ class OnStepXAux : public INDI::DefaultDevice
     protected:
         virtual bool Handshake();
         virtual void TimerHit() override;
+        virtual IPState updateWeather() override;
 
     private:
         OnStepXCore        m_core;

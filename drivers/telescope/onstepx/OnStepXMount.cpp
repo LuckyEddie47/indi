@@ -26,22 +26,21 @@
 #include <cstdio>
 #include <cstring>
 
+#define WEATHER_TAB "Weather"
+
 // Bring alignment types into scope without polluting the global namespace.
 using INDI::AlignmentSubsystem::AlignmentDatabaseEntry;
 using INDI::AlignmentSubsystem::TelescopeDirectionVector;
 
 // ---------------------------------------------------------------------------
-// Track mode indices — must match addTrackMode() call order in initProperties()
+// Track mode indices — must match AddTrackMode() call order in initProperties()
 // ---------------------------------------------------------------------------
-static constexpr int TRACK_SIDEREAL = 0;
-static constexpr int TRACK_LUNAR    = 1;
-static constexpr int TRACK_SOLAR    = 2;
-static constexpr int TRACK_KING     = 3;
+enum { TRACK_SIDEREAL = 0, TRACK_LUNAR = 1, TRACK_SOLAR = 2, TRACK_KING = 3 };
 
 // ---------------------------------------------------------------------------
 // Constructor
 // ---------------------------------------------------------------------------
-OnStepXMount::OnStepXMount()
+OnStepXMount::OnStepXMount() : INDI::WeatherInterface(this)
 {
     setVersion(0, 1);
     m_core.setDevice(this);
@@ -84,6 +83,13 @@ bool OnStepXMount::initProperties()
     // Slew rate labels are set by the base class (inditelescope.cpp) when
     // SetTelescopeCapability(caps, 4) is called — no override needed here.
 
+    // Weather interface — tab name, parameter group name
+    WI::initProperties(WEATHER_TAB, WEATHER_TAB);
+    addParameter("WEATHER_TEMPERATURE", "Temperature (C)",    -40,  80, 15);
+    addParameter("WEATHER_PRESSURE",    "Pressure (hPa)",     800, 1100, 15);
+    addParameter("WEATHER_HUMIDITY",    "Humidity (%)",         0,  100, 15);
+    addParameter("WEATHER_DEWPOINT",    "Dew Point (C)",      -40,   40, 15);
+
     // Alignment subsystem — initialised after Handshake for AltAz only,
     // but the AlignmentSubsystemForDrivers members are harmless to construct.
 
@@ -96,11 +102,15 @@ bool OnStepXMount::initProperties()
 bool OnStepXMount::updateProperties()
 {
     INDI::Telescope::updateProperties();
+    WI::updateProperties();
 
     if (isConnected())
     {
         if (!isEquatorial())
             InitAlignmentProperties(this);
+
+        m_site.setComm(&m_core.comm());
+        m_site.setDevice(this);
     }
 
     return true;
@@ -593,21 +603,58 @@ bool OnStepXMount::MoveWE(INDI_DIR_WE dir, TelescopeMotionCommand command)
 }
 
 // ---------------------------------------------------------------------------
-// Location / Time — stubs; implemented fully in Stage 5
+// Location
 // ---------------------------------------------------------------------------
 bool OnStepXMount::updateLocation(double latitude, double longitude, double elevation)
 {
-    INDI_UNUSED(latitude);
-    INDI_UNUSED(longitude);
-    INDI_UNUSED(elevation);
-    return true;   // return true so INDI doesn't report a failure at startup
+    return m_site.writeLocation(latitude, longitude, elevation);
 }
 
+// ---------------------------------------------------------------------------
+// Time
+// ---------------------------------------------------------------------------
 bool OnStepXMount::updateTime(ln_date *utc, double utc_offset)
 {
-    INDI_UNUSED(utc);
-    INDI_UNUSED(utc_offset);
-    return true;
+    return m_site.writeTime(utc, utc_offset);
+}
+
+// ---------------------------------------------------------------------------
+// updateWeatherState — called from ReadScopeStatus throttle (every ~30 polls)
+// ---------------------------------------------------------------------------
+void OnStepXMount::updateWeatherState()
+{
+    WI::checkWeatherUpdate();
+}
+
+// ---------------------------------------------------------------------------
+// updateWeather — WeatherInterface callback; queries sensors from firmware
+// ---------------------------------------------------------------------------
+IPState OnStepXMount::updateWeather()
+{
+    char reply[64];
+    bool any = false;
+
+    auto tryRead = [&](const char *cmd, const char *param) -> bool
+    {
+        if (!m_core.comm().sendCommand(cmd, reply))
+            return false;
+        // OnStepX returns "CE_0" or similar on missing sensor
+        if (reply[0] < '-' || (reply[0] > '9' && reply[0] != '.'))
+            return false;
+        char *end;
+        double val = std::strtod(reply, &end);
+        if (end == reply)
+            return false;
+        setParameterValue(param, val);
+        return true;
+    };
+
+    if (tryRead(":GX9A#", "WEATHER_TEMPERATURE")) any = true;
+    if (tryRead(":GX9B#", "WEATHER_PRESSURE"))    any = true;
+    if (tryRead(":GX9C#", "WEATHER_HUMIDITY"))     any = true;
+    if (tryRead(":GX9E#", "WEATHER_DEWPOINT"))     any = true;
+
+    return any ? IPS_OK : IPS_IDLE;
 }
 
 // ---------------------------------------------------------------------------
@@ -615,6 +662,8 @@ bool OnStepXMount::updateTime(ln_date *utc, double utc_offset)
 // ---------------------------------------------------------------------------
 bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
 {
+    if (WI::processSwitch(dev, name, states, names, n))
+        return true;
     if (isConnected() && !isEquatorial())
         ProcessAlignmentSwitchProperties(this, name, states, names, n);
     return INDI::Telescope::ISNewSwitch(dev, name, states, names, n);
@@ -622,6 +671,8 @@ bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *state
 
 bool OnStepXMount::ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
 {
+    if (WI::processNumber(dev, name, values, names, n))
+        return true;
     if (isConnected() && !isEquatorial())
         ProcessAlignmentNumberProperties(this, name, values, names, n);
     return INDI::Telescope::ISNewNumber(dev, name, values, names, n);
@@ -637,6 +688,7 @@ bool OnStepXMount::ISNewText(const char *dev, const char *name, char *texts[], c
 bool OnStepXMount::saveConfigItems(FILE *fp)
 {
     INDI::Telescope::saveConfigItems(fp);
+    WI::saveConfigItems(fp);
     if (!isEquatorial())
         SaveAlignmentConfigProperties(fp);
     return true;
