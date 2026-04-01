@@ -1,5 +1,5 @@
 /*
-    OnStep X INDI Driver
+    OnStep X INDI Driver — Mount device class
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -19,9 +19,13 @@
 #pragma once
 
 #include "OnStepXCore.h"
-#include <libindi/inditelescope.h>
+#include "OnStepXStatus.h"
 
-class OnStepXMount : public INDI::Telescope
+#include <inditelescope.h>
+#include <alignment/AlignmentSubsystemForDrivers.h>
+
+class OnStepXMount : public INDI::Telescope,
+                     public INDI::AlignmentSubsystem::AlignmentSubsystemForDrivers
 {
     public:
         OnStepXMount();
@@ -46,11 +50,33 @@ class OnStepXMount : public INDI::Telescope
         virtual bool SetDefaultPark() override;
         virtual bool SetTrackEnabled(bool enabled) override;
         virtual bool SetTrackMode(uint8_t mode) override;
+        virtual bool SetSlewRate(int index) override;
         virtual bool MoveNS(INDI_DIR_NS dir, TelescopeMotionCommand command) override;
         virtual bool MoveWE(INDI_DIR_WE dir, TelescopeMotionCommand command) override;
         virtual bool updateLocation(double latitude, double longitude, double elevation) override;
         virtual bool updateTime(ln_date *utc, double utc_offset) override;
 
     private:
-        OnStepXCore m_core;
+        // Status refresh — sends :Gu# (preferred) or :GU# (fallback)
+        bool refreshMountStatus();
+
+        // ReadScopeStatus delegates
+        bool updateCoordinates();
+        void updateTrackingState(const MountStatus &s);
+        void updateSlewState(const MountStatus &s);
+        void updateStatusText(const MountStatus &s);
+
+        // Stubs for throttled subsystems (implemented in later stages)
+        void updateFocuserStates()  {}
+        void updateRotatorState()   {}
+        void updateWeatherState()   {}
+        void updateFeatureStates()  {}
+
+        bool isEquatorial() const;
+
+        OnStepXCore  m_core;
+        MountStatus  m_status;
+
+        // Poll throttle — counts ReadScopeStatus calls
+        int  m_pollCount { 0 };
 };
