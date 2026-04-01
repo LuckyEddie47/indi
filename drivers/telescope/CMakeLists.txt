@@ -280,7 +280,8 @@ add_executable(indi_onstepx
     onstepx/main_mount.cpp
     onstepx/OnStepXCore.cpp
     onstepx/OnStepXComm.cpp
-    onstepx/OnStepXMount.cpp)
+    onstepx/OnStepXMount.cpp
+    onstepx/OnStepXStatus.cpp)
 
 target_link_libraries(indi_onstepx AlignmentDriver indidriver)
 
