@@ -24,9 +24,10 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
-#define WEATHER_TAB "Weather"
+#define WEATHER_TAB "Weather"   // tab name for WeatherInterface properties
 
 // Bring alignment types into scope without polluting the global namespace.
 using INDI::AlignmentSubsystem::AlignmentDatabaseEntry;
@@ -40,12 +41,14 @@ enum { TRACK_SIDEREAL = 0, TRACK_LUNAR = 1, TRACK_SOLAR = 2, TRACK_KING = 3 };
 // ---------------------------------------------------------------------------
 // Constructor
 // ---------------------------------------------------------------------------
-OnStepXMount::OnStepXMount() : INDI::WeatherInterface(this)
+OnStepXMount::OnStepXMount() : INDI::GuiderInterface(this),
+                               INDI::WeatherInterface(this)
 {
     setVersion(0, 1);
     m_core.setDevice(this);
     m_limits.setDevice(this);
     m_site.setDevice(this);
+    // m_weather.setComm() called in updateProperties after connect
 
     // Provisional capability set — refined in Handshake() once probed.
     SetTelescopeCapability(
@@ -90,12 +93,20 @@ bool OnStepXMount::initProperties()
     // Limits and home
     m_limits.initProperties();
 
+    // Guider interface — standard TELESCOPE_TIMED_GUIDE_NS/WE properties
+    GI::initProperties(MOTION_TAB);
+
+    // Guide rate (read-only display from :GX90#)
+    m_guideRateNP[0].fill("GUIDE_RATE", "Rate (x sidereal)", "%.2f", 0, 1, 0.01, 0.5);
+    m_guideRateNP.fill(getDeviceName(), "OSX_GUIDE_RATE", "Guide Rate", MOTION_TAB, IP_RO, 60, IPS_IDLE);
+
     // Weather interface — tab name, parameter group name
     WI::initProperties(WEATHER_TAB, WEATHER_TAB);
     addParameter("WEATHER_TEMPERATURE", "Temperature (C)",    -40,  80, 15);
     addParameter("WEATHER_PRESSURE",    "Pressure (hPa)",     800, 1100, 15);
     addParameter("WEATHER_HUMIDITY",    "Humidity (%)",         0,  100, 15);
     addParameter("WEATHER_DEWPOINT",    "Dew Point (C)",      -40,   40, 15);
+    addParameter("OSX_MCU_TEMP",        "MCU Temp (C)",       -20,   80, 15);
 
     // Alignment subsystem — initialised after Handshake for AltAz only,
     // but the AlignmentSubsystemForDrivers members are harmless to construct.
@@ -109,6 +120,7 @@ bool OnStepXMount::initProperties()
 bool OnStepXMount::updateProperties()
 {
     INDI::Telescope::updateProperties();
+    GI::updateProperties();
     WI::updateProperties();
 
     if (isConnected())
@@ -118,11 +130,15 @@ bool OnStepXMount::updateProperties()
 
         m_site.setComm(&m_core.comm());
         m_limits.setComm(&m_core.comm());
+        m_weather.setComm(&m_core.comm());
         m_limits.updateProperties(true, m_core.caps().hasHomeSense);
+        defineProperty(m_guideRateNP);
+        readGuideRate();
     }
     else
     {
         m_limits.updateProperties(false, false);
+        deleteProperty(m_guideRateNP);
     }
 
     return true;
@@ -149,10 +165,12 @@ bool OnStepXMount::Handshake()
 
     const Capabilities &cap = m_core.caps();
 
+    // Home find/set are always available on OnStepX; pier side is probed.
     uint32_t telescopeCaps =
-        TELESCOPE_CAN_GOTO | TELESCOPE_CAN_SYNC | TELESCOPE_CAN_PARK |
-        TELESCOPE_CAN_ABORT | TELESCOPE_HAS_TIME | TELESCOPE_HAS_LOCATION |
-        TELESCOPE_HAS_TRACK_MODE | TELESCOPE_CAN_CONTROL_TRACK;
+        TELESCOPE_CAN_GOTO       | TELESCOPE_CAN_SYNC       | TELESCOPE_CAN_PARK  |
+        TELESCOPE_CAN_ABORT      | TELESCOPE_HAS_TIME       | TELESCOPE_HAS_LOCATION |
+        TELESCOPE_HAS_TRACK_MODE | TELESCOPE_CAN_CONTROL_TRACK |
+        TELESCOPE_CAN_HOME_FIND  | TELESCOPE_CAN_HOME_SET;
 
     if (cap.hasPierSide)
         telescopeCaps |= TELESCOPE_HAS_PIER_SIDE;
@@ -183,6 +201,8 @@ bool OnStepXMount::ReadScopeStatus()
         else if (m_status.pierSide == MountStatus::PierSide::WEST)
             setPierSide(PIER_WEST);
     }
+
+    checkGuideComplete();
 
     m_pollCount++;
     if (m_pollCount % 5  == 0) updateFocuserStates();
@@ -381,31 +401,34 @@ bool OnStepXMount::Goto(double ra, double dec)
     fs_sexa(decStr, dec, 3, 360000);   // Dec: 3-digit degree field (±90)
 
     char cmd[64];
+    char reply[64];
 
+    // :Sr# and :Sd# reply '1' on acceptance, '0' on format error.
+    // Must use sendCommand (not blind) so firmware rejection is detected.
     snprintf(cmd, sizeof(cmd), ":Sr%s#", raStr);
-    if (!m_core.comm().sendCommandBlind(cmd))
+    if (!m_core.comm().sendCommand(cmd, reply) || reply[0] != '1')
     {
-        LOG_ERROR("Goto: failed to set RA");
+        LOGF_ERROR("Goto: firmware rejected RA '%s'", raStr);
         return false;
     }
 
     snprintf(cmd, sizeof(cmd), ":Sd%s#", decStr);
-    if (!m_core.comm().sendCommandBlind(cmd))
+    if (!m_core.comm().sendCommand(cmd, reply) || reply[0] != '1')
     {
-        LOG_ERROR("Goto: failed to set Dec");
+        LOGF_ERROR("Goto: firmware rejected Dec '%s'", decStr);
         return false;
     }
 
-    char reply[256];
-    if (!m_core.comm().sendCommand(":MS#", reply))
+    char msReply[256];
+    if (!m_core.comm().sendCommand(":MS#", msReply))
     {
         LOG_ERROR("Goto: :MS# failed");
         return false;
     }
 
-    if (reply[0] != '0')
+    if (msReply[0] != '0')
     {
-        LOGF_ERROR("Goto rejected by firmware (reply: '%s')", reply);
+        LOGF_ERROR("Goto rejected by firmware (reply: '%s')", msReply);
         return false;
     }
 
@@ -424,22 +447,22 @@ bool OnStepXMount::Sync(double ra, double dec)
     fs_sexa(decStr, dec, 3, 360000);
 
     char cmd[64];
+    char reply[256];
 
     snprintf(cmd, sizeof(cmd), ":Sr%s#", raStr);
-    if (!m_core.comm().sendCommandBlind(cmd))
+    if (!m_core.comm().sendCommand(cmd, reply) || reply[0] != '1')
     {
-        LOG_ERROR("Sync: failed to set RA");
+        LOGF_ERROR("Sync: firmware rejected RA '%s'", raStr);
         return false;
     }
 
     snprintf(cmd, sizeof(cmd), ":Sd%s#", decStr);
-    if (!m_core.comm().sendCommandBlind(cmd))
+    if (!m_core.comm().sendCommand(cmd, reply) || reply[0] != '1')
     {
-        LOG_ERROR("Sync: failed to set Dec");
+        LOGF_ERROR("Sync: firmware rejected Dec '%s'", decStr);
         return false;
     }
 
-    char reply[256];
     if (!m_core.comm().sendCommand(":CS#", reply))
     {
         LOG_ERROR("Sync: :CS# failed");
@@ -481,7 +504,10 @@ bool OnStepXMount::Abort()
         LOG_ERROR("Abort failed");
         return false;
     }
-    TrackState = SCOPE_TRACKING;
+    // Do not force a specific TrackState here — the next ReadScopeStatus
+    // poll will set it correctly from the firmware status.  Forcing
+    // SCOPE_TRACKING was wrong when the mount was idle (not tracking)
+    // before the abort.
     return true;
 }
 
@@ -657,30 +683,101 @@ void OnStepXMount::updateWeatherState()
 // ---------------------------------------------------------------------------
 IPState OnStepXMount::updateWeather()
 {
-    char reply[64];
-    bool any = false;
+    SensorData data = m_weather.readSensors(m_core.caps().hasMcuTemp);
+    if (data.temp.ok)      setParameterValue("WEATHER_TEMPERATURE", data.temp.value);
+    if (data.pressure.ok)  setParameterValue("WEATHER_PRESSURE",    data.pressure.value);
+    if (data.humidity.ok)  setParameterValue("WEATHER_HUMIDITY",    data.humidity.value);
+    if (data.dewpoint.ok)  setParameterValue("WEATHER_DEWPOINT",    data.dewpoint.value);
+    if (data.mcuTemp.ok)   setParameterValue("OSX_MCU_TEMP",        data.mcuTemp.value);
+    return data.anyOk() ? IPS_OK : IPS_IDLE;
+}
 
-    auto tryRead = [&](const char *cmd, const char *param) -> bool
+// ---------------------------------------------------------------------------
+// Guide pulse methods — GuiderInterface overrides
+//
+// OnStepX commands:
+//   :MGn{ms}#  :MGs{ms}#  :MGe{ms}#  :MGw{ms}#  — no reply (blind send)
+//
+// We return IPS_BUSY immediately and fire GuideComplete() from
+// checkGuideComplete() once the pulse duration has elapsed.
+// ---------------------------------------------------------------------------
+IPState OnStepXMount::GuideNorth(uint32_t ms)
+{
+    char cmd[32];
+    snprintf(cmd, sizeof(cmd), ":MGn%u#", ms);
+    m_core.comm().sendCommandBlind(cmd);
+    m_guideEndNS = Clock::now() + std::chrono::milliseconds(ms);
+    m_guidingNS  = true;
+    return IPS_BUSY;
+}
+
+IPState OnStepXMount::GuideSouth(uint32_t ms)
+{
+    char cmd[32];
+    snprintf(cmd, sizeof(cmd), ":MGs%u#", ms);
+    m_core.comm().sendCommandBlind(cmd);
+    m_guideEndNS = Clock::now() + std::chrono::milliseconds(ms);
+    m_guidingNS  = true;
+    return IPS_BUSY;
+}
+
+IPState OnStepXMount::GuideEast(uint32_t ms)
+{
+    char cmd[32];
+    snprintf(cmd, sizeof(cmd), ":MGe%u#", ms);
+    m_core.comm().sendCommandBlind(cmd);
+    m_guideEndWE = Clock::now() + std::chrono::milliseconds(ms);
+    m_guidingWE  = true;
+    return IPS_BUSY;
+}
+
+IPState OnStepXMount::GuideWest(uint32_t ms)
+{
+    char cmd[32];
+    snprintf(cmd, sizeof(cmd), ":MGw%u#", ms);
+    m_core.comm().sendCommandBlind(cmd);
+    m_guideEndWE = Clock::now() + std::chrono::milliseconds(ms);
+    m_guidingWE  = true;
+    return IPS_BUSY;
+}
+
+// ---------------------------------------------------------------------------
+// checkGuideComplete — called every ReadScopeStatus poll
+// ---------------------------------------------------------------------------
+void OnStepXMount::checkGuideComplete()
+{
+    auto now = Clock::now();
+
+    if (m_guidingNS && now >= m_guideEndNS)
     {
-        if (!m_core.comm().sendCommand(cmd, reply))
-            return false;
-        // OnStepX returns "CE_0" or similar on missing sensor
-        if (reply[0] < '-' || (reply[0] > '9' && reply[0] != '.'))
-            return false;
-        char *end;
-        double val = std::strtod(reply, &end);
-        if (end == reply)
-            return false;
-        setParameterValue(param, val);
-        return true;
-    };
+        m_guidingNS = false;
+        GuideComplete(INDI_EQ_AXIS::AXIS_DE);
+    }
 
-    if (tryRead(":GX9A#", "WEATHER_TEMPERATURE")) any = true;
-    if (tryRead(":GX9B#", "WEATHER_PRESSURE"))    any = true;
-    if (tryRead(":GX9C#", "WEATHER_HUMIDITY"))     any = true;
-    if (tryRead(":GX9E#", "WEATHER_DEWPOINT"))     any = true;
+    if (m_guidingWE && now >= m_guideEndWE)
+    {
+        m_guidingWE = false;
+        GuideComplete(INDI_EQ_AXIS::AXIS_RA);
+    }
+}
 
-    return any ? IPS_OK : IPS_IDLE;
+// ---------------------------------------------------------------------------
+// readGuideRate — query :GX90# and update OSX_GUIDE_RATE property
+// ---------------------------------------------------------------------------
+void OnStepXMount::readGuideRate()
+{
+    char reply[32];
+    if (!m_core.comm().sendCommand(":GX90#", reply))
+        return;
+
+    char *end;
+    double rate = std::strtod(reply, &end);
+    if (end == reply || rate <= 0.0)
+        return;
+
+    m_guideRateNP[0].setValue(rate);
+    m_guideRateNP.setState(IPS_OK);
+    m_guideRateNP.apply();
 }
 
 // ---------------------------------------------------------------------------
@@ -699,6 +796,8 @@ bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *state
 
 bool OnStepXMount::ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
 {
+    if (GI::processNumber(dev, name, values, names, n))
+        return true;
     if (WI::processNumber(dev, name, values, names, n))
         return true;
     if (isConnected() && m_limits.handleNumber(name, values, names, n))

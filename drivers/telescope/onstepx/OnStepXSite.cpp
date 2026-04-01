@@ -139,11 +139,26 @@ bool OnStepXSite::writeTime(const ln_date *utc, double utc_offset)
 {
     char reply[64];
 
-    // 1. Set UTC offset (timezone).  Format: ":SG±HH#"
-    //    OnStepX convention: positive = East of UTC (same as INDI utc_offset).
-    int tzH = static_cast<int>(std::round(utc_offset));
+    // 1. Set UTC offset (timezone).
+    //    OnStepX accepts ":SG[sHH]#" or ":SG[sHH:MM]#" where MM is 00, 30, or 45.
+    //    Snap the fractional-hour part to the nearest valid minute value.
+    int    tzH       = static_cast<int>(utc_offset);          // integer hours (signed)
+    double fracHour  = utc_offset - tzH;                       // e.g. 0.5 for +5:30
+    // Handle negative offsets: e.g. -5.5 → tzH=-5, fracHour=-0.5 → abs=0.5
+    if (fracHour < 0) fracHour = -fracHour;
+    int fracMin = static_cast<int>(std::round(fracHour * 60.0)); // 0, 30, or 45 typical
+    // Snap to nearest allowed value (0, 30, 45) per firmware spec
+    if      (fracMin < 15) fracMin = 0;
+    else if (fracMin < 37) fracMin = 30;
+    else if (fracMin < 53) fracMin = 45;
+    else                 { fracMin = 0; tzH += (utc_offset >= 0 ? 1 : -1); }
+
     char tzCmd[32];
-    snprintf(tzCmd, sizeof(tzCmd), ":SG%+03d#", tzH);
+    if (fracMin == 0)
+        snprintf(tzCmd, sizeof(tzCmd), ":SG%+03d#", tzH);
+    else
+        snprintf(tzCmd, sizeof(tzCmd), ":SG%+03d:%02d#", tzH, fracMin);
+
     if (!m_comm->sendCommand(tzCmd, reply) || reply[0] != '1')
     {
         if (m_dev)
@@ -154,6 +169,7 @@ bool OnStepXSite::writeTime(const ln_date *utc, double utc_offset)
     }
 
     // 2. Compute local time and date by applying the UTC offset.
+    //    Use the exact (unsnapped) utc_offset for the local time calculation.
     ln_zonedate lzd;
     ln_date mutable_utc = *utc;
     ln_date_to_zonedate(&mutable_utc, &lzd, static_cast<int>(utc_offset * 3600.0));
@@ -193,18 +209,3 @@ bool OnStepXSite::writeTime(const ln_date *utc, double utc_offset)
     return true;
 }
 
-// ---------------------------------------------------------------------------
-// parseDouble (static)
-// ---------------------------------------------------------------------------
-bool OnStepXSite::parseDouble(const char *reply, double &out)
-{
-    if (!reply || reply[0] == '\0')
-        return false;
-    // Reject obvious error codes (e.g. "CE_0", "ERR")
-    if ((reply[0] < '0' || reply[0] > '9') &&
-        reply[0] != '-' && reply[0] != '+' && reply[0] != '.')
-        return false;
-    char *end;
-    out = std::strtod(reply, &end);
-    return (end != reply);
-}

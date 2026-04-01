@@ -75,3 +75,18 @@ target_link_libraries(test_onstepxlimits
 )
 
 add_test(test-onstepxlimits test_onstepxlimits)
+
+add_executable(test_onstepxguide
+    test_onstepxguide.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXComm.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXWeather.cpp"
+)
+
+target_link_libraries(test_onstepxguide
+    indidriver
+    ${GTEST_LIBRARIES}
+    ${GMOCK_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+add_test(test-onstepxguide test_onstepxguide)

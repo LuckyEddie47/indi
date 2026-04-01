@@ -18,10 +18,7 @@
 
 #include "OnStepXAux.h"
 
-#include <cstdlib>
-#include <cstring>
-
-#define WEATHER_TAB "Weather"
+#define WEATHER_TAB "Weather"   // tab name for WeatherInterface properties
 
 OnStepXAux::OnStepXAux() : INDI::WeatherInterface(this)
 {
@@ -43,6 +40,7 @@ bool OnStepXAux::initProperties()
     addParameter("WEATHER_PRESSURE",    "Pressure (hPa)",     800, 1100, 15);
     addParameter("WEATHER_HUMIDITY",    "Humidity (%)",         0,  100, 15);
     addParameter("WEATHER_DEWPOINT",    "Dew Point (C)",      -40,   40, 15);
+    addParameter("OSX_MCU_TEMP",        "MCU Temp (C)",       -20,   80, 15);
 
     m_serialConnection = new Connection::Serial(this);
     m_serialConnection->registerHandshake([&]()
@@ -86,6 +84,7 @@ bool OnStepXAux::Handshake()
         return false;
     }
 
+    m_weather.setComm(&m_core.comm());
     return true;
 }
 
@@ -129,27 +128,11 @@ void OnStepXAux::TimerHit()
 // ---------------------------------------------------------------------------
 IPState OnStepXAux::updateWeather()
 {
-    char reply[64];
-    bool any = false;
-
-    auto tryRead = [&](const char *cmd, const char *param) -> bool
-    {
-        if (!m_core.comm().sendCommand(cmd, reply))
-            return false;
-        if (reply[0] < '-' || (reply[0] > '9' && reply[0] != '.'))
-            return false;
-        char *end;
-        double val = std::strtod(reply, &end);
-        if (end == reply)
-            return false;
-        setParameterValue(param, val);
-        return true;
-    };
-
-    if (tryRead(":GX9A#", "WEATHER_TEMPERATURE")) any = true;
-    if (tryRead(":GX9B#", "WEATHER_PRESSURE"))    any = true;
-    if (tryRead(":GX9C#", "WEATHER_HUMIDITY"))     any = true;
-    if (tryRead(":GX9E#", "WEATHER_DEWPOINT"))     any = true;
-
-    return any ? IPS_OK : IPS_IDLE;
+    SensorData data = m_weather.readSensors(m_core.caps().hasMcuTemp);
+    if (data.temp.ok)      setParameterValue("WEATHER_TEMPERATURE", data.temp.value);
+    if (data.pressure.ok)  setParameterValue("WEATHER_PRESSURE",    data.pressure.value);
+    if (data.humidity.ok)  setParameterValue("WEATHER_HUMIDITY",    data.humidity.value);
+    if (data.dewpoint.ok)  setParameterValue("WEATHER_DEWPOINT",    data.dewpoint.value);
+    if (data.mcuTemp.ok)   setParameterValue("OSX_MCU_TEMP",        data.mcuTemp.value);
+    return data.anyOk() ? IPS_OK : IPS_IDLE;
 }

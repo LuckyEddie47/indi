@@ -19,6 +19,7 @@
 #pragma once
 
 #include "OnStepXCore.h"
+#include "OnStepXWeather.h"
 #include <defaultdevice.h>
 #include <indiweatherinterface.h>
 #include "connectionplugins/connectionserial.h"
@@ -45,6 +46,7 @@ class OnStepXAux : public INDI::DefaultDevice,
 
     private:
         OnStepXCore        m_core;
+        OnStepXWeather     m_weather;
         Connection::Serial *m_serialConnection { nullptr };
         Connection::TCP    *m_tcpConnection    { nullptr };
 };

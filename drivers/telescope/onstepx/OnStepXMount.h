@@ -22,13 +22,18 @@
 #include "OnStepXLimits.h"
 #include "OnStepXSite.h"
 #include "OnStepXStatus.h"
+#include "OnStepXWeather.h"
 
 #include <inditelescope.h>
 #include <alignment/AlignmentSubsystemForDrivers.h>
+#include <indiguiderinterface.h>
 #include <indiweatherinterface.h>
+
+#include <chrono>
 
 class OnStepXMount : public INDI::Telescope,
                      public INDI::AlignmentSubsystem::AlignmentSubsystemForDrivers,
+                     public INDI::GuiderInterface,
                      public INDI::WeatherInterface
 {
     public:
@@ -61,6 +66,12 @@ class OnStepXMount : public INDI::Telescope,
         virtual bool updateTime(ln_date *utc, double utc_offset) override;
         virtual IPState ExecuteHomeAction(TelescopeHomeAction action) override;
 
+        // GuiderInterface
+        virtual IPState GuideNorth(uint32_t ms) override;
+        virtual IPState GuideSouth(uint32_t ms) override;
+        virtual IPState GuideEast(uint32_t ms) override;
+        virtual IPState GuideWest(uint32_t ms) override;
+
     protected:
         // WeatherInterface — called by WI::checkWeatherUpdate() every polling cycle
         virtual IPState updateWeather() override;
@@ -80,14 +91,28 @@ class OnStepXMount : public INDI::Telescope,
         void updateRotatorState()   {}
         void updateWeatherState();
         void updateFeatureStates()  {}
+        void readGuideRate();
+        void checkGuideComplete();
 
         bool isEquatorial() const;
 
         OnStepXCore    m_core;
         OnStepXLimits  m_limits;
         OnStepXSite    m_site;
+        OnStepXWeather m_weather;
         MountStatus    m_status;
 
         // Poll throttle — counts ReadScopeStatus calls
         int  m_pollCount { 0 };
+
+        // Guide pulse completion tracking — steady_clock end-times
+        using Clock     = std::chrono::steady_clock;
+        using TimePoint = Clock::time_point;
+        bool      m_guidingNS { false };
+        bool      m_guidingWE { false };
+        TimePoint m_guideEndNS;
+        TimePoint m_guideEndWE;
+
+        // Guide rate (read from :GX90#, displayed read-only)
+        INDI::PropertyNumber m_guideRateNP {1};
 };

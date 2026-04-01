@@ -283,7 +283,8 @@ add_executable(indi_onstepx
     onstepx/OnStepXLimits.cpp
     onstepx/OnStepXMount.cpp
     onstepx/OnStepXSite.cpp
-    onstepx/OnStepXStatus.cpp)
+    onstepx/OnStepXStatus.cpp
+    onstepx/OnStepXWeather.cpp)
 
 target_link_libraries(indi_onstepx AlignmentDriver indidriver)
 
@@ -294,7 +295,8 @@ add_executable(indi_onstepx_aux
     onstepx/main_aux.cpp
     onstepx/OnStepXCore.cpp
     onstepx/OnStepXComm.cpp
-    onstepx/OnStepXAux.cpp)
+    onstepx/OnStepXAux.cpp
+    onstepx/OnStepXWeather.cpp)
 
 target_link_libraries(indi_onstepx_aux indidriver)
 

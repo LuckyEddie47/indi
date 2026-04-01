@@ -50,7 +50,4 @@ class OnStepXSite
     private:
         OnStepXComm        *m_comm { nullptr };
         INDI::DefaultDevice *m_dev { nullptr };
-
-        // Parse a decimal reply; returns false if reply is empty or an error code.
-        static bool parseDouble(const char *reply, double &out);
 };
