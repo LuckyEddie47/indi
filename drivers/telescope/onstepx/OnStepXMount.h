@@ -21,6 +21,7 @@
 #include "OnStepXCore.h"
 #include "OnStepXFocuser.h"
 #include "OnStepXLimits.h"
+#include "OnStepXRotator.h"
 #include "OnStepXSite.h"
 #include "OnStepXStatus.h"
 #include "OnStepXTracking.h"
@@ -32,6 +33,7 @@
 #include <inditelescope.h>
 #include <alignment/AlignmentSubsystemForDrivers.h>
 #include <indiguiderinterface.h>
+#include <indirotatorinterface.h>
 #include <indiweatherinterface.h>
 
 #include <chrono>
@@ -39,6 +41,7 @@
 class OnStepXMount : public INDI::Telescope,
                      public INDI::AlignmentSubsystem::AlignmentSubsystemForDrivers,
                      public INDI::GuiderInterface,
+                     public INDI::RotatorInterface,
                      public INDI::WeatherInterface
 {
     public:
@@ -78,6 +81,12 @@ class OnStepXMount : public INDI::Telescope,
         virtual IPState GuideEast(uint32_t ms) override;
         virtual IPState GuideWest(uint32_t ms) override;
 
+        // RotatorInterface
+        virtual IPState MoveRotator(double angle) override;
+        virtual bool    AbortRotator() override;
+        virtual IPState HomeRotator() override;
+        virtual bool    SetRotatorBacklash(int32_t steps) override;
+
     protected:
         // WeatherInterface — called by WI::checkWeatherUpdate() every polling cycle
         virtual IPState updateWeather() override;
@@ -96,7 +105,7 @@ class OnStepXMount : public INDI::Telescope,
 
         // Throttled subsystem updaters
         void updateFocuserStates();
-        void updateRotatorState()   {}
+        void updateRotatorState();
         void updateWeatherState();
         void updateFeatureStates()  {}
         void readGuideRate();
@@ -107,6 +116,7 @@ class OnStepXMount : public INDI::Telescope,
 
         OnStepXCore     m_core;
         OnStepXLimits   m_limits;
+        OnStepXRotator  m_rotator;
         OnStepXSite     m_site;
         OnStepXTracking m_tracking;
         OnStepXWeather  m_weather;

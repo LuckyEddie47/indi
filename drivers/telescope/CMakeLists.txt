@@ -283,6 +283,7 @@ add_executable(indi_onstepx
     onstepx/OnStepXFocuser.cpp
     onstepx/OnStepXLimits.cpp
     onstepx/OnStepXMount.cpp
+    onstepx/OnStepXRotator.cpp
     onstepx/OnStepXSite.cpp
     onstepx/OnStepXStatus.cpp
     onstepx/OnStepXTracking.cpp
@@ -299,6 +300,7 @@ add_executable(indi_onstepx_aux
     onstepx/OnStepXComm.cpp
     onstepx/OnStepXFocuser.cpp
     onstepx/OnStepXAux.cpp
+    onstepx/OnStepXRotator.cpp
     onstepx/OnStepXWeather.cpp)
 
 target_link_libraries(indi_onstepx_aux indidriver)

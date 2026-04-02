@@ -120,3 +120,18 @@ target_link_libraries(test_onstepxfocuser
 )
 
 add_test(test-onstepxfocuser test_onstepxfocuser)
+
+add_executable(test_onstepxrotator
+    test_onstepxrotator.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXComm.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXRotator.cpp"
+)
+
+target_link_libraries(test_onstepxrotator
+    indidriver
+    ${GTEST_LIBRARIES}
+    ${GMOCK_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+add_test(test-onstepxrotator test_onstepxrotator)

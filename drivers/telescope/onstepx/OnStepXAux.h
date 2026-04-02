@@ -20,8 +20,10 @@
 
 #include "OnStepXCore.h"
 #include "OnStepXFocuser.h"
+#include "OnStepXRotator.h"
 #include "OnStepXWeather.h"
 #include <defaultdevice.h>
+#include <indirotatorinterface.h>
 #include <indiweatherinterface.h>
 #include "connectionplugins/connectionserial.h"
 #include "connectionplugins/connectiontcp.h"
@@ -30,6 +32,7 @@
 #include <memory>
 
 class OnStepXAux : public INDI::DefaultDevice,
+                   public INDI::RotatorInterface,
                    public INDI::WeatherInterface
 {
     public:
@@ -48,11 +51,19 @@ class OnStepXAux : public INDI::DefaultDevice,
         virtual void TimerHit() override;
         virtual IPState updateWeather() override;
 
+        // RotatorInterface
+        virtual IPState MoveRotator(double angle) override;
+        virtual bool    AbortRotator() override;
+        virtual IPState HomeRotator() override;
+        virtual bool    SetRotatorBacklash(int32_t steps) override;
+
     private:
         void createFocusers();
         void pollFocusers();
+        void updateRotatorState();
 
         OnStepXCore        m_core;
+        OnStepXRotator     m_rotator;
         OnStepXWeather     m_weather;
         Connection::Serial *m_serialConnection { nullptr };
         Connection::TCP    *m_tcpConnection    { nullptr };

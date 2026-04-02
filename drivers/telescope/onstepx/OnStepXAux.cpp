@@ -20,10 +20,12 @@
 
 #define WEATHER_TAB "Weather"   // tab name for WeatherInterface properties
 
-OnStepXAux::OnStepXAux() : INDI::WeatherInterface(this)
+OnStepXAux::OnStepXAux() : INDI::RotatorInterface(this),
+                           INDI::WeatherInterface(this)
 {
     setVersion(0, 1);
     m_core.setDevice(this);
+    m_rotator.setDevice(this);
 }
 
 const char *OnStepXAux::getDefaultName()
@@ -34,6 +36,9 @@ const char *OnStepXAux::getDefaultName()
 bool OnStepXAux::initProperties()
 {
     INDI::DefaultDevice::initProperties();
+
+    RI::initProperties("Rotator");
+    m_rotator.initProperties(false);  // hasDerotator known only after Handshake
 
     WI::initProperties(WEATHER_TAB, WEATHER_TAB);
     addParameter("WEATHER_TEMPERATURE", "Temperature (C)",    -40,  80, 15);
@@ -67,9 +72,38 @@ bool OnStepXAux::initProperties()
 bool OnStepXAux::updateProperties()
 {
     INDI::DefaultDevice::updateProperties();
+    RI::updateProperties();
     WI::updateProperties();
+
     if (isConnected())
+    {
         createFocusers();
+
+        if (m_core.caps().hasRotator)
+        {
+            setDriverInterface(getDriverInterface() | ROTATOR_INTERFACE);
+            m_rotator.updateProperties(true, m_core.caps().hasDerotator);
+            auto init = m_rotator.readInitial();
+            if (init.angleValid)
+            {
+                GotoRotatorNP[0].setValue(init.angle);
+                GotoRotatorNP.setState(IPS_OK);
+                GotoRotatorNP.apply();
+            }
+            if (init.backlashValid)
+            {
+                RotatorBacklashNP[0].setValue(static_cast<double>(init.backlash));
+                RotatorBacklashNP.setState(IPS_OK);
+                RotatorBacklashNP.apply();
+            }
+        }
+    }
+    else
+    {
+        if (m_core.caps().hasRotator)
+            m_rotator.updateProperties(false, false);
+    }
+
     return true;
 }
 
@@ -86,19 +120,26 @@ bool OnStepXAux::Handshake()
         return false;
     }
 
+    m_rotator.setComm(&m_core.comm());
     m_weather.setComm(&m_core.comm());
     return true;
 }
 
 bool OnStepXAux::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
 {
+    if (RI::processSwitch(dev, name, states, names, n))
+        return true;
     if (WI::processSwitch(dev, name, states, names, n))
+        return true;
+    if (isConnected() && m_core.caps().hasRotator && m_rotator.handleSwitch(name, states, names, n))
         return true;
     return INDI::DefaultDevice::ISNewSwitch(dev, name, states, names, n);
 }
 
 bool OnStepXAux::ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
 {
+    if (RI::processNumber(dev, name, values, names, n))
+        return true;
     if (WI::processNumber(dev, name, values, names, n))
         return true;
     return INDI::DefaultDevice::ISNewNumber(dev, name, values, names, n);
@@ -112,7 +153,9 @@ bool OnStepXAux::ISNewText(const char *dev, const char *name, char *texts[], cha
 bool OnStepXAux::saveConfigItems(FILE *fp)
 {
     INDI::DefaultDevice::saveConfigItems(fp);
+    RI::saveConfigItems(fp);
     WI::saveConfigItems(fp);
+    m_rotator.saveConfig(fp);
     return true;
 }
 
@@ -123,7 +166,8 @@ void OnStepXAux::TimerHit()
 
     m_pollCount++;
     WI::checkWeatherUpdate();
-    if (m_pollCount % 5 == 0) pollFocusers();
+    if (m_pollCount % 5  == 0) pollFocusers();
+    if (m_pollCount % 10 == 0) updateRotatorState();
 
     SetTimer(getCurrentPollingPeriod());
 }
@@ -164,4 +208,47 @@ IPState OnStepXAux::updateWeather()
     if (data.dewpoint.ok)  setParameterValue("WEATHER_DEWPOINT",    data.dewpoint.value);
     if (data.mcuTemp.ok)   setParameterValue("OSX_MCU_TEMP",        data.mcuTemp.value);
     return data.anyOk() ? IPS_OK : IPS_IDLE;
+}
+
+// ---------------------------------------------------------------------------
+// updateRotatorState — poll angle and status (~10 s throttle via TimerHit)
+// ---------------------------------------------------------------------------
+void OnStepXAux::updateRotatorState()
+{
+    if (!m_core.caps().hasRotator)
+        return;
+
+    auto r = m_rotator.pollStatus();
+
+    if (r.angleValid)
+        GotoRotatorNP[0].setValue(r.angle);
+
+    if (r.statusValid)
+        GotoRotatorNP.setState(r.moving ? IPS_BUSY : IPS_OK);
+
+    if (r.angleValid || r.statusValid)
+        GotoRotatorNP.apply();
+}
+
+// ---------------------------------------------------------------------------
+// RotatorInterface overrides — delegate to m_rotator helper
+// ---------------------------------------------------------------------------
+IPState OnStepXAux::MoveRotator(double angle)
+{
+    return m_rotator.moveToAngle(angle);
+}
+
+bool OnStepXAux::AbortRotator()
+{
+    return m_rotator.abortRotator();
+}
+
+IPState OnStepXAux::HomeRotator()
+{
+    return m_rotator.homeRotator();
+}
+
+bool OnStepXAux::SetRotatorBacklash(int32_t steps)
+{
+    return m_rotator.setBacklash(steps);
 }

@@ -42,11 +42,13 @@ enum { TRACK_SIDEREAL = 0, TRACK_LUNAR = 1, TRACK_SOLAR = 2, TRACK_KING = 3 };
 // Constructor
 // ---------------------------------------------------------------------------
 OnStepXMount::OnStepXMount() : INDI::GuiderInterface(this),
+                               INDI::RotatorInterface(this),
                                INDI::WeatherInterface(this)
 {
     setVersion(0, 1);
     m_core.setDevice(this);
     m_limits.setDevice(this);
+    m_rotator.setDevice(this);
     m_site.setDevice(this);
     m_tracking.setDevice(this);
     // comm pointers set in updateProperties after connect
@@ -98,6 +100,12 @@ bool OnStepXMount::initProperties()
     // Advanced tracking properties
     m_tracking.initProperties();
 
+    // Rotator interface — standard ABS_ROTATOR_ANGLE, ROTATOR_ABORT_MOTION, etc.
+    RI::initProperties("Rotator");
+
+    // Custom rotator properties (de-rotator, parallactic — only shown for AltAz/derotator)
+    m_rotator.initProperties(false);  // hasDerotator known only after Handshake
+
     // Guider interface — standard TELESCOPE_TIMED_GUIDE_NS/WE properties
     GI::initProperties(MOTION_TAB);
 
@@ -126,6 +134,7 @@ bool OnStepXMount::updateProperties()
 {
     INDI::Telescope::updateProperties();
     GI::updateProperties();
+    RI::updateProperties();
     WI::updateProperties();
 
     if (isConnected())
@@ -135,6 +144,7 @@ bool OnStepXMount::updateProperties()
 
         m_site.setComm(&m_core.comm());
         m_limits.setComm(&m_core.comm());
+        m_rotator.setComm(&m_core.comm());
         m_tracking.setComm(&m_core.comm());
         m_weather.setComm(&m_core.comm());
         m_limits.updateProperties(true, m_core.caps().hasHomeSense);
@@ -142,12 +152,33 @@ bool OnStepXMount::updateProperties()
         defineProperty(m_guideRateNP);
         readGuideRate();
         createFocusers();
+
+        if (m_core.caps().hasRotator)
+        {
+            setDriverInterface(getDriverInterface() | ROTATOR_INTERFACE);
+            m_rotator.updateProperties(true, m_core.caps().hasDerotator);
+            auto init = m_rotator.readInitial();
+            if (init.angleValid)
+            {
+                GotoRotatorNP[0].setValue(init.angle);
+                GotoRotatorNP.setState(IPS_OK);
+                GotoRotatorNP.apply();
+            }
+            if (init.backlashValid)
+            {
+                RotatorBacklashNP[0].setValue(static_cast<double>(init.backlash));
+                RotatorBacklashNP.setState(IPS_OK);
+                RotatorBacklashNP.apply();
+            }
+        }
     }
     else
     {
         m_limits.updateProperties(false, false);
         m_tracking.updateProperties(false);
         deleteProperty(m_guideRateNP);
+        if (m_core.caps().hasRotator)
+            m_rotator.updateProperties(false, false);
     }
 
     return true;
@@ -847,6 +878,49 @@ void OnStepXMount::createFocusers()
 }
 
 // ---------------------------------------------------------------------------
+// updateRotatorState — poll rotator angle and motion status (~10 s throttle)
+// ---------------------------------------------------------------------------
+void OnStepXMount::updateRotatorState()
+{
+    if (!m_core.caps().hasRotator)
+        return;
+
+    auto r = m_rotator.pollStatus();
+
+    if (r.angleValid)
+        GotoRotatorNP[0].setValue(r.angle);
+
+    if (r.statusValid)
+        GotoRotatorNP.setState(r.moving ? IPS_BUSY : IPS_OK);
+
+    if (r.angleValid || r.statusValid)
+        GotoRotatorNP.apply();
+}
+
+// ---------------------------------------------------------------------------
+// RotatorInterface overrides — delegate to m_rotator helper
+// ---------------------------------------------------------------------------
+IPState OnStepXMount::MoveRotator(double angle)
+{
+    return m_rotator.moveToAngle(angle);
+}
+
+bool OnStepXMount::AbortRotator()
+{
+    return m_rotator.abortRotator();
+}
+
+IPState OnStepXMount::HomeRotator()
+{
+    return m_rotator.homeRotator();
+}
+
+bool OnStepXMount::SetRotatorBacklash(int32_t steps)
+{
+    return m_rotator.setBacklash(steps);
+}
+
+// ---------------------------------------------------------------------------
 // updateFocuserStates — poll each active focuser (position + temperature)
 // ---------------------------------------------------------------------------
 void OnStepXMount::updateFocuserStates()
@@ -863,11 +937,15 @@ void OnStepXMount::updateFocuserStates()
 // ---------------------------------------------------------------------------
 bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
 {
+    if (RI::processSwitch(dev, name, states, names, n))
+        return true;
     if (WI::processSwitch(dev, name, states, names, n))
         return true;
     if (isConnected() && m_limits.handleSwitch(name, states, names, n))
         return true;
     if (isConnected() && m_tracking.handleSwitch(name, states, names, n))
+        return true;
+    if (isConnected() && m_core.caps().hasRotator && m_rotator.handleSwitch(name, states, names, n))
         return true;
     if (isConnected() && !isEquatorial())
         ProcessAlignmentSwitchProperties(this, name, states, names, n);
@@ -876,6 +954,8 @@ bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *state
 
 bool OnStepXMount::ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
 {
+    if (RI::processNumber(dev, name, values, names, n))
+        return true;
     if (GI::processNumber(dev, name, values, names, n))
         return true;
     if (WI::processNumber(dev, name, values, names, n))
@@ -897,8 +977,10 @@ bool OnStepXMount::ISNewText(const char *dev, const char *name, char *texts[], c
 bool OnStepXMount::saveConfigItems(FILE *fp)
 {
     INDI::Telescope::saveConfigItems(fp);
+    RI::saveConfigItems(fp);
     WI::saveConfigItems(fp);
     m_limits.saveConfig(fp);
+    m_rotator.saveConfig(fp);
     m_tracking.saveConfig(fp);
     if (!isEquatorial())
         SaveAlignmentConfigProperties(fp);
