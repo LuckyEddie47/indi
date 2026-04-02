@@ -46,8 +46,11 @@ OnStepXMount::OnStepXMount() : INDI::GuiderInterface(this),
                                INDI::WeatherInterface(this)
 {
     setVersion(0, 1);
+    m_alignment.setDevice(this);
     m_core.setDevice(this);
+    m_auxFeatures.setDevice(this);
     m_limits.setDevice(this);
+    m_pec.setDevice(this);
     m_rotator.setDevice(this);
     m_site.setDevice(this);
     m_tracking.setDevice(this);
@@ -100,6 +103,12 @@ bool OnStepXMount::initProperties()
     // Advanced tracking properties
     m_tracking.initProperties();
 
+    // PEC
+    m_pec.initProperties();
+
+    // Alignment
+    m_alignment.initProperties();
+
     // Rotator interface — standard ABS_ROTATOR_ANGLE, ROTATOR_ABORT_MOTION, etc.
     RI::initProperties("Rotator");
 
@@ -142,6 +151,9 @@ bool OnStepXMount::updateProperties()
         if (!isEquatorial())
             InitAlignmentProperties(this);
 
+        m_alignment.setComm(&m_core.comm());
+        m_auxFeatures.setComm(&m_core.comm());
+        m_pec.setComm(&m_core.comm());
         m_site.setComm(&m_core.comm());
         m_limits.setComm(&m_core.comm());
         m_rotator.setComm(&m_core.comm());
@@ -171,14 +183,26 @@ bool OnStepXMount::updateProperties()
                 RotatorBacklashNP.apply();
             }
         }
+
+        if (m_core.caps().featureMask)
+            m_auxFeatures.discoverAndDefine(m_core.caps().featureMask);
+
+        if (m_core.caps().hasPec)
+            m_pec.updateProperties(true);
+
+        m_alignment.updateProperties(true);
     }
     else
     {
+        m_alignment.updateProperties(false);
         m_limits.updateProperties(false, false);
         m_tracking.updateProperties(false);
         deleteProperty(m_guideRateNP);
         if (m_core.caps().hasRotator)
             m_rotator.updateProperties(false, false);
+        m_auxFeatures.deleteAll();
+        if (m_core.caps().hasPec)
+            m_pec.updateProperties(false);
     }
 
     return true;
@@ -248,6 +272,8 @@ bool OnStepXMount::ReadScopeStatus()
     m_pollCount++;
     if (m_pollCount % 5  == 0) updateFocuserStates();
     if (m_pollCount % 10 == 0) updateRotatorState();
+    if (m_pollCount % 10 == 0) updatePecStatus();
+    if (m_pollCount % 30 == 0) updateAlignmentStatus();
     if (m_pollCount % 30 == 0) updateWeatherState();
     if (m_pollCount % 5  == 0) updateFeatureStates();
     updateStatusText(m_status);
@@ -878,6 +904,32 @@ void OnStepXMount::createFocusers()
 }
 
 // ---------------------------------------------------------------------------
+// updatePecStatus — poll :$QZ?# state (~10 poll throttle)
+// ---------------------------------------------------------------------------
+void OnStepXMount::updatePecStatus()
+{
+    if (m_core.caps().hasPec)
+        m_pec.pollStatus();
+}
+
+// ---------------------------------------------------------------------------
+// updateAlignmentStatus — refresh :A?# status (~30 poll throttle)
+// ---------------------------------------------------------------------------
+void OnStepXMount::updateAlignmentStatus()
+{
+    m_alignment.updateStatus();
+}
+
+// ---------------------------------------------------------------------------
+// updateFeatureStates — poll aux feature slot values (~5 poll throttle)
+// ---------------------------------------------------------------------------
+void OnStepXMount::updateFeatureStates()
+{
+    if (m_core.caps().featureMask)
+        m_auxFeatures.pollStatus();
+}
+
+// ---------------------------------------------------------------------------
 // updateRotatorState — poll rotator angle and motion status (~10 s throttle)
 // ---------------------------------------------------------------------------
 void OnStepXMount::updateRotatorState()
@@ -945,7 +997,13 @@ bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *state
         return true;
     if (isConnected() && m_tracking.handleSwitch(name, states, names, n))
         return true;
+    if (isConnected() && m_core.caps().hasPec && m_pec.handleSwitch(name, states, names, n))
+        return true;
     if (isConnected() && m_core.caps().hasRotator && m_rotator.handleSwitch(name, states, names, n))
+        return true;
+    if (isConnected() && m_core.caps().featureMask && m_auxFeatures.handleSwitch(name, states, names, n))
+        return true;
+    if (isConnected() && m_alignment.handleSwitch(name, states, names, n))
         return true;
     if (isConnected() && !isEquatorial())
         ProcessAlignmentSwitchProperties(this, name, states, names, n);
@@ -961,6 +1019,8 @@ bool OnStepXMount::ISNewNumber(const char *dev, const char *name, double values[
     if (WI::processNumber(dev, name, values, names, n))
         return true;
     if (isConnected() && m_limits.handleNumber(name, values, names, n))
+        return true;
+    if (isConnected() && m_core.caps().featureMask && m_auxFeatures.handleNumber(name, values, names, n))
         return true;
     if (isConnected() && !isEquatorial())
         ProcessAlignmentNumberProperties(this, name, values, names, n);
@@ -979,7 +1039,10 @@ bool OnStepXMount::saveConfigItems(FILE *fp)
     INDI::Telescope::saveConfigItems(fp);
     RI::saveConfigItems(fp);
     WI::saveConfigItems(fp);
+    m_alignment.saveConfig(fp);
+    m_auxFeatures.saveConfig(fp);
     m_limits.saveConfig(fp);
+    m_pec.saveConfig(fp);
     m_rotator.saveConfig(fp);
     m_tracking.saveConfig(fp);
     if (!isEquatorial())

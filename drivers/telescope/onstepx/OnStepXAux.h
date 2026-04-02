@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "OnStepXAuxFeatures.h"
 #include "OnStepXCore.h"
 #include "OnStepXFocuser.h"
 #include "OnStepXRotator.h"
@@ -61,8 +62,10 @@ class OnStepXAux : public INDI::DefaultDevice,
         void createFocusers();
         void pollFocusers();
         void updateRotatorState();
+        void pollFeatures();
 
         OnStepXCore        m_core;
+        OnStepXAuxFeatures m_auxFeatures;
         OnStepXRotator     m_rotator;
         OnStepXWeather     m_weather;
         Connection::Serial *m_serialConnection { nullptr };

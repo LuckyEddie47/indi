@@ -25,6 +25,7 @@ OnStepXAux::OnStepXAux() : INDI::RotatorInterface(this),
 {
     setVersion(0, 1);
     m_core.setDevice(this);
+    m_auxFeatures.setDevice(this);
     m_rotator.setDevice(this);
 }
 
@@ -97,11 +98,15 @@ bool OnStepXAux::updateProperties()
                 RotatorBacklashNP.apply();
             }
         }
+
+        if (m_core.caps().featureMask)
+            m_auxFeatures.discoverAndDefine(m_core.caps().featureMask);
     }
     else
     {
         if (m_core.caps().hasRotator)
             m_rotator.updateProperties(false, false);
+        m_auxFeatures.deleteAll();
     }
 
     return true;
@@ -120,6 +125,7 @@ bool OnStepXAux::Handshake()
         return false;
     }
 
+    m_auxFeatures.setComm(&m_core.comm());
     m_rotator.setComm(&m_core.comm());
     m_weather.setComm(&m_core.comm());
     return true;
@@ -133,6 +139,8 @@ bool OnStepXAux::ISNewSwitch(const char *dev, const char *name, ISState *states,
         return true;
     if (isConnected() && m_core.caps().hasRotator && m_rotator.handleSwitch(name, states, names, n))
         return true;
+    if (isConnected() && m_core.caps().featureMask && m_auxFeatures.handleSwitch(name, states, names, n))
+        return true;
     return INDI::DefaultDevice::ISNewSwitch(dev, name, states, names, n);
 }
 
@@ -141,6 +149,8 @@ bool OnStepXAux::ISNewNumber(const char *dev, const char *name, double values[],
     if (RI::processNumber(dev, name, values, names, n))
         return true;
     if (WI::processNumber(dev, name, values, names, n))
+        return true;
+    if (isConnected() && m_core.caps().featureMask && m_auxFeatures.handleNumber(name, values, names, n))
         return true;
     return INDI::DefaultDevice::ISNewNumber(dev, name, values, names, n);
 }
@@ -155,6 +165,7 @@ bool OnStepXAux::saveConfigItems(FILE *fp)
     INDI::DefaultDevice::saveConfigItems(fp);
     RI::saveConfigItems(fp);
     WI::saveConfigItems(fp);
+    m_auxFeatures.saveConfig(fp);
     m_rotator.saveConfig(fp);
     return true;
 }
@@ -167,6 +178,7 @@ void OnStepXAux::TimerHit()
     m_pollCount++;
     WI::checkWeatherUpdate();
     if (m_pollCount % 5  == 0) pollFocusers();
+    if (m_pollCount % 5  == 0) pollFeatures();
     if (m_pollCount % 10 == 0) updateRotatorState();
 
     SetTimer(getCurrentPollingPeriod());
@@ -194,6 +206,12 @@ void OnStepXAux::pollFocusers()
 {
     for (auto &f : m_focusers)
         if (f) f->pollStatus();
+}
+
+void OnStepXAux::pollFeatures()
+{
+    if (m_core.caps().featureMask)
+        m_auxFeatures.pollStatus();
 }
 
 // ---------------------------------------------------------------------------
