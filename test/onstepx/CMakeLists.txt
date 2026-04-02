@@ -90,3 +90,19 @@ target_link_libraries(test_onstepxguide
 )
 
 add_test(test-onstepxguide test_onstepxguide)
+
+add_executable(test_onstepxtracking
+    test_onstepxtracking.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXComm.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXStatus.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXTracking.cpp"
+)
+
+target_link_libraries(test_onstepxtracking
+    indidriver
+    ${GTEST_LIBRARIES}
+    ${GMOCK_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+add_test(test-onstepxtracking test_onstepxtracking)

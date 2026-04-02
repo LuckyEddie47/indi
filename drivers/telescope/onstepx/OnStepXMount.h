@@ -22,6 +22,7 @@
 #include "OnStepXLimits.h"
 #include "OnStepXSite.h"
 #include "OnStepXStatus.h"
+#include "OnStepXTracking.h"
 #include "OnStepXWeather.h"
 
 #include <inditelescope.h>
@@ -59,6 +60,7 @@ class OnStepXMount : public INDI::Telescope,
         virtual bool SetDefaultPark() override;
         virtual bool SetTrackEnabled(bool enabled) override;
         virtual bool SetTrackMode(uint8_t mode) override;
+        virtual bool SetTrackRate(double raRate, double deRate) override;
         virtual bool SetSlewRate(int index) override;
         virtual bool MoveNS(INDI_DIR_NS dir, TelescopeMotionCommand command) override;
         virtual bool MoveWE(INDI_DIR_WE dir, TelescopeMotionCommand command) override;
@@ -93,13 +95,15 @@ class OnStepXMount : public INDI::Telescope,
         void updateFeatureStates()  {}
         void readGuideRate();
         void checkGuideComplete();
+        void updateTrackingProperties();
 
         bool isEquatorial() const;
 
-        OnStepXCore    m_core;
-        OnStepXLimits  m_limits;
-        OnStepXSite    m_site;
-        OnStepXWeather m_weather;
+        OnStepXCore     m_core;
+        OnStepXLimits   m_limits;
+        OnStepXSite     m_site;
+        OnStepXTracking m_tracking;
+        OnStepXWeather  m_weather;
         MountStatus    m_status;
 
         // Poll throttle — counts ReadScopeStatus calls

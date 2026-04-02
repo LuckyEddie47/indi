@@ -48,7 +48,8 @@ OnStepXMount::OnStepXMount() : INDI::GuiderInterface(this),
     m_core.setDevice(this);
     m_limits.setDevice(this);
     m_site.setDevice(this);
-    // m_weather.setComm() called in updateProperties after connect
+    m_tracking.setDevice(this);
+    // comm pointers set in updateProperties after connect
 
     // Provisional capability set — refined in Handshake() once probed.
     SetTelescopeCapability(
@@ -60,6 +61,7 @@ OnStepXMount::OnStepXMount() : INDI::GuiderInterface(this),
         TELESCOPE_HAS_LOCATION    |
         TELESCOPE_HAS_TRACK_MODE  |
         TELESCOPE_CAN_CONTROL_TRACK |
+        TELESCOPE_HAS_TRACK_RATE  |
         TELESCOPE_CAN_HOME_FIND   |
         TELESCOPE_CAN_HOME_SET,
         4);   // 4 slew rates
@@ -92,6 +94,9 @@ bool OnStepXMount::initProperties()
 
     // Limits and home
     m_limits.initProperties();
+
+    // Advanced tracking properties
+    m_tracking.initProperties();
 
     // Guider interface — standard TELESCOPE_TIMED_GUIDE_NS/WE properties
     GI::initProperties(MOTION_TAB);
@@ -130,14 +135,17 @@ bool OnStepXMount::updateProperties()
 
         m_site.setComm(&m_core.comm());
         m_limits.setComm(&m_core.comm());
+        m_tracking.setComm(&m_core.comm());
         m_weather.setComm(&m_core.comm());
         m_limits.updateProperties(true, m_core.caps().hasHomeSense);
+        m_tracking.updateProperties(true);
         defineProperty(m_guideRateNP);
         readGuideRate();
     }
     else
     {
         m_limits.updateProperties(false, false);
+        m_tracking.updateProperties(false);
         deleteProperty(m_guideRateNP);
     }
 
@@ -170,6 +178,7 @@ bool OnStepXMount::Handshake()
         TELESCOPE_CAN_GOTO       | TELESCOPE_CAN_SYNC       | TELESCOPE_CAN_PARK  |
         TELESCOPE_CAN_ABORT      | TELESCOPE_HAS_TIME       | TELESCOPE_HAS_LOCATION |
         TELESCOPE_HAS_TRACK_MODE | TELESCOPE_CAN_CONTROL_TRACK |
+        TELESCOPE_HAS_TRACK_RATE |
         TELESCOPE_CAN_HOME_FIND  | TELESCOPE_CAN_HOME_SET;
 
     if (cap.hasPierSide)
@@ -362,6 +371,9 @@ void OnStepXMount::updateTrackingState(const MountStatus &s)
     }
 
     TrackState = s.tracking ? SCOPE_TRACKING : SCOPE_IDLE;
+
+    // Sync advanced tracking properties from status
+    m_tracking.syncStatus(s);
 }
 
 // ---------------------------------------------------------------------------
@@ -608,6 +620,35 @@ bool OnStepXMount::SetSlewRate(int index)
 }
 
 // ---------------------------------------------------------------------------
+// SetTrackRate — called by INDI when the user selects "Custom" track mode
+// and edits TELESCOPE_TRACK_RATE.  raRate / deRate are arcsec/s offsets from
+// sidereal.  OnStepX accepts them as:
+//   :RA[f]#   RA custom rate (arcsec/s)
+//   :RE[f]#   DE custom rate (arcsec/s)
+// Both commands return '1' on success.
+// ---------------------------------------------------------------------------
+bool OnStepXMount::SetTrackRate(double raRate, double deRate)
+{
+    char cmd[48], reply[4];
+
+    snprintf(cmd, sizeof(cmd), ":RA%f#", raRate);
+    if (!m_core.comm().sendCommand(cmd, reply) || reply[0] != '1')
+    {
+        LOGF_ERROR("SetTrackRate: RA command failed (raRate=%.4f)", raRate);
+        return false;
+    }
+
+    snprintf(cmd, sizeof(cmd), ":RE%f#", deRate);
+    if (!m_core.comm().sendCommand(cmd, reply) || reply[0] != '1')
+    {
+        LOGF_ERROR("SetTrackRate: DE command failed (deRate=%.4f)", deRate);
+        return false;
+    }
+
+    return true;
+}
+
+// ---------------------------------------------------------------------------
 // Manual motion (arrow buttons in Ekos)
 // ---------------------------------------------------------------------------
 bool OnStepXMount::MoveNS(INDI_DIR_NS dir, TelescopeMotionCommand command)
@@ -789,6 +830,8 @@ bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *state
         return true;
     if (isConnected() && m_limits.handleSwitch(name, states, names, n))
         return true;
+    if (isConnected() && m_tracking.handleSwitch(name, states, names, n))
+        return true;
     if (isConnected() && !isEquatorial())
         ProcessAlignmentSwitchProperties(this, name, states, names, n);
     return INDI::Telescope::ISNewSwitch(dev, name, states, names, n);
@@ -819,6 +862,7 @@ bool OnStepXMount::saveConfigItems(FILE *fp)
     INDI::Telescope::saveConfigItems(fp);
     WI::saveConfigItems(fp);
     m_limits.saveConfig(fp);
+    m_tracking.saveConfig(fp);
     if (!isEquatorial())
         SaveAlignmentConfigProperties(fp);
     return true;

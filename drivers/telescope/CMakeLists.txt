@@ -284,6 +284,7 @@ add_executable(indi_onstepx
     onstepx/OnStepXMount.cpp
     onstepx/OnStepXSite.cpp
     onstepx/OnStepXStatus.cpp
+    onstepx/OnStepXTracking.cpp
     onstepx/OnStepXWeather.cpp)
 
 target_link_libraries(indi_onstepx AlignmentDriver indidriver)
