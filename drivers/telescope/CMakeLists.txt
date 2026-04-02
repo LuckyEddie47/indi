@@ -280,6 +280,7 @@ add_executable(indi_onstepx
     onstepx/main_mount.cpp
     onstepx/OnStepXCore.cpp
     onstepx/OnStepXComm.cpp
+    onstepx/OnStepXFocuser.cpp
     onstepx/OnStepXLimits.cpp
     onstepx/OnStepXMount.cpp
     onstepx/OnStepXSite.cpp
@@ -296,6 +297,7 @@ add_executable(indi_onstepx_aux
     onstepx/main_aux.cpp
     onstepx/OnStepXCore.cpp
     onstepx/OnStepXComm.cpp
+    onstepx/OnStepXFocuser.cpp
     onstepx/OnStepXAux.cpp
     onstepx/OnStepXWeather.cpp)
 

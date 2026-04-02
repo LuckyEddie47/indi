@@ -222,6 +222,103 @@ bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, in
 }
 
 // ---------------------------------------------------------------------------
+// sendCommandFocuser / sendCommandBlindFocuser
+//
+// Atomically:  :FA[slot]#  (select focuser, consumes single-char reply)
+//              :F[cmd]#    (actual command, reads '#'-terminated reply)
+// ---------------------------------------------------------------------------
+bool OnStepXComm::sendCommandFocuser(int slot, const char *cmd, char *reply, int timeout_ms)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_fd < 0)
+    {
+        OSX_COMM_LOGF_ERROR("sendCommandFocuser: fd not set");
+        return false;
+    }
+
+    doFlush();
+
+    // Select focuser n
+    char selectCmd[8];
+    snprintf(selectCmd, sizeof(selectCmd), ":FA%d#", slot);
+    if (!writeCommand(selectCmd))
+    {
+        OSX_COMM_LOGF_ERROR("sendCommandFocuser: select write failed (slot %d)", slot);
+        return false;
+    }
+
+    // Consume single-char reply ('1' = exists, '0' = does not)
+    char sel = '0';
+    if (!readSingleChar(sel, 500))
+    {
+        OSX_COMM_LOGF_ERROR("sendCommandFocuser: no reply to :FA%d#", slot);
+        return false;
+    }
+    if (sel != '1')
+    {
+        OSX_COMM_LOGF_ERROR("sendCommandFocuser: focuser %d not found (reply '%c')", slot, sel);
+        return false;
+    }
+
+    // Send the actual command and read '#'-terminated reply
+    if (!writeCommand(cmd))
+    {
+        OSX_COMM_LOGF_ERROR("sendCommandFocuser: write failed for cmd '%s'", cmd);
+        return false;
+    }
+
+    reply[0] = '\0';
+    if (!readUntilHash(reply, 256, timeout_ms))
+    {
+        OSX_COMM_LOGF_ERROR("sendCommandFocuser: timeout for cmd '%s' (slot %d)", cmd, slot);
+        return false;
+    }
+
+    OSX_COMM_LOGF_DEBUG("FOC%d CMD: %s  REPLY: %s", slot, cmd, reply);
+    return true;
+}
+
+bool OnStepXComm::sendCommandBlindFocuser(int slot, const char *cmd)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+
+    if (m_fd < 0)
+    {
+        OSX_COMM_LOGF_ERROR("sendCommandBlindFocuser: fd not set");
+        return false;
+    }
+
+    doFlush();
+
+    // Select focuser n
+    char selectCmd[8];
+    snprintf(selectCmd, sizeof(selectCmd), ":FA%d#", slot);
+    if (!writeCommand(selectCmd))
+    {
+        OSX_COMM_LOGF_ERROR("sendCommandBlindFocuser: select write failed (slot %d)", slot);
+        return false;
+    }
+
+    // Consume single-char reply
+    char sel = '0';
+    if (!readSingleChar(sel, 500) || sel != '1')
+    {
+        OSX_COMM_LOGF_ERROR("sendCommandBlindFocuser: focuser %d not found", slot);
+        return false;
+    }
+
+    if (!writeCommand(cmd))
+    {
+        OSX_COMM_LOGF_ERROR("sendCommandBlindFocuser: write failed for cmd '%s'", cmd);
+        return false;
+    }
+
+    OSX_COMM_LOGF_DEBUG("FOC%d CMD (blind): %s", slot, cmd);
+    return true;
+}
+
+// ---------------------------------------------------------------------------
 // Private helpers — callers must already hold m_mutex
 // ---------------------------------------------------------------------------
 
@@ -304,4 +401,18 @@ bool OnStepXComm::readUntilHash(char *buf, int maxLen, int timeout_ms)
     // Buffer full without seeing '#'
     buf[len] = '\0';
     return false;
+}
+
+// Read exactly one byte with a timeout; no locking (caller holds mutex).
+bool OnStepXComm::readSingleChar(char &c, int timeout_ms)
+{
+    fd_set rfd;
+    FD_ZERO(&rfd);
+    FD_SET(m_fd, &rfd);
+    struct timeval tv { timeout_ms / 1000, (timeout_ms % 1000) * 1000L };
+
+    if (select(m_fd + 1, &rfd, nullptr, nullptr, &tv) <= 0)
+        return false;
+
+    return read(m_fd, &c, 1) == 1;
 }

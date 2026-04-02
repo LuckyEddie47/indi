@@ -141,6 +141,7 @@ bool OnStepXMount::updateProperties()
         m_tracking.updateProperties(true);
         defineProperty(m_guideRateNP);
         readGuideRate();
+        createFocusers();
     }
     else
     {
@@ -819,6 +820,42 @@ void OnStepXMount::readGuideRate()
     m_guideRateNP[0].setValue(rate);
     m_guideRateNP.setState(IPS_OK);
     m_guideRateNP.apply();
+}
+
+// ---------------------------------------------------------------------------
+// createFocusers — called once from updateProperties on first connect.
+// Instantiates OnStepXFocuser objects for each detected slot (1..numFocusers),
+// hands them the shared comm object, and announces them to the INDI bus.
+// ---------------------------------------------------------------------------
+void OnStepXMount::createFocusers()
+{
+    int nf = m_core.caps().numFocusers;
+    for (int i = 0; i < nf && i < (int)m_focusers.size(); i++)
+    {
+        if (m_focusers[i])
+            continue;  // already created (shouldn't happen, but guard anyway)
+
+        m_focusers[i] = std::make_unique<OnStepXFocuser>(i + 1);
+        m_focusers[i]->setComm(&m_core.comm());
+        // Announce the device: registers it in the global device list so that
+        // clients (Ekos) see it as a separate focuser device in the same process.
+        m_focusers[i]->ISGetProperties(nullptr);
+        // Mark it as connected (no own port — parent's connection is shared)
+        m_focusers[i]->setConnected(true, IPS_OK);
+        m_focusers[i]->updateProperties();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// updateFocuserStates — poll each active focuser (position + temperature)
+// ---------------------------------------------------------------------------
+void OnStepXMount::updateFocuserStates()
+{
+    for (auto &f : m_focusers)
+    {
+        if (f)
+            f->pollStatus();
+    }
 }
 
 // ---------------------------------------------------------------------------

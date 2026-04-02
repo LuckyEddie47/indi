@@ -19,11 +19,15 @@
 #pragma once
 
 #include "OnStepXCore.h"
+#include "OnStepXFocuser.h"
 #include "OnStepXLimits.h"
 #include "OnStepXSite.h"
 #include "OnStepXStatus.h"
 #include "OnStepXTracking.h"
 #include "OnStepXWeather.h"
+
+#include <array>
+#include <memory>
 
 #include <inditelescope.h>
 #include <alignment/AlignmentSubsystemForDrivers.h>
@@ -88,8 +92,10 @@ class OnStepXMount : public INDI::Telescope,
         void updateSlewState(const MountStatus &s);
         void updateStatusText(const MountStatus &s);
 
+        void createFocusers();
+
         // Throttled subsystem updaters
-        void updateFocuserStates()  {}
+        void updateFocuserStates();
         void updateRotatorState()   {}
         void updateWeatherState();
         void updateFeatureStates()  {}
@@ -104,6 +110,9 @@ class OnStepXMount : public INDI::Telescope,
         OnStepXSite     m_site;
         OnStepXTracking m_tracking;
         OnStepXWeather  m_weather;
+
+        // Focuser child devices — created after Handshake, slot 1..numFocusers
+        std::array<std::unique_ptr<OnStepXFocuser>, 6> m_focusers;
         MountStatus    m_status;
 
         // Poll throttle — counts ReadScopeStatus calls

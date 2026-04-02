@@ -68,6 +68,8 @@ bool OnStepXAux::updateProperties()
 {
     INDI::DefaultDevice::updateProperties();
     WI::updateProperties();
+    if (isConnected())
+        createFocusers();
     return true;
 }
 
@@ -119,8 +121,35 @@ void OnStepXAux::TimerHit()
     if (!isConnected())
         return;
 
+    m_pollCount++;
     WI::checkWeatherUpdate();
+    if (m_pollCount % 5 == 0) pollFocusers();
+
     SetTimer(getCurrentPollingPeriod());
+}
+
+// ---------------------------------------------------------------------------
+// createFocusers — same pattern as OnStepXMount::createFocusers
+// ---------------------------------------------------------------------------
+void OnStepXAux::createFocusers()
+{
+    int nf = m_core.caps().numFocusers;
+    for (int i = 0; i < nf && i < (int)m_focusers.size(); i++)
+    {
+        if (m_focusers[i])
+            continue;
+        m_focusers[i] = std::make_unique<OnStepXFocuser>(i + 1);
+        m_focusers[i]->setComm(&m_core.comm());
+        m_focusers[i]->ISGetProperties(nullptr);
+        m_focusers[i]->setConnected(true, IPS_OK);
+        m_focusers[i]->updateProperties();
+    }
+}
+
+void OnStepXAux::pollFocusers()
+{
+    for (auto &f : m_focusers)
+        if (f) f->pollStatus();
 }
 
 // ---------------------------------------------------------------------------

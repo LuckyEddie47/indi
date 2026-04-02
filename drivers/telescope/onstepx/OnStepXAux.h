@@ -19,11 +19,15 @@
 #pragma once
 
 #include "OnStepXCore.h"
+#include "OnStepXFocuser.h"
 #include "OnStepXWeather.h"
 #include <defaultdevice.h>
 #include <indiweatherinterface.h>
 #include "connectionplugins/connectionserial.h"
 #include "connectionplugins/connectiontcp.h"
+
+#include <array>
+#include <memory>
 
 class OnStepXAux : public INDI::DefaultDevice,
                    public INDI::WeatherInterface
@@ -45,8 +49,16 @@ class OnStepXAux : public INDI::DefaultDevice,
         virtual IPState updateWeather() override;
 
     private:
+        void createFocusers();
+        void pollFocusers();
+
         OnStepXCore        m_core;
         OnStepXWeather     m_weather;
         Connection::Serial *m_serialConnection { nullptr };
         Connection::TCP    *m_tcpConnection    { nullptr };
+
+        int  m_pollCount { 0 };
+
+        // Focuser child devices — created after Handshake, slot 1..numFocusers
+        std::array<std::unique_ptr<OnStepXFocuser>, 6> m_focusers;
 };

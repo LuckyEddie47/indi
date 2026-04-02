@@ -36,6 +36,12 @@ class OnStepXComm
         // Send command; discard any reply.
         bool sendCommandBlind(const char *cmd);
 
+        // Focuser-slot variants: atomically send :FA[slot]# (consumes the single-char
+        // reply), then send cmd and read '#'-terminated reply — or blind-send.
+        // Both operations share one mutex lock, preventing interleaving.
+        bool sendCommandFocuser(int slot, const char *cmd, char *reply, int timeout_ms = 2000);
+        bool sendCommandBlindFocuser(int slot, const char *cmd);
+
         // Send command; read a single char reply with no '#' terminator.
         bool sendCommandSingleChar(const char *cmd, char &reply, int timeout_ms = 2000);
 
@@ -53,4 +59,5 @@ class OnStepXComm
         void doFlush();                                        // no-lock; called from within locked context
         bool writeCommand(const char *cmd);                    // no-lock
         bool readUntilHash(char *buf, int maxLen, int timeout_ms);  // no-lock
+        bool readSingleChar(char &c, int timeout_ms);          // no-lock
 };
