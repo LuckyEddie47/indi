@@ -30,6 +30,7 @@
 #include "OnStepXRotator.h"
 #include "OnStepXWeather.h"
 #include <defaultdevice.h>
+#include <indipropertytext.h>
 #include <indirotatorinterface.h>
 #include <indiweatherinterface.h>
 #include "connectionplugins/connectionserial.h"
@@ -74,6 +75,7 @@ class OnStepXAux : public INDI::DefaultDevice,
         OnStepXAuxFeatures m_auxFeatures;
         OnStepXRotator     m_rotator;
         OnStepXWeather     m_weather;
+        INDI::PropertyText m_firmwareTP { 4 };
         Connection::Serial *m_serialConnection { nullptr };
         Connection::TCP    *m_tcpConnection    { nullptr };
 

@@ -7,6 +7,8 @@ add_executable(indi_onstepx
     OnStepXCore.cpp
     OnStepXComm.cpp
     OnStepXFocuser.cpp
+    OnStepXGuide.cpp
+    OnStepXInfo.cpp
     OnStepXLimits.cpp
     OnStepXMount.cpp
     OnStepXPec.cpp

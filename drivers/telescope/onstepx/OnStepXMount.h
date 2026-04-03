@@ -29,6 +29,8 @@
 #include "OnStepXAuxFeatures.h"
 #include "OnStepXCore.h"
 #include "OnStepXFocuser.h"
+#include "OnStepXGuide.h"
+#include "OnStepXInfo.h"
 #include "OnStepXLimits.h"
 #include "OnStepXPec.h"
 #include "OnStepXRotator.h"
@@ -46,7 +48,6 @@
 #include <indirotatorinterface.h>
 #include <indiweatherinterface.h>
 
-#include <chrono>
 
 class OnStepXMount : public INDI::Telescope,
                      public INDI::AlignmentSubsystem::AlignmentSubsystemForDrivers,
@@ -109,8 +110,6 @@ class OnStepXMount : public INDI::Telescope,
         bool updateCoordinates();
         void updateTrackingState(const MountStatus &s);
         void updateSlewState(const MountStatus &s);
-        void updateStatusText(const MountStatus &s);
-
         void createFocusers();
 
         // Throttled subsystem updaters
@@ -120,8 +119,6 @@ class OnStepXMount : public INDI::Telescope,
         void updateFeatureStates();
         void updateAlignmentStatus();
         void updatePecStatus();
-        void readGuideRate();
-        void checkGuideComplete();
         void updateTrackingProperties();
 
         bool isEquatorial() const;
@@ -129,6 +126,8 @@ class OnStepXMount : public INDI::Telescope,
         OnStepXAlignment   m_alignment;
         OnStepXCore        m_core;
         OnStepXAuxFeatures m_auxFeatures;
+        OnStepXGuide       m_guide;
+        OnStepXInfo        m_info;
         OnStepXLimits      m_limits;
         OnStepXPec         m_pec;
         OnStepXRotator     m_rotator;
@@ -143,14 +142,4 @@ class OnStepXMount : public INDI::Telescope,
         // Poll throttle — counts ReadScopeStatus calls
         int  m_pollCount { 0 };
 
-        // Guide pulse completion tracking — steady_clock end-times
-        using Clock     = std::chrono::steady_clock;
-        using TimePoint = Clock::time_point;
-        bool      m_guidingNS { false };
-        bool      m_guidingWE { false };
-        TimePoint m_guideEndNS;
-        TimePoint m_guideEndWE;
-
-        // Guide rate (read from :GX90#, displayed read-only)
-        INDI::PropertyNumber m_guideRateNP {1};
 };

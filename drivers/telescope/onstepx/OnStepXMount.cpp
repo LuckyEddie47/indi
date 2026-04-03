@@ -23,8 +23,6 @@
 #include <libnova/julian_day.h>
 
 #include <cmath>
-#include <cstdio>
-#include <cstdlib>
 #include <cstring>
 
 #define WEATHER_TAB "Weather"   // tab name for WeatherInterface properties
@@ -49,11 +47,15 @@ OnStepXMount::OnStepXMount() : INDI::GuiderInterface(this),
     m_alignment.setDevice(this);
     m_core.setDevice(this);
     m_auxFeatures.setDevice(this);
+    m_guide.setDevice(this);
+    m_guide.setGuiderInterface(this);
+    m_info.setDevice(this);
     m_limits.setDevice(this);
     m_pec.setDevice(this);
     m_rotator.setDevice(this);
     m_site.setDevice(this);
     m_tracking.setDevice(this);
+    m_weather.setDevice(this);
     // comm pointers set in updateProperties after connect
 
     // Provisional capability set — refined in Handshake() once probed.
@@ -118,9 +120,14 @@ bool OnStepXMount::initProperties()
     // Guider interface — standard TELESCOPE_TIMED_GUIDE_NS/WE properties
     GI::initProperties(MOTION_TAB);
 
-    // Guide rate (read-only display from :GX90#)
-    m_guideRateNP[0].fill("GUIDE_RATE", "Rate (x sidereal)", "%.2f", 0, 1, 0.01, 0.5);
-    m_guideRateNP.fill(getDeviceName(), "OSX_GUIDE_RATE", "Guide Rate", MOTION_TAB, IP_RO, 60, IPS_IDLE);
+    // Guide rate and pulse helper
+    m_guide.initProperties();
+
+    // Info (firmware display, status text, reticle)
+    m_info.initProperties();
+
+    // Weather calibration and DUT1 (owned by weather helper, shown on Weather tab)
+    m_weather.initProperties();
 
     // Weather interface — tab name, parameter group name
     WI::initProperties(WEATHER_TAB, WEATHER_TAB);
@@ -153,16 +160,19 @@ bool OnStepXMount::updateProperties()
 
         m_alignment.setComm(&m_core.comm());
         m_auxFeatures.setComm(&m_core.comm());
+        m_guide.setComm(&m_core.comm());
+        m_info.setComm(&m_core.comm());
         m_pec.setComm(&m_core.comm());
         m_site.setComm(&m_core.comm());
         m_limits.setComm(&m_core.comm());
         m_rotator.setComm(&m_core.comm());
         m_tracking.setComm(&m_core.comm());
         m_weather.setComm(&m_core.comm());
+        m_weather.updateProperties(true);
         m_limits.updateProperties(true, m_core.caps().hasHomeSense);
         m_tracking.updateProperties(true);
-        defineProperty(m_guideRateNP);
-        readGuideRate();
+        m_guide.updateProperties(true);
+        m_info.updateProperties(true, m_core.caps());
         createFocusers();
 
         if (m_core.caps().hasRotator)
@@ -197,7 +207,9 @@ bool OnStepXMount::updateProperties()
         m_alignment.updateProperties(false);
         m_limits.updateProperties(false, false);
         m_tracking.updateProperties(false);
-        deleteProperty(m_guideRateNP);
+        m_guide.updateProperties(false);
+        m_info.updateProperties(false, {});
+        m_weather.updateProperties(false);
         if (m_core.caps().hasRotator)
             m_rotator.updateProperties(false, false);
         m_auxFeatures.deleteAll();
@@ -267,7 +279,7 @@ bool OnStepXMount::ReadScopeStatus()
             setPierSide(PIER_WEST);
     }
 
-    checkGuideComplete();
+    m_guide.checkComplete();
 
     m_pollCount++;
     if (m_pollCount % 5  == 0) updateFocuserStates();
@@ -276,7 +288,7 @@ bool OnStepXMount::ReadScopeStatus()
     if (m_pollCount % 30 == 0) updateAlignmentStatus();
     if (m_pollCount % 30 == 0) updateWeatherState();
     if (m_pollCount % 5  == 0) updateFeatureStates();
-    updateStatusText(m_status);
+    m_info.updateStatus(m_status);
 
     return true;
 }
@@ -441,14 +453,6 @@ void OnStepXMount::updateSlewState(const MountStatus &s)
 {
     if (s.gotoActive)
         TrackState = SCOPE_SLEWING;
-}
-
-// ---------------------------------------------------------------------------
-// updateStatusText — called every poll cycle (stub; expands in later stages)
-// ---------------------------------------------------------------------------
-void OnStepXMount::updateStatusText(const MountStatus &s)
-{
-    INDI_UNUSED(s);
 }
 
 // ---------------------------------------------------------------------------
@@ -792,92 +796,12 @@ IPState OnStepXMount::updateWeather()
 }
 
 // ---------------------------------------------------------------------------
-// Guide pulse methods — GuiderInterface overrides
-//
-// OnStepX commands:
-//   :MGn{ms}#  :MGs{ms}#  :MGe{ms}#  :MGw{ms}#  — no reply (blind send)
-//
-// We return IPS_BUSY immediately and fire GuideComplete() from
-// checkGuideComplete() once the pulse duration has elapsed.
+// Guide pulse methods — delegate to OnStepXGuide
 // ---------------------------------------------------------------------------
-IPState OnStepXMount::GuideNorth(uint32_t ms)
-{
-    char cmd[32];
-    snprintf(cmd, sizeof(cmd), ":MGn%u#", ms);
-    m_core.comm().sendCommandBlind(cmd);
-    m_guideEndNS = Clock::now() + std::chrono::milliseconds(ms);
-    m_guidingNS  = true;
-    return IPS_BUSY;
-}
-
-IPState OnStepXMount::GuideSouth(uint32_t ms)
-{
-    char cmd[32];
-    snprintf(cmd, sizeof(cmd), ":MGs%u#", ms);
-    m_core.comm().sendCommandBlind(cmd);
-    m_guideEndNS = Clock::now() + std::chrono::milliseconds(ms);
-    m_guidingNS  = true;
-    return IPS_BUSY;
-}
-
-IPState OnStepXMount::GuideEast(uint32_t ms)
-{
-    char cmd[32];
-    snprintf(cmd, sizeof(cmd), ":MGe%u#", ms);
-    m_core.comm().sendCommandBlind(cmd);
-    m_guideEndWE = Clock::now() + std::chrono::milliseconds(ms);
-    m_guidingWE  = true;
-    return IPS_BUSY;
-}
-
-IPState OnStepXMount::GuideWest(uint32_t ms)
-{
-    char cmd[32];
-    snprintf(cmd, sizeof(cmd), ":MGw%u#", ms);
-    m_core.comm().sendCommandBlind(cmd);
-    m_guideEndWE = Clock::now() + std::chrono::milliseconds(ms);
-    m_guidingWE  = true;
-    return IPS_BUSY;
-}
-
-// ---------------------------------------------------------------------------
-// checkGuideComplete — called every ReadScopeStatus poll
-// ---------------------------------------------------------------------------
-void OnStepXMount::checkGuideComplete()
-{
-    auto now = Clock::now();
-
-    if (m_guidingNS && now >= m_guideEndNS)
-    {
-        m_guidingNS = false;
-        GuideComplete(INDI_EQ_AXIS::AXIS_DE);
-    }
-
-    if (m_guidingWE && now >= m_guideEndWE)
-    {
-        m_guidingWE = false;
-        GuideComplete(INDI_EQ_AXIS::AXIS_RA);
-    }
-}
-
-// ---------------------------------------------------------------------------
-// readGuideRate — query :GX90# and update OSX_GUIDE_RATE property
-// ---------------------------------------------------------------------------
-void OnStepXMount::readGuideRate()
-{
-    char reply[32];
-    if (!m_core.comm().sendCommand(":GX90#", reply))
-        return;
-
-    char *end;
-    double rate = std::strtod(reply, &end);
-    if (end == reply || rate <= 0.0)
-        return;
-
-    m_guideRateNP[0].setValue(rate);
-    m_guideRateNP.setState(IPS_OK);
-    m_guideRateNP.apply();
-}
+IPState OnStepXMount::GuideNorth(uint32_t ms) { return m_guide.guideNorth(ms); }
+IPState OnStepXMount::GuideSouth(uint32_t ms) { return m_guide.guideSouth(ms); }
+IPState OnStepXMount::GuideEast(uint32_t ms)  { return m_guide.guideEast(ms);  }
+IPState OnStepXMount::GuideWest(uint32_t ms)  { return m_guide.guideWest(ms);  }
 
 // ---------------------------------------------------------------------------
 // createFocusers — called once from updateProperties on first connect.
@@ -993,6 +917,8 @@ bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *state
         return true;
     if (WI::processSwitch(dev, name, states, names, n))
         return true;
+    if (isConnected() && m_info.handleSwitch(name, states, names, n))
+        return true;
     if (isConnected() && m_limits.handleSwitch(name, states, names, n))
         return true;
     if (isConnected() && m_tracking.handleSwitch(name, states, names, n))
@@ -1018,6 +944,12 @@ bool OnStepXMount::ISNewNumber(const char *dev, const char *name, double values[
         return true;
     if (WI::processNumber(dev, name, values, names, n))
         return true;
+    if (isConnected() && m_guide.handleNumber(name, values, names, n))
+        return true;
+    if (isConnected() && m_tracking.handleNumber(name, values, names, n))
+        return true;
+    if (isConnected() && m_weather.handleNumber(name, values, names, n))
+        return true;
     if (isConnected() && m_limits.handleNumber(name, values, names, n))
         return true;
     if (isConnected() && m_core.caps().featureMask && m_auxFeatures.handleNumber(name, values, names, n))
@@ -1042,6 +974,9 @@ bool OnStepXMount::saveConfigItems(FILE *fp)
     m_alignment.saveConfig(fp);
     m_auxFeatures.saveConfig(fp);
     m_limits.saveConfig(fp);
+    m_guide.saveConfig(fp);
+    m_info.saveConfig(fp);
+    m_weather.saveConfig(fp);
     m_pec.saveConfig(fp);
     m_rotator.saveConfig(fp);
     m_tracking.saveConfig(fp);

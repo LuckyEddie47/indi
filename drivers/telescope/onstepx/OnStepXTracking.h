@@ -39,6 +39,7 @@
       OSX_FREQ_ADJ         IP_RW  ISR_ATMOST1  3 switches: Down / Up / Reset (momentary)
       OSX_AUTO_FLIP        IP_RW  ISR_1OFMANY  2 switches: Off / On
       OSX_PREFERRED_PIER   IP_RW  ISR_1OFMANY  3 switches: West / East / Best
+      OSX_SLEW_RATE_MAX    IP_RW  Number[1]    Max slew rate in deg/sec (:GX4C# / :Rs[d.d]#)
 */
 
 #pragma once
@@ -60,6 +61,7 @@ class OnStepXTracking
 
         // Returns true if the event was consumed.
         bool handleSwitch(const char *name, ISState *states, char *names[], int n);
+        bool handleNumber(const char *name, double values[], char *names[], int n);
 
         void saveConfig(FILE *fp);
 
@@ -84,4 +86,6 @@ class OnStepXTracking
         INDI::PropertySwitch m_autoFlipSP     {2};
         // Preferred pier side for new gotos: West / East / Best
         INDI::PropertySwitch m_preferredPierSP{3};
+        // Max slew rate (deg/sec)
+        INDI::PropertyNumber m_slewRateMaxNP   {1};
 };

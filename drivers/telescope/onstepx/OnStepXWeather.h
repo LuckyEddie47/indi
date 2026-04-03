@@ -26,20 +26,30 @@
       :GX9C# — relative humidity (%, float)
       :GX9E# — dew point (deg C, float)
       :GX9F# — MCU temperature (deg C, float; optional, requires hasMcuTemp)
+      :SX9A,[v]# — set temperature calibration offset (reply '1')
+      :SX9B,[v]# — set pressure calibration offset (reply '1')
+      :SX9C,[v]# — set humidity calibration offset (reply '1')
+      :SU[+-f]#  — set DUT1 / UT1-UTC correction in seconds (reply '1')
 
     INDI Properties (Weather tab, via WeatherInterface):
-      WEATHER_TEMPERATURE  IP_RO
+      WEATHER_TEMPERATURE  IP_RO  (via WeatherInterface addParameter)
       WEATHER_PRESSURE     IP_RO
       WEATHER_HUMIDITY     IP_RO
       WEATHER_DEWPOINT     IP_RO
-      OSX_MCU_TEMP         IP_RO  (hasMcuTemp only)
+      OSX_MCU_TEMP         IP_RO  (via WeatherInterface addParameter, hasMcuTemp only)
+
+    INDI Properties owned directly by this helper:
+      OSX_WEATHER_SET      IP_RW  Number[3]  Temp / Pressure / Humidity offsets
+      OSX_DUT1             IP_RW  Number[1]  UT1-UTC correction (seconds)
 */
 
 #pragma once
 
 #include <indiapi.h>   // IPState
+#include <indipropertynumber.h>
 
 class OnStepXComm;
+namespace INDI { class DefaultDevice; }
 
 struct WeatherReading
 {
@@ -64,14 +74,25 @@ struct SensorData
 class OnStepXWeather
 {
     public:
-        void setComm(OnStepXComm *comm) { m_comm = comm; }
+        void setDevice(INDI::DefaultDevice *dev) { m_dev = dev; }
+        void setComm(OnStepXComm *comm)          { m_comm = comm; }
 
         // Query all weather sensors and return parsed values.
         // Caller must apply results via WeatherInterface::setParameterValue().
         SensorData readSensors(bool hasMcuTemp);
 
+        // INDI property lifecycle — both binaries call these
+        void initProperties();
+        void updateProperties(bool connected);
+        bool handleNumber(const char *name, double values[], char *names[], int n);
+        void saveConfig(FILE *fp);
+
     private:
-        OnStepXComm *m_comm { nullptr };
+        INDI::DefaultDevice *m_dev  { nullptr };
+        OnStepXComm         *m_comm { nullptr };
+
+        INDI::PropertyNumber m_weatherSetNP { 3 };  // OSX_WEATHER_SET: temp/pressure/humidity offsets
+        INDI::PropertyNumber m_dut1NP       { 1 };  // OSX_DUT1: UT1-UTC correction (seconds)
 
         // Try reading one sensor command; returns a WeatherReading with
         // ok=true on success.  Returns ok=false if the reply is absent or

@@ -22,6 +22,9 @@
 #include <indicom.h>
 #include <indistandardproperty.h>
 
+#include <cstdio>
+#include <cstdlib>
+
 #define TRACKING_TAB "Tracking"
 
 // ---------------------------------------------------------------------------
@@ -63,6 +66,11 @@ void OnStepXTracking::initProperties()
     m_preferredPierSP[2].fill("PIER_BEST", "Best", ISS_ON);
     m_preferredPierSP.fill(dev, "OSX_PREFERRED_PIER",
                            "Preferred Pier Side", TRACKING_TAB, IP_RW, ISR_1OFMANY, 60, IPS_IDLE);
+
+    // --- OSX_SLEW_RATE_MAX ---
+    m_slewRateMaxNP[0].fill("SLEW_RATE_MAX", "Max Rate (deg/s)", "%.1f", 0.1, 90.0, 0.5, 1.0);
+    m_slewRateMaxNP.fill(dev, "OSX_SLEW_RATE_MAX", "Max Slew Rate",
+                         TRACKING_TAB, IP_RW, 60, IPS_IDLE);
 }
 
 // ---------------------------------------------------------------------------
@@ -77,6 +85,7 @@ void OnStepXTracking::updateProperties(bool connected)
         m_dev->defineProperty(m_freqAdjSP);
         m_dev->defineProperty(m_autoFlipSP);
         m_dev->defineProperty(m_preferredPierSP);
+        m_dev->defineProperty(m_slewRateMaxNP);
         readSettings();
     }
     else
@@ -86,6 +95,7 @@ void OnStepXTracking::updateProperties(bool connected)
         m_dev->deleteProperty(m_freqAdjSP);
         m_dev->deleteProperty(m_autoFlipSP);
         m_dev->deleteProperty(m_preferredPierSP);
+        m_dev->deleteProperty(m_slewRateMaxNP);
     }
 }
 
@@ -186,6 +196,29 @@ bool OnStepXTracking::handleSwitch(const char *name, ISState *states, char *name
 }
 
 // ---------------------------------------------------------------------------
+// handleNumber
+// ---------------------------------------------------------------------------
+bool OnStepXTracking::handleNumber(const char *name, double values[], char *names[], int n)
+{
+    if (!m_slewRateMaxNP.isNameMatch(name))
+        return false;
+
+    m_slewRateMaxNP.update(values, names, n);
+    double rate = m_slewRateMaxNP[0].getValue();
+
+    char cmd[16];
+    snprintf(cmd, sizeof(cmd), ":Rs%.1f#", rate);
+    char reply[4];
+    if (m_comm->sendCommand(cmd, reply) && reply[0] == '1')
+        m_slewRateMaxNP.setState(IPS_OK);
+    else
+        m_slewRateMaxNP.setState(IPS_ALERT);
+
+    m_slewRateMaxNP.apply();
+    return true;
+}
+
+// ---------------------------------------------------------------------------
 // saveConfig
 // ---------------------------------------------------------------------------
 void OnStepXTracking::saveConfig(FILE *fp)
@@ -194,6 +227,7 @@ void OnStepXTracking::saveConfig(FILE *fp)
     m_trackAxisSP.save(fp);
     m_autoFlipSP.save(fp);
     m_preferredPierSP.save(fp);
+    m_slewRateMaxNP.save(fp);
 }
 
 // ---------------------------------------------------------------------------
@@ -268,5 +302,18 @@ void OnStepXTracking::readSettings()
         }
         m_preferredPierSP.setState(IPS_OK);
         m_preferredPierSP.apply();
+    }
+
+    // Max slew rate
+    if (m_comm->sendCommand(":GX4C#", reply))
+    {
+        char *end;
+        double rate = std::strtod(reply, &end);
+        if (end != reply && rate > 0.0)
+        {
+            m_slewRateMaxNP[0].setValue(rate);
+            m_slewRateMaxNP.setState(IPS_OK);
+            m_slewRateMaxNP.apply();
+        }
     }
 }

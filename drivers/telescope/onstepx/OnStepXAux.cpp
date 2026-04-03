@@ -27,6 +27,7 @@ OnStepXAux::OnStepXAux() : INDI::RotatorInterface(this),
     m_core.setDevice(this);
     m_auxFeatures.setDevice(this);
     m_rotator.setDevice(this);
+    m_weather.setDevice(this);
 }
 
 const char *OnStepXAux::getDefaultName()
@@ -40,6 +41,16 @@ bool OnStepXAux::initProperties()
 
     RI::initProperties("Rotator");
     m_rotator.initProperties(false);  // hasDerotator known only after Handshake
+
+    m_weather.initProperties();
+
+    // --- OSX_FIRMWARE ---
+    m_firmwareTP[0].fill("FIRMWARE_VERSION", "Version", "");
+    m_firmwareTP[1].fill("FIRMWARE_DATE",    "Date",    "");
+    m_firmwareTP[2].fill("FIRMWARE_TIME",    "Time",    "");
+    m_firmwareTP[3].fill("FIRMWARE_CONFIG",  "Config",  "");
+    m_firmwareTP.fill(getDeviceName(), "OSX_FIRMWARE", "Firmware Info",
+                      "OnStepX", IP_RO, 60, IPS_IDLE);
 
     WI::initProperties(WEATHER_TAB, WEATHER_TAB);
     addParameter("WEATHER_TEMPERATURE", "Temperature (C)",    -40,  80, 15);
@@ -78,6 +89,14 @@ bool OnStepXAux::updateProperties()
 
     if (isConnected())
     {
+        defineProperty(m_firmwareTP);
+        m_firmwareTP[0].setText(m_core.caps().firmwareVersion);
+        m_firmwareTP[1].setText(m_core.caps().firmwareDate);
+        m_firmwareTP[2].setText(m_core.caps().firmwareTime);
+        m_firmwareTP[3].setText(m_core.caps().configName);
+        m_firmwareTP.setState(IPS_OK);
+        m_firmwareTP.apply();
+
         createFocusers();
 
         if (m_core.caps().hasRotator)
@@ -104,9 +123,11 @@ bool OnStepXAux::updateProperties()
     }
     else
     {
+        deleteProperty(m_firmwareTP);
         if (m_core.caps().hasRotator)
             m_rotator.updateProperties(false, false);
         m_auxFeatures.deleteAll();
+        m_weather.updateProperties(false);
     }
 
     return true;
@@ -128,6 +149,7 @@ bool OnStepXAux::Handshake()
     m_auxFeatures.setComm(&m_core.comm());
     m_rotator.setComm(&m_core.comm());
     m_weather.setComm(&m_core.comm());
+    m_weather.updateProperties(true);
     return true;
 }
 
@@ -150,6 +172,8 @@ bool OnStepXAux::ISNewNumber(const char *dev, const char *name, double values[],
         return true;
     if (WI::processNumber(dev, name, values, names, n))
         return true;
+    if (isConnected() && m_weather.handleNumber(name, values, names, n))
+        return true;
     if (isConnected() && m_core.caps().featureMask && m_auxFeatures.handleNumber(name, values, names, n))
         return true;
     return INDI::DefaultDevice::ISNewNumber(dev, name, values, names, n);
@@ -167,6 +191,7 @@ bool OnStepXAux::saveConfigItems(FILE *fp)
     WI::saveConfigItems(fp);
     m_auxFeatures.saveConfig(fp);
     m_rotator.saveConfig(fp);
+    m_weather.saveConfig(fp);
     return true;
 }
 
