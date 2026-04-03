@@ -16,44 +16,9 @@
 #include <gtest/gtest.h>
 
 #include "OnStepXAuxFeatures.h"
-#include "OnStepXComm.h"
 
-#include <sys/socket.h>
-#include <thread>
-#include <unistd.h>
 #include <cstdio>
 #include <cstring>
-
-// ---------------------------------------------------------------------------
-// Socket pair helper
-// ---------------------------------------------------------------------------
-static std::pair<int,int> makePair()
-{
-    int sv[2];
-    if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) != 0)
-        throw std::runtime_error("socketpair failed");
-    return {sv[0], sv[1]};
-}
-
-struct Responder
-{
-    int fd;
-    std::string expect(const char *reply)
-    {
-        char buf[256] {};
-        int pos = 0;
-        while (pos < (int)sizeof(buf) - 1)
-        {
-            char c;
-            if (read(fd, &c, 1) != 1) break;
-            if (c == '#') break;
-            buf[pos++] = c;
-        }
-        std::string r(reply);
-        write(fd, r.c_str(), r.size());
-        return std::string(buf);
-    }
-};
 
 // ---------------------------------------------------------------------------
 // Expose private helpers via a test subclass

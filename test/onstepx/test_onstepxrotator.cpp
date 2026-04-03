@@ -54,7 +54,7 @@ struct Responder
             buf[pos++] = c;
         }
         std::string r(reply);
-        write(fd, r.c_str(), r.size());
+        if (write(fd, r.c_str(), r.size())) {};
         return std::string(buf);
     }
 };
@@ -308,8 +308,6 @@ TEST(RotatorHelper, ReadInitial_AngleAndBacklash)
 // ---------------------------------------------------------------------------
 TEST(RotatorAngle, FormatAngle_NegativeWraps)
 {
-    // -10 degrees should wrap to 350
-    char buf[32];
     // Access formatAngle indirectly via moveToAngle: the command sent should
     // encode 350:00:00 when angle=-10
     auto [dFd, rFd] = makePair();

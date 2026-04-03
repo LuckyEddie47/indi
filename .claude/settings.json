@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /home/ed/Data/Code/indi-onstepx/indi/drivers/telescope/onstepx/README*)",
+      "Bash(wc -l /home/ed/Data/Code/indi-onstepx/indi/drivers/telescope/onstepx/*.cpp)",
+      "Bash(grep -n \"write\\(fd,\" /home/ed/Data/Code/indi-onstepx/indi/test/onstepx/*.cpp)",
+      "Bash(cmake --build /home/ed/Data/Code/indi-onstepx/indi/build --target test_onstepxpec --target test_onstepxalignment --target test_onstepxauxfeatures --target test_onstepxfocuser --target test_onstepxrotator --target test_onstepxguide --target test_onstepxtracking)",
+      "Bash(cmake --build /home/ed/Data/Code/indi-onstepx/indi/build)",
+      "Bash(ctest --test-dir build --output-on-failure)",
+      "Bash(ctest --test-dir /home/ed/Data/Code/indi-onstepx/indi/build --output-on-failure)",
+      "Bash(cmake .. -DCMAKE_BUILD_TYPE=Debug -DINDI_BUILD_UNITTESTS=ON -DGMOCK_LIBRARY=/tmp/gmock_build/lib/libgmock.a -DGMOCK_INCLUDE_DIR=/usr/src/googletest/googlemock/include)",
+      "Bash(gcc --version)",
+      "Bash(/tmp/test_warn.c:*)",
+      "Bash(gcc -Wall -Wunused-result -c /tmp/test_warn.c -o /tmp/test_warn.o)",
+      "Bash(grep -n \"struct Responder\" /home/ed/Data/Code/indi-onstepx/indi/test/onstepx/*.cpp)",
+      "Bash(cmake --build . --target test_onstepxguide test_onstepxtracking test_onstepxfocuser test_onstepxrotator test_onstepxauxfeatures test_onstepxpec test_onstepxalignment)",
+      "Bash(ctest -R onstepx --output-on-failure)"
+    ]
+  }
+}

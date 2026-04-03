@@ -43,7 +43,7 @@ static std::string respondOnce(int fd, const char *reply)
     }
     std::string r(reply);
     r += '#';
-    write(fd, r.c_str(), r.size());
+    if (write(fd, r.c_str(), r.size())) {};
     return std::string(buf);
 }
 

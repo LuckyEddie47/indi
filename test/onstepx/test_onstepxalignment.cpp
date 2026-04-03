@@ -45,7 +45,7 @@ struct Responder
             buf[pos++] = c;
         }
         std::string r(reply);
-        write(fd, r.c_str(), r.size());
+        if (write(fd, r.c_str(), r.size())) {};
         return std::string(buf);
     }
 };
@@ -134,7 +134,6 @@ TEST(AlignStatus, Parse_NotStarted)
 
 TEST(AlignStatus, Parse_InProgress)
 {
-    const char reply[] = "931";   // max=9, current=3, target=1 — actually current>target = done
     // "in progress" means current < target
     const char reply2[] = "912";  // max=9, current=1, target=2
     int cur = reply2[1] - '0';

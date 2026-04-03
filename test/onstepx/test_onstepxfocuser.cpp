@@ -49,7 +49,7 @@ struct Responder
         }
         // Send reply (no '#' for single-char, '#'-terminated for regular)
         std::string r(reply);
-        write(fd, r.c_str(), r.size());
+        if (write(fd, r.c_str(), r.size())) {};
         return std::string(buf);
     }
 
@@ -65,7 +65,7 @@ struct Responder
             if (c == '#') break;
             buf[pos++] = c;
         }
-        write(fd, &reply, 1);
+        if (write(fd, &reply, 1)) {};
         return std::string(buf);
     }
 };

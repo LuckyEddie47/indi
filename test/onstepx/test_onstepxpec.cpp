@@ -43,7 +43,7 @@ struct Responder
             buf[pos++] = c;
         }
         std::string r(reply);
-        write(fd, r.c_str(), r.size());
+        if (write(fd, r.c_str(), r.size())) {};
         return std::string(buf);
     }
 };
@@ -180,7 +180,7 @@ TEST(PecHelper, ReadWormSteps_Invalid)
 {
     const char *reply = "";
     char *end;
-    long val = std::strtol(reply, &end, 10);
+    std::strtol(reply, &end, 10);
     EXPECT_EQ(end, reply);
 }
 
