@@ -63,6 +63,12 @@ void OnStepXLimits::initProperties()
     m_meridianLimitNP[1].fill("MERIDIAN_WEST", "W of Meridian (min)", "%.0f", -600, 600, 1, 0);
     m_meridianLimitNP.fill(m_dev ? m_dev->getDeviceName() : "",
                            "MERIDIAN_LIMITS", "Meridian Limits", LIMITS_TAB, IP_RW, 0, IPS_IDLE);
+
+    // --- Mount backlash ---
+    m_backlashNP[0].fill("MOUNT_BACKLASH_AXIS1", "Axis1 RA/Az (arcsec)",  "%.0f", 0, 3600, 1, 0);
+    m_backlashNP[1].fill("MOUNT_BACKLASH_AXIS2", "Axis2 Dec/Alt (arcsec)","%.0f", 0, 3600, 1, 0);
+    m_backlashNP.fill(m_dev ? m_dev->getDeviceName() : "",
+                      "OSX_MOUNT_BACKLASH", "Mount Backlash", LIMITS_TAB, IP_RW, 0, IPS_IDLE);
 }
 
 // ---------------------------------------------------------------------------
@@ -80,6 +86,7 @@ void OnStepXLimits::updateProperties(bool connected, bool hasHomeSense)
             m_dev->defineProperty(m_homeOffsetNP);
         m_dev->defineProperty(m_horizonLimitNP);
         m_dev->defineProperty(m_meridianLimitNP);
+        m_dev->defineProperty(m_backlashNP);
 
         // Populate limits from device
         readLimits();
@@ -91,6 +98,7 @@ void OnStepXLimits::updateProperties(bool connected, bool hasHomeSense)
         m_dev->deleteProperty(m_homeOffsetNP);
         m_dev->deleteProperty(m_horizonLimitNP);
         m_dev->deleteProperty(m_meridianLimitNP);
+        m_dev->deleteProperty(m_backlashNP);
     }
 }
 
@@ -178,6 +186,21 @@ bool OnStepXLimits::handleNumber(const char *name, double values[], char *names[
         return true;
     }
 
+    if (m_backlashNP.isNameMatch(name))
+    {
+        m_backlashNP.update(values, names, n);
+        char cmd[32];
+        bool ok = true;
+        char reply[64];
+        snprintf(cmd, sizeof(cmd), ":$BR%d#", static_cast<int>(m_backlashNP[0].getValue()));
+        if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1') ok = false;
+        snprintf(cmd, sizeof(cmd), ":$BD%d#", static_cast<int>(m_backlashNP[1].getValue()));
+        if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1') ok = false;
+        m_backlashNP.setState(ok ? IPS_OK : IPS_ALERT);
+        m_backlashNP.apply();
+        return true;
+    }
+
     return false;
 }
 
@@ -190,6 +213,7 @@ void OnStepXLimits::saveConfig(FILE *fp)
     m_homeOffsetNP.save(fp);
     m_horizonLimitNP.save(fp);
     m_meridianLimitNP.save(fp);
+    m_backlashNP.save(fp);
 }
 
 // ---------------------------------------------------------------------------
@@ -239,7 +263,22 @@ bool OnStepXLimits::readLimits()
     m_meridianLimitNP.setState(ok2 ? IPS_OK : IPS_ALERT);
     m_meridianLimitNP.apply();
 
-    return ok && ok2;
+    // Mount backlash (:%BR# -> Axis1, :%BD# -> Axis2)
+    bool ok3 = true;
+    if (m_comm->sendCommand(":%BR#", reply))
+        m_backlashNP[0].setValue(std::atof(reply));
+    else
+        ok3 = false;
+
+    if (m_comm->sendCommand(":%BD#", reply))
+        m_backlashNP[1].setValue(std::atof(reply));
+    else
+        ok3 = false;
+
+    m_backlashNP.setState(ok3 ? IPS_OK : IPS_ALERT);
+    m_backlashNP.apply();
+
+    return ok && ok2 && ok3;
 }
 
 // ---------------------------------------------------------------------------

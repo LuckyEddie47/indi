@@ -208,6 +208,131 @@ TEST_F(TrackingTest, PreferredPierBest_SendsSX96_B)
 }
 
 // ---------------------------------------------------------------------------
+// Stage 15: OSX_SLEW_RATE_MAX tests
+// ---------------------------------------------------------------------------
+TEST_F(TrackingTest, SlewRateMax_WritesSendRs)
+{
+    double values[] = { 2.5 };
+    const char *names[] = { "SLEW_RATE_MAX" };
+
+    auto cmd = respondInBackground("1", [&]{
+        m_tracking.handleNumber("OSX_SLEW_RATE_MAX", values, const_cast<char**>(names), 1);
+    });
+    EXPECT_EQ(cmd, ":Rs2.5");
+}
+
+TEST_F(TrackingTest, SlewRateMax_NackSetsAlert)
+{
+    double values[] = { 5.0 };
+    const char *names[] = { "SLEW_RATE_MAX" };
+
+    respondInBackground("0", [&]{
+        m_tracking.handleNumber("OSX_SLEW_RATE_MAX", values, const_cast<char**>(names), 1);
+    });
+    EXPECT_EQ(IPS_ALERT, m_tracking.slewRateMaxNP().getState());
+}
+
+// ---------------------------------------------------------------------------
+// Stage 16: OSX_TRACK_FREQ tests
+// Multi-reply responder shared below
+// ---------------------------------------------------------------------------
+class TrackFreqResponder
+{
+public:
+    void addRule(const std::string &key, const std::string &reply)
+    {
+        m_rules[key] = reply;
+    }
+    void start(int fd)
+    {
+        m_fd = fd;
+        m_thread = std::thread([this]{ run(); });
+    }
+    void stop()
+    {
+        if (m_fd >= 0) { shutdown(m_fd, SHUT_RDWR); close(m_fd); m_fd = -1; }
+        if (m_thread.joinable()) m_thread.join();
+    }
+    const std::vector<std::string> &cmds() const { return m_cmds; }
+private:
+    int m_fd{-1};
+    std::thread m_thread;
+    std::map<std::string,std::string> m_rules;
+    std::vector<std::string> m_cmds;
+    void run()
+    {
+        char buf[256]; int pos=0;
+        while (true)
+        {
+            if (read(m_fd, buf+pos, 1) <= 0) break;
+            if (buf[pos++] == '#')
+            {
+                buf[pos] = '\0';
+                std::string full(buf, pos);
+                m_cmds.push_back(full);
+                std::string key = full.substr(1, full.size()-2);
+                std::string rep = m_rules.count(key) ? m_rules[key] : "1";
+                rep += '#';
+                if (write(m_fd, rep.c_str(), rep.size()) < 0) break;
+                pos = 0;
+            }
+            if (pos >= 255) pos = 0;
+        }
+    }
+};
+
+TEST(TrackFreqTest, ReadSettings_QueriesGT)
+{
+    int sv[2];
+    ASSERT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, sv));
+    OnStepXComm comm; comm.setFd(sv[0]);
+    OnStepXTracking tracking; tracking.setComm(&comm); tracking.initProperties();
+
+    TrackFreqResponder resp;
+    resp.addRule("GX95",  "0");
+    resp.addRule("GX96",  "B");
+    resp.addRule("GX4C",  "2.0");
+    resp.addRule("GT",    "60.1642");
+    resp.start(sv[1]);
+
+    tracking.readSettings();
+    resp.stop();
+    close(sv[0]);
+
+    bool hasGT = false;
+    for (const auto &c : resp.cmds())
+        if (c == ":GT#") hasGT = true;
+    EXPECT_TRUE(hasGT) << ":GT# not sent during readSettings()";
+    EXPECT_NEAR(60.1642, tracking.trackFreqNP()[0].getValue(), 0.0001);
+}
+
+TEST(TrackFreqTest, SyncStatus_PollsGTEvery10Calls)
+{
+    int sv[2];
+    ASSERT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, sv));
+    OnStepXComm comm; comm.setFd(sv[0]);
+    OnStepXTracking tracking; tracking.setComm(&comm); tracking.initProperties();
+
+    TrackFreqResponder resp;
+    resp.addRule("GT", "59.9");
+    resp.start(sv[1]);
+
+    MountStatus s;
+    s.trackComp = MountStatus::TrackComp::NONE;
+    // Call syncStatus 10 times — :GT# should be issued on the 10th
+    for (int i = 0; i < 10; i++)
+        tracking.syncStatus(s);
+
+    resp.stop();
+    close(sv[0]);
+
+    int gtCount = 0;
+    for (const auto &c : resp.cmds())
+        if (c == ":GT#") gtCount++;
+    EXPECT_EQ(1, gtCount) << "Expected exactly one :GT# query after 10 syncStatus calls";
+}
+
+// ---------------------------------------------------------------------------
 // SetTrackRate — verify command format produced by snprintf
 // ---------------------------------------------------------------------------
 TEST(TrackRate, RACommandFormat)

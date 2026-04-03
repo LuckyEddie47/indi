@@ -37,6 +37,9 @@
       OSX_MERIDIAN_LIMITS  IP_RW  2 numbers: West Limit / East Limit (deg)
       OSX_HOME_AUTO_BOOT   IP_RW  ISR_1OFMANY  2 switches: Off / On
       OSX_HOME_OFFSETS     IP_RW  2 numbers: Axis 1 / Axis 2 (arcmin; hasHomeSense only)
+      OSX_MOUNT_BACKLASH   IP_RW  2 numbers: Axis1 (RA/Az) / Axis2 (Dec/Alt) arcsec
+        Read:  :%BR# -> Axis1,  :%BD# -> Axis2
+        Write: :$BR[n]# / :$BD[n]# (each expects '1' reply)
 */
 
 #pragma once
@@ -90,6 +93,7 @@ class OnStepXLimits
         INDI::PropertyNumber &homeOffsetNP()  { return m_homeOffsetNP; }
         INDI::PropertyNumber &horizonLimitNP(){ return m_horizonLimitNP; }
         INDI::PropertyNumber &meridianLimitNP(){ return m_meridianLimitNP; }
+        INDI::PropertyNumber &backlashNP()     { return m_backlashNP; }
 
     private:
         OnStepXComm        *m_comm { nullptr };
@@ -100,4 +104,5 @@ class OnStepXLimits
         INDI::PropertyNumber m_homeOffsetNP  { 2 };  // Axis1, Axis2 home offsets
         INDI::PropertyNumber m_horizonLimitNP  { 2 };// Min alt, Max alt (degrees)
         INDI::PropertyNumber m_meridianLimitNP { 2 };// East, West meridian (minutes)
+        INDI::PropertyNumber m_backlashNP      { 2 };// Axis1 (RA/Az) / Axis2 (Dec/Alt) arcsec
 };

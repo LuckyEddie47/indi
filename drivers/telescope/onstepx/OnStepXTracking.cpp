@@ -71,6 +71,11 @@ void OnStepXTracking::initProperties()
     m_slewRateMaxNP[0].fill("SLEW_RATE_MAX", "Max Rate (deg/s)", "%.1f", 0.1, 90.0, 0.5, 1.0);
     m_slewRateMaxNP.fill(dev, "OSX_SLEW_RATE_MAX", "Max Slew Rate",
                          TRACKING_TAB, IP_RW, 60, IPS_IDLE);
+
+    // --- OSX_TRACK_FREQ ---
+    m_trackFreqNP[0].fill("TRACK_FREQ", "Frequency (Hz)", "%.4f", 0.0, 100.0, 0.0001, 0.0);
+    m_trackFreqNP.fill(dev, "OSX_TRACK_FREQ", "Track Frequency",
+                       TRACKING_TAB, IP_RO, 60, IPS_IDLE);
 }
 
 // ---------------------------------------------------------------------------
@@ -86,6 +91,7 @@ void OnStepXTracking::updateProperties(bool connected)
         m_dev->defineProperty(m_autoFlipSP);
         m_dev->defineProperty(m_preferredPierSP);
         m_dev->defineProperty(m_slewRateMaxNP);
+        m_dev->defineProperty(m_trackFreqNP);
         readSettings();
     }
     else
@@ -96,6 +102,7 @@ void OnStepXTracking::updateProperties(bool connected)
         m_dev->deleteProperty(m_autoFlipSP);
         m_dev->deleteProperty(m_preferredPierSP);
         m_dev->deleteProperty(m_slewRateMaxNP);
+        m_dev->deleteProperty(m_trackFreqNP);
     }
 }
 
@@ -268,6 +275,23 @@ void OnStepXTracking::syncStatus(const MountStatus &s)
     m_trackAxisSP[isDual ? 1 : 0].setState(ISS_ON);
     m_trackAxisSP.setState(IPS_OK);
     m_trackAxisSP.apply();
+
+    // Poll :GT# every 10 calls to update tracking frequency display
+    if ((++m_syncCount % 10) == 0)
+    {
+        char reply[32];
+        if (m_comm && m_comm->sendCommand(":GT#", reply))
+        {
+            char *end;
+            double freq = std::strtod(reply, &end);
+            if (end != reply && freq > 0.0)
+            {
+                m_trackFreqNP[0].setValue(freq);
+                m_trackFreqNP.setState(IPS_OK);
+                m_trackFreqNP.apply();
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -314,6 +338,19 @@ void OnStepXTracking::readSettings()
             m_slewRateMaxNP[0].setValue(rate);
             m_slewRateMaxNP.setState(IPS_OK);
             m_slewRateMaxNP.apply();
+        }
+    }
+
+    // Tracking frequency
+    if (m_comm->sendCommand(":GT#", reply))
+    {
+        char *end;
+        double freq = std::strtod(reply, &end);
+        if (end != reply && freq > 0.0)
+        {
+            m_trackFreqNP[0].setValue(freq);
+            m_trackFreqNP.setState(IPS_OK);
+            m_trackFreqNP.apply();
         }
     }
 }

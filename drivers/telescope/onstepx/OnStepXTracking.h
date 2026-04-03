@@ -40,6 +40,7 @@
       OSX_AUTO_FLIP        IP_RW  ISR_1OFMANY  2 switches: Off / On
       OSX_PREFERRED_PIER   IP_RW  ISR_1OFMANY  3 switches: West / East / Best
       OSX_SLEW_RATE_MAX    IP_RW  Number[1]    Max slew rate in deg/sec (:GX4C# / :Rs[d.d]#)
+      OSX_TRACK_FREQ       IP_RO  Number[1]    Current tracking frequency Hz (:GT#)
 */
 
 #pragma once
@@ -63,9 +64,14 @@ class OnStepXTracking
         bool handleSwitch(const char *name, ISState *states, char *names[], int n);
         bool handleNumber(const char *name, double values[], char *names[], int n);
 
+        // Property accessors (used by tests and by OnStepXMount for state sync)
+        INDI::PropertyNumber &slewRateMaxNP() { return m_slewRateMaxNP; }
+        INDI::PropertyNumber &trackFreqNP()   { return m_trackFreqNP; }
+
         void saveConfig(FILE *fp);
 
         // Sync displayed state from a freshly polled MountStatus (trackComp field).
+        // Also polls :GT# to update OSX_TRACK_FREQ.
         void syncStatus(const MountStatus &s);
 
         // Query :GX95# and :GX96# to initialise autoFlip and preferredPier
@@ -88,4 +94,8 @@ class OnStepXTracking
         INDI::PropertySwitch m_preferredPierSP{3};
         // Max slew rate (deg/sec)
         INDI::PropertyNumber m_slewRateMaxNP   {1};
+        // Current tracking frequency (Hz, IP_RO)
+        INDI::PropertyNumber m_trackFreqNP     {1};
+
+        int m_syncCount { 0 };  // poll counter for throttling :GT# query
 };

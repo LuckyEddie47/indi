@@ -279,6 +279,91 @@ TEST_F(LimitsTest, HandleNumber_MeridianLimitsSendsSXE9SXEA)
 }
 
 // ---------------------------------------------------------------------------
+// Stage 16: OSX_MOUNT_BACKLASH tests
+// ---------------------------------------------------------------------------
+TEST_F(LimitsTest, Backlash_ReadOnConnect)
+{
+    m_responder.addRule("%BR", "120");
+    m_responder.addRule("%BD", "45");
+    // Also add the existing limit rules so readLimits() doesn't fail
+    m_responder.addRule("Gh",   "-10");
+    m_responder.addRule("Go",   "89");
+    m_responder.addRule("GXE9", "15");
+    m_responder.addRule("GXEA", "30");
+    m_responder.start(m_mockFd);
+
+    m_limits.initProperties();
+    bool ok = m_limits.readLimits();
+    m_responder.stop();
+
+    EXPECT_TRUE(ok);
+    EXPECT_NEAR(120.0, m_limits.backlashNP()[0].getValue(), 0.1);
+    EXPECT_NEAR( 45.0, m_limits.backlashNP()[1].getValue(), 0.1);
+}
+
+TEST_F(LimitsTest, Backlash_WriteAxis1SendsBR)
+{
+    m_limits.initProperties();
+    m_responder.start(m_mockFd);
+
+    double values[] = { 200.0, 80.0 };
+    const char *names[] = { "MOUNT_BACKLASH_AXIS1", "MOUNT_BACKLASH_AXIS2" };
+    bool handled = m_limits.handleNumber("OSX_MOUNT_BACKLASH",
+                                         values, const_cast<char **>(names), 2);
+    m_responder.stop();
+
+    EXPECT_TRUE(handled);
+    bool hasBR = false, hasBD = false;
+    for (const auto &c : m_responder.cmds())
+    {
+        if (c.find(":$BR200#") != std::string::npos) hasBR = true;
+        if (c.find(":$BD80#")  != std::string::npos) hasBD = true;
+    }
+    EXPECT_TRUE(hasBR) << "Expected :$BR200# — got: "
+                       << (m_responder.cmds().empty() ? "(none)" : m_responder.cmds()[0]);
+    EXPECT_TRUE(hasBD) << "Expected :$BD80#";
+}
+
+TEST_F(LimitsTest, Backlash_WriteBothAxesSentTogether)
+{
+    m_limits.initProperties();
+    m_responder.start(m_mockFd);
+
+    double values[] = { 500.0, 300.0 };
+    const char *names[] = { "MOUNT_BACKLASH_AXIS1", "MOUNT_BACKLASH_AXIS2" };
+    m_limits.handleNumber("OSX_MOUNT_BACKLASH",
+                          values, const_cast<char **>(names), 2);
+    m_responder.stop();
+
+    // Both commands must appear regardless of order
+    int brCount = 0, bdCount = 0;
+    for (const auto &c : m_responder.cmds())
+    {
+        if (c.find(":$BR") != std::string::npos) brCount++;
+        if (c.find(":$BD") != std::string::npos) bdCount++;
+    }
+    EXPECT_EQ(1, brCount) << "Expected exactly one :$BR# command";
+    EXPECT_EQ(1, bdCount) << "Expected exactly one :$BD# command";
+}
+
+TEST_F(LimitsTest, Backlash_NackSetsAlertState)
+{
+    m_limits.initProperties();
+    // Responder replies '0' (NACK) for all commands
+    m_responder.addRule("$BR200", "0");
+    m_responder.addRule("$BD80",  "0");
+    m_responder.start(m_mockFd);
+
+    double values[] = { 200.0, 80.0 };
+    const char *names[] = { "MOUNT_BACKLASH_AXIS1", "MOUNT_BACKLASH_AXIS2" };
+    m_limits.handleNumber("OSX_MOUNT_BACKLASH",
+                          values, const_cast<char **>(names), 2);
+    m_responder.stop();
+
+    EXPECT_EQ(IPS_ALERT, m_limits.backlashNP().getState());
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 int main(int argc, char **argv)

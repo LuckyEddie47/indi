@@ -19,6 +19,7 @@
 #include "OnStepXSite.h"
 #include "OnStepXComm.h"
 
+#include <defaultdevice.h>
 #include <indilogger.h>
 #include <indicom.h>                    // f_scansexa, getSexComponentsIID
 #include <libnova/utility.h>            // ln_date_to_zonedate
@@ -28,6 +29,164 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
+#define SITES_TAB "Sites"
+
+// ---------------------------------------------------------------------------
+// initProperties
+// ---------------------------------------------------------------------------
+void OnStepXSite::initProperties()
+{
+    const char *dev = m_dev ? m_dev->getDeviceName() : "";
+
+    // --- OSX_SITE_SELECT ---
+    m_siteSelectSP[0].fill("SITE_1", "Site 1", ISS_ON);
+    m_siteSelectSP[1].fill("SITE_2", "Site 2", ISS_OFF);
+    m_siteSelectSP[2].fill("SITE_3", "Site 3", ISS_OFF);
+    m_siteSelectSP[3].fill("SITE_4", "Site 4", ISS_OFF);
+    m_siteSelectSP.fill(dev, "OSX_SITE_SELECT", "Site Profile",
+                        SITES_TAB, IP_RW, ISR_1OFMANY, 60, IPS_IDLE);
+
+    // --- OSX_SITE_NAME ---
+    m_siteNameTP[0].fill("SITE_NAME", "Name", "");
+    m_siteNameTP.fill(dev, "OSX_SITE_NAME", "Site Name",
+                      SITES_TAB, IP_RW, 60, IPS_IDLE);
+}
+
+// ---------------------------------------------------------------------------
+// updateProperties
+// ---------------------------------------------------------------------------
+void OnStepXSite::updateProperties(bool connected)
+{
+    if (connected)
+    {
+        m_dev->defineProperty(m_siteSelectSP);
+        m_dev->defineProperty(m_siteNameTP);
+        readSiteNames();
+    }
+    else
+    {
+        m_dev->deleteProperty(m_siteSelectSP);
+        m_dev->deleteProperty(m_siteNameTP);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// handleSwitch — OSX_SITE_SELECT
+// ---------------------------------------------------------------------------
+bool OnStepXSite::handleSwitch(const char *name, ISState *states, char *names[], int n)
+{
+    if (!m_siteSelectSP.isNameMatch(name))
+        return false;
+
+    m_siteSelectSP.update(states, names, n);
+
+    // Determine which site was selected (1-based)
+    int site = 1;
+    for (int i = 0; i < 4; i++)
+        if (m_siteSelectSP[i].getState() == ISS_ON) { site = i + 1; break; }
+
+    double lat = 0, lon = 0, elev = 0;
+    if (selectSite(site, lat, lon, elev))
+    {
+        m_lastLat         = lat;
+        m_lastLon         = lon;
+        m_lastElev        = elev;
+        m_locationUpdated = true;
+        m_siteSelectSP.setState(IPS_OK);
+        readSiteNames();
+    }
+    else
+    {
+        m_siteSelectSP.setState(IPS_ALERT);
+    }
+    m_siteSelectSP.apply();
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// handleText — OSX_SITE_NAME
+// ---------------------------------------------------------------------------
+bool OnStepXSite::handleText(const char *name, char *texts[], char *names[], int n)
+{
+    if (!m_siteNameTP.isNameMatch(name))
+        return false;
+
+    m_siteNameTP.update(texts, names, n);
+    const char *newName = m_siteNameTP[0].getText();
+
+    // Command depends on active site slot
+    const char *cmds[4] = { ":SM", ":SN", ":SO", ":SP" };
+    int idx = m_activeSite - 1;
+    if (idx < 0 || idx > 3) idx = 0;
+
+    char cmd[64];
+    snprintf(cmd, sizeof(cmd), "%s%s#", cmds[idx], newName);
+    char reply[4];
+    if (m_comm->sendCommand(cmd, reply) && reply[0] == '1')
+    {
+        m_siteNameTP.setState(IPS_OK);
+        // Refresh switch labels too
+        readSiteNames();
+    }
+    else
+    {
+        m_siteNameTP.setState(IPS_ALERT);
+    }
+    m_siteNameTP.apply();
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// saveConfig — site names are stored in firmware; nothing to persist here
+// ---------------------------------------------------------------------------
+void OnStepXSite::saveConfig(FILE *fp)
+{
+    (void)fp;
+}
+
+// ---------------------------------------------------------------------------
+// readSiteNames — query :GM#/:GN#/:GO#/:GP#; update labels and name field
+// ---------------------------------------------------------------------------
+void OnStepXSite::readSiteNames()
+{
+    const char *cmds[4]  = { ":GM#", ":GN#", ":GO#", ":GP#" };
+    char reply[64];
+    char names[4][64]    = { "Site 1", "Site 2", "Site 3", "Site 4" };
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (m_comm->sendCommand(cmds[i], reply) && reply[0] != '\0')
+            snprintf(names[i], sizeof(names[i]), "%s", reply);
+        m_siteSelectSP[i].setLabel(names[i]);
+    }
+
+    m_siteSelectSP.setState(IPS_OK);
+    m_siteSelectSP.apply();
+
+    // Populate name field with active site's name
+    int idx = m_activeSite - 1;
+    if (idx < 0 || idx > 3) idx = 0;
+    m_siteNameTP[0].setText(names[idx]);
+    m_siteNameTP.setState(IPS_OK);
+    m_siteNameTP.apply();
+}
+
+// ---------------------------------------------------------------------------
+// selectSite — send :W[n]#, then re-read location
+// ---------------------------------------------------------------------------
+bool OnStepXSite::selectSite(int n, double &lat, double &lon, double &elev)
+{
+    // :W[n]# is blind (no reply)
+    char cmd[8];
+    snprintf(cmd, sizeof(cmd), ":W%d#", n);
+    m_comm->sendCommandBlind(cmd);
+
+    m_activeSite = n;
+
+    // Re-read location so caller can update GEOGRAPHIC_COORD
+    return readLocation(lat, lon, elev);
+}
 
 // ---------------------------------------------------------------------------
 // writeLocation

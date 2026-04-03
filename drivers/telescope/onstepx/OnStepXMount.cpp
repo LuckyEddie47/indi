@@ -102,6 +102,9 @@ bool OnStepXMount::initProperties()
     // Limits and home
     m_limits.initProperties();
 
+    // Site profiles
+    m_site.initProperties();
+
     // Advanced tracking properties
     m_tracking.initProperties();
 
@@ -164,6 +167,7 @@ bool OnStepXMount::updateProperties()
         m_info.setComm(&m_core.comm());
         m_pec.setComm(&m_core.comm());
         m_site.setComm(&m_core.comm());
+        m_site.updateProperties(true);
         m_limits.setComm(&m_core.comm());
         m_rotator.setComm(&m_core.comm());
         m_tracking.setComm(&m_core.comm());
@@ -209,6 +213,7 @@ bool OnStepXMount::updateProperties()
         m_tracking.updateProperties(false);
         m_guide.updateProperties(false);
         m_info.updateProperties(false, {});
+        m_site.updateProperties(false);
         m_weather.updateProperties(false);
         if (m_core.caps().hasRotator)
             m_rotator.updateProperties(false, false);
@@ -919,6 +924,16 @@ bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *state
         return true;
     if (isConnected() && m_info.handleSwitch(name, states, names, n))
         return true;
+    if (isConnected() && m_site.handleSwitch(name, states, names, n))
+    {
+        // Site switch — re-read location and push to GEOGRAPHIC_COORD
+        if (m_site.locationUpdated())
+        {
+            UpdateLocation(m_site.lastLat(), m_site.lastLon(), m_site.lastElev());
+            m_site.clearLocationUpdated();
+        }
+        return true;
+    }
     if (isConnected() && m_limits.handleSwitch(name, states, names, n))
         return true;
     if (isConnected() && m_tracking.handleSwitch(name, states, names, n))
@@ -961,6 +976,8 @@ bool OnStepXMount::ISNewNumber(const char *dev, const char *name, double values[
 
 bool OnStepXMount::ISNewText(const char *dev, const char *name, char *texts[], char *names[], int n)
 {
+    if (isConnected() && m_site.handleText(name, texts, names, n))
+        return true;
     if (isConnected() && !isEquatorial())
         ProcessAlignmentTextProperties(this, name, texts, names, n);
     return INDI::Telescope::ISNewText(dev, name, texts, names, n);
@@ -974,6 +991,7 @@ bool OnStepXMount::saveConfigItems(FILE *fp)
     m_alignment.saveConfig(fp);
     m_auxFeatures.saveConfig(fp);
     m_limits.saveConfig(fp);
+    m_site.saveConfig(fp);
     m_guide.saveConfig(fp);
     m_info.saveConfig(fp);
     m_weather.saveConfig(fp);
