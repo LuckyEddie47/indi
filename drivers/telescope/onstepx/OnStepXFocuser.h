@@ -1,5 +1,5 @@
 /*
-    OnStep X INDI Driver — Focuser device (one instance per physical focuser slot)
+    OnStep X INDI Driver — Focuser device (shared by both binaries)
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -14,6 +14,31 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    One INDI::Focuser child device per physical focuser slot (slots 1-6).
+    The parent device (OnStepXMount or OnStepXAux) creates instances after
+    Handshake, calls setComm() to wire in the shared comm object, then
+    calls ISGetProperties(nullptr) to announce the device to INDI clients.
+    1 tick = 1 micron throughout this class.
+
+    Protocol (OnStepX v10.24c):
+      All commands are prefixed with :FA[slot]# to select the focuser slot.
+      :FG#    — get position (integer, microns)
+      :FM#    — get max position (integer, microns)
+      :FT#    — status: 'M'=moving, 'S'=stopped
+      :Ft#    — temperature (float, deg C); 999 = no sensor
+      :FN[n]# — goto absolute position n microns (reply '1')
+      :Fm[n]# — move relative n microns, signed (no reply)
+      :FQ#    — abort (no reply)
+      :FB[n]# — set backlash n steps (reply '1')
+      :FP[n]# — set speed 1-4 (reply '1')
+
+    INDI Properties (standard FocuserInterface):
+      ABS_FOCUS_POSITION    IP_RW  1 number: position (microns)
+      REL_FOCUS_POSITION    IP_RW  1 number: relative move (microns)
+      FOCUS_ABORT_MOTION    IP_RW  1 switch
+      FOCUS_BACKLASH_STEPS  IP_RW  1 number: backlash (steps)
+      OSX_FOCUS_TEMPERATURE IP_RO  1 number: temperature (deg C)
 */
 
 #pragma once
@@ -22,27 +47,6 @@
 
 #include <indifocuser.h>
 
-// One INDI::Focuser device per physical focuser slot (slot = 1-6).
-//
-// Protocol (all commands are prefixed with :FA[slot]# to select the focuser):
-//   :FG#  — get position (integer, microns)
-//   :FM#  — get max position (integer, microns)
-//   :FT#  — status: '0'=idle, 'S'=stopped, 'M'=moving
-//   :Ft#  — temperature (float, °C); may return 999 if no sensor
-//   :FN[n]# — goto absolute position n microns (reply '1')
-//   :Fm[n]# — move relative n microns, signed (no reply)
-//   :FQ#  — abort (no reply)
-//   :FB[n]# — set backlash n steps (reply '1')
-//   :FP[n]# — set speed 1-4 (reply '1')
-//
-// Connection model:
-//   The focuser has no own Serial/TCP connection.  The parent device
-//   (OnStepXMount or OnStepXAux) calls setComm() after its own Handshake
-//   succeeds and then calls ISGetProperties(nullptr) to announce this device
-//   to connected INDI clients.  The parent later calls pollStatus() every
-//   5 seconds from its own poll throttle.
-//
-// 1 tick = 1 micron throughout this class.
 class OnStepXFocuser : public INDI::Focuser
 {
     public:

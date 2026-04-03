@@ -1,5 +1,5 @@
 /*
-    OnStep X INDI Driver
+    OnStep X INDI Driver — Handshake and capability probing (shared by both binaries)
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -14,6 +14,19 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    Owns the shared OnStepXComm instance and the Capabilities struct.
+    probeController() runs for both binaries; probeMount() is mount-only.
+
+    Probe commands (OnStepX v10.24c):
+      :GVP#  — product name; must return "OnStepX" (Phase 1)
+      :GVN#  — firmware version string (Phase 1)
+      :GVD#  — firmware date string (Phase 1)
+      :GVT#  — firmware time string (Phase 1)
+      :GXY0# — 8-char aux-feature mask + capability flags (Phase 1)
+      :GX9A# — weather sensor probe: non-"0" reply = sensor present (Phase 1)
+      :Gu#   — binary status probe: any reply confirms hasBinaryStatus (Phase 2)
+      :GU#   — ASCII status string; used to derive mount type, PEC, pier side (Phase 2)
 */
 
 #pragma once

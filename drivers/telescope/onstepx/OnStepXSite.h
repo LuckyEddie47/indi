@@ -14,6 +14,20 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    Plain C++ helper -- no INDI base class.  Non-owning borrowed pointers.
+    Implements updateLocation() and updateTime() for OnStepXMount.
+
+    Protocol (OnStepX v10.24c):
+      :St[±DD:MM:SS.S]# — set latitude, North positive (reply '1')
+      :Sg[DDD:MM:SS.S]# — set longitude, West positive (INDI convention is East; inverted here)
+      :Sv[n]#           — set elevation in metres (reply '1')
+      :Gt#              — get latitude (sexagesimal, North positive)
+      :Gg#              — get longitude (sexagesimal, West positive)
+      :Gev#             — get elevation (integer, metres)
+      :SG[±HH.H]#       — set UTC offset, hours East of UTC (reply '1')
+      :SL[HH:MM:SS]#    — set local time (reply '1')
+      :SC[MM/DD/YY]#    — set local date (reply '1')
 */
 
 #pragma once
@@ -23,8 +37,7 @@
 class OnStepXComm;
 namespace INDI { class DefaultDevice; }
 
-// Handles site location and time synchronisation for the mount binary.
-// Plain C++ -- no INDI base class.  Holds borrowed pointers (non-owning).
+// Plain C++ -- no INDI base class.  Non-owning borrowed pointers.
 class OnStepXSite
 {
     public:

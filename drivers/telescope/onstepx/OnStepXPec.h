@@ -1,26 +1,26 @@
 /*
     OnStep X INDI Driver — PEC helper (mount binary only)
 
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
     Protocol (OnStepX v10.24c):
       :$QZ?#   — get PEC status: one char from {I,p,P,r,R}, optional '.' suffix = index detected
-                 I=Ignore (not supported), p=ready-to-play, P=Playing, r=ready-to-record, R=Recording
+                 I=Ignore, p=ready-to-play, P=Playing, r=ready-to-record, R=Recording
       :$QZ+#   — enable PEC playback (reply '1')
       :$QZ-#   — disable PEC playback (reply '1')
       :$QZ/#   — ready to record PEC (reply '1')
       :$QZZ#   — clear PEC buffer (reply '1')
       :$QZ!#   — write PEC to EEPROM (reply '1')
-      :VW#     — worm period (worm gear steps per revolution, integer, '#'-terminated)
+      :VW#     — worm period (steps per revolution, integer)
 
-    INDI Properties (all on "PEC" tab):
-      OSX_PEC_STATE  IP_RO  5 lights: Ignored / Ready-to-Play / Playing / Ready-to-Record / Recording
-      OSX_PEC_INDEX  IP_RO  2 lights: Not Detected / Detected
-      OSX_PEC_CONTROL  IP_RW  ISR_ATMOST1: Play / Stop / Ready-Record / Clear / Save-EEPROM
-      OSX_PEC_WORM_STEPS  IP_RO  1 number: worm steps
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
+    INDI Properties (PEC tab):
+      OSX_PEC_STATE       IP_RO  5 lights: Ignored / Ready-to-Play / Playing / Ready-to-Record / Recording
+      OSX_PEC_INDEX       IP_RO  2 lights: Not Detected / Detected
+      OSX_PEC_CONTROL     IP_RW  ISR_ATMOST1  5 switches: Play / Stop / Ready-Record / Clear / Save-EEPROM
+      OSX_PEC_WORM_STEPS  IP_RO  1 number: worm steps per revolution
 */
 
 #pragma once

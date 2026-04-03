@@ -275,38 +275,5 @@ target_link_libraries(indi_alpaca_telescope indidriver ${HTTPLIB_LIBRARY})
 
 install(TARGETS indi_alpaca_telescope RUNTIME DESTINATION bin)
 
-# ########## OnStep X (mount) ##########
-add_executable(indi_onstepx
-    onstepx/main_mount.cpp
-    onstepx/OnStepXAlignment.cpp
-    onstepx/OnStepXAuxFeatures.cpp
-    onstepx/OnStepXCore.cpp
-    onstepx/OnStepXComm.cpp
-    onstepx/OnStepXFocuser.cpp
-    onstepx/OnStepXLimits.cpp
-    onstepx/OnStepXMount.cpp
-    onstepx/OnStepXPec.cpp
-    onstepx/OnStepXRotator.cpp
-    onstepx/OnStepXSite.cpp
-    onstepx/OnStepXStatus.cpp
-    onstepx/OnStepXTracking.cpp
-    onstepx/OnStepXWeather.cpp)
-
-target_link_libraries(indi_onstepx AlignmentDriver indidriver)
-
-install(TARGETS indi_onstepx RUNTIME DESTINATION bin)
-
-# ########## OnStep X Controller (auxiliary, no mount) ##########
-add_executable(indi_onstepx_aux
-    onstepx/main_aux.cpp
-    onstepx/OnStepXAuxFeatures.cpp
-    onstepx/OnStepXCore.cpp
-    onstepx/OnStepXComm.cpp
-    onstepx/OnStepXFocuser.cpp
-    onstepx/OnStepXAux.cpp
-    onstepx/OnStepXRotator.cpp
-    onstepx/OnStepXWeather.cpp)
-
-target_link_libraries(indi_onstepx_aux indidriver)
-
-install(TARGETS indi_onstepx_aux RUNTIME DESTINATION bin)
+# ########## OnStep X ##########
+add_subdirectory(onstepx)

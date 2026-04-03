@@ -1,5 +1,5 @@
 /*
-    OnStep X INDI Driver — Mount device class
+    OnStep X INDI Driver — Mount device class (indi_onstepx)
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -14,6 +14,13 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    Top-level device class for the mount binary.  Composes helper classes
+    for each subsystem: OnStepXAlignment, OnStepXAuxFeatures, OnStepXCore,
+    OnStepXLimits, OnStepXPec, OnStepXRotator, OnStepXSite, OnStepXTracking,
+    and OnStepXWeather.  Mixes in AlignmentSubsystemForDrivers, GuiderInterface,
+    RotatorInterface, and WeatherInterface.  All protocol commands are
+    implemented in the individual helper classes.
 */
 
 #pragma once

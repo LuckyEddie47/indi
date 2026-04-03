@@ -1,5 +1,5 @@
 /*
-    OnStep X INDI Driver — Capability flags populated during Handshake probing
+    OnStep X INDI Driver — Capability flags (shared by both binaries)
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -14,6 +14,14 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    Populated in two phases during Handshake (see OnStepXCore):
+      Phase 1 -- probeController(), both binaries: isOnStepX, hasRotator,
+        hasDerotator, hasWeather*, hasElevation, hasMcuTemp, numFocusers,
+        featureMask, firmwareVersion/Date/Time, configName.
+      Phase 2 -- probeMount(), mount binary only: hasMount, hasGoto,
+        hasBinaryStatus, hasPec, hasHomeSense, hasPPS, hasDUT1, hasPierSide,
+        mountType.
 */
 
 #pragma once

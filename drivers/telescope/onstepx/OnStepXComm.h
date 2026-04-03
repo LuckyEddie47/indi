@@ -1,5 +1,5 @@
 /*
-    OnStep X INDI Driver — Communication layer
+    OnStep X INDI Driver — Communication layer (shared by both binaries)
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -14,6 +14,13 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    All LX200-framed I/O in one place.  Zero raw read()/write() calls outside
+    this class.  Commands are '#'-terminated; replies are '#'-terminated except
+    where noted (sendCommandSingleChar, sendCommandReadN).  A mutex serialises
+    all sends and receives; flushIO() drains stale input before each send.
+    Focuser-slot variants atomically send the :FA[n]# slot selector and the
+    command within one mutex lock to prevent interleaving.
 */
 
 #pragma once

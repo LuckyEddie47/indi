@@ -1,5 +1,5 @@
 /*
-    OnStep X INDI Driver — Mount status struct and parsers
+    OnStep X INDI Driver — Mount status struct and parsers (mount binary only)
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -14,6 +14,15 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    MountStatus is populated by one of two parsers each ReadScopeStatus cycle;
+    both produce equivalent output so ReadScopeStatus() is path-agnostic.
+
+    Protocol (OnStepX v10.24c):
+      :GU#  — ASCII status string; each character position encodes a flag or enum.
+               Full character map documented in OnStepXStatus.cpp::parseGU().
+      :Gu#  — 9-byte binary status (faster; provisional bit layout -- requires
+               hardware validation; driver falls back to :GU# if parse fails).
 */
 
 #pragma once
@@ -21,9 +30,7 @@
 #include <cstdint>
 
 // ---------------------------------------------------------------------------
-// MountStatus — populated by OnStepXStatus::parseGU() or parseGu().
-// Both parsers produce equivalent output so ReadScopeStatus() is agnostic
-// to which path was taken.
+// MountStatus
 // ---------------------------------------------------------------------------
 struct MountStatus
 {

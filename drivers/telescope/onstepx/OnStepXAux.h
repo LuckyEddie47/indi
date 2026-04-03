@@ -1,5 +1,5 @@
 /*
-    OnStep X INDI Driver
+    OnStep X INDI Driver — Auxiliary controller device class (indi_onstepx_aux)
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -14,6 +14,12 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    Top-level device class for OnStepX installations without a mount.
+    Composes OnStepXCore (probing), OnStepXAuxFeatures, OnStepXFocuser
+    (up to 6 slots), and OnStepXRotator.  Mixes in RotatorInterface and
+    WeatherInterface.  All protocol commands are implemented in the
+    individual helper classes.
 */
 
 #pragma once

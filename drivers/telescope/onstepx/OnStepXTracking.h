@@ -1,5 +1,5 @@
 /*
-    OnStep X INDI Driver — Tracking control helper
+    OnStep X INDI Driver — Tracking control helper (mount binary only)
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -14,6 +14,31 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    Plain C++ helper -- no INDI base class.  Non-owning borrowed pointers.
+    Advanced tracking properties beyond the standard SetTrackMode/SetTrackRate.
+
+    Protocol (OnStepX v10.24c):
+      :To#         — tracking compensation: full (both axes)
+      :Tr#         — tracking compensation: refraction only
+      :Tn#         — tracking compensation: off
+      :T1#         — compensation axes: single
+      :T2#         — compensation axes: dual
+      :T-#         — frequency nudge: decrease (blind)
+      :T+#         — frequency nudge: increase (blind)
+      :TR#         — frequency nudge: reset (blind)
+      :SX95,0/1#   — meridian auto-flip: 0=off, 1=on (reply '1')
+      :GX95#       — read auto-flip setting ('0' / '1')
+      :SX96,W/E/B# — preferred pier side (reply '1')
+      :GX96#       — read preferred pier side ('W' / 'E' / 'B')
+      trackComp state also derived from :GU# status string each poll.
+
+    INDI Properties (Tracking tab):
+      OSX_TRACK_COMP       IP_RW  ISR_1OFMANY  3 switches: Full / Refraction / Off
+      OSX_TRACK_COMP_AXES  IP_RW  ISR_1OFMANY  2 switches: Single / Dual
+      OSX_FREQ_ADJ         IP_RW  ISR_ATMOST1  3 switches: Down / Up / Reset (momentary)
+      OSX_AUTO_FLIP        IP_RW  ISR_1OFMANY  2 switches: Off / On
+      OSX_PREFERRED_PIER   IP_RW  ISR_1OFMANY  3 switches: West / East / Best
 */
 
 #pragma once
@@ -24,28 +49,6 @@
 
 class OnStepXComm;
 
-// Encapsulates the advanced tracking properties for the mount binary:
-//
-//   OSX_TRACK_COMP       — tracking compensation mode (Full/Refraction/Off)
-//                          Write: :To# / :Tr# / :Tn#
-//                          Read:  MountStatus.trackComp from :GU#
-//
-//   OSX_TRACK_COMP_AXES  — compensation axis count (Single/Dual)
-//                          Write: :T1# / :T2#
-//                          Read:  MountStatus.trackComp from :GU#
-//
-//   OSX_FREQ_ADJ         — momentary frequency nudge (−/+/Reset)
-//                          Write: :T-# / :T+# / :TR# (all blind)
-//
-//   OSX_AUTO_FLIP        — meridian auto-flip enable (Off/On)
-//                          Write: :SX95,0# / :SX95,1#  (reply '1' = ok)
-//                          Read:  :GX95#  → '0' / '1'
-//
-//   OSX_PREFERRED_PIER   — preferred pier side for new gotos (West/East/Best)
-//                          Write: :SX96,W# / :SX96,E# / :SX96,B# (reply '1')
-//                          Read:  :GX96#  → 'W' / 'E' / 'B'
-//
-// Plain C++, no INDI base class.  Non-owning borrowed pointers.
 class OnStepXTracking
 {
     public:

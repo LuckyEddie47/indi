@@ -14,6 +14,29 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    Plain C++ helper -- no INDI base class.  Non-owning borrowed pointers.
+
+    Protocol (OnStepX v10.24c):
+      :Gh#         — get altitude limit (integer, deg)
+      :Sh[n]#      — set altitude limit (reply '1')
+      :Go#         — get overhead limit (integer, deg)
+      :So[n]#      — set overhead limit (reply '1')
+      :GXE9#       — get meridian limit West (integer, deg)
+      :GXEA#       — get meridian limit East (integer, deg)
+      :SXE9,[n]#   — set meridian limit West (reply '1')
+      :SXEA,[n]#   — set meridian limit East (reply '1')
+      :hC#         — find home (no reply)
+      :hF#         — set current position as home (no reply)
+      :hA0/1#      — home-at-boot: 0=off, 1=on (reply '1')
+      :hC1,[n]#    — home offset axis 1 in arcmin (requires hasHomeSense)
+      :hC2,[n]#    — home offset axis 2 in arcmin (requires hasHomeSense)
+
+    INDI Properties (Motion Control tab):
+      OSX_HORIZON_LIMIT    IP_RW  2 numbers: Altitude Limit / Overhead Limit (deg)
+      OSX_MERIDIAN_LIMITS  IP_RW  2 numbers: West Limit / East Limit (deg)
+      OSX_HOME_AUTO_BOOT   IP_RW  ISR_1OFMANY  2 switches: Off / On
+      OSX_HOME_OFFSETS     IP_RW  2 numbers: Axis 1 / Axis 2 (arcmin; hasHomeSense only)
 */
 
 #pragma once
@@ -24,11 +47,6 @@
 class OnStepXComm;
 namespace INDI { class DefaultDevice; }
 
-// Manages horizon limits, meridian limits, home control, and home offsets.
-// Plain C++ -- no INDI base class.  Holds borrowed pointers (non-owning).
-//
-// The owning OnStepXMount calls init/update/handle* from the standard
-// INDI entry points.
 class OnStepXLimits
 {
     public:

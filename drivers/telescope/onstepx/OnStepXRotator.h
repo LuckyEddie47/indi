@@ -14,6 +14,33 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    Plain C++ helper -- not a RotatorInterface subclass.  The device class
+    (which IS a RotatorInterface subclass) delegates each RI virtual to its
+    m_rotator member.  GotoRotatorNP / RotatorBacklashNP are protected in
+    RotatorInterface; pollStatus() and readInitial() return plain structs so
+    the device class can apply them to its own RI properties.
+    De-rotator properties are created only when cap.hasDerotator is true.
+
+    Protocol (OnStepX v10.24c):
+      :rG#          — get angle (sexagesimal DDD:MM:SS.S)
+      :rT#          — status ('M'=moving, 'S'=stopped)
+      :rS[±DDD:MM:SS]# — goto angle (reply '1')
+      :rC#          — goto home (no reply)
+      :rQ#          — abort movement (no reply; does NOT abort de-rotator)
+      :rb[n]#       — set backlash n steps (reply '1')
+      :rb#          — get backlash (integer)
+      :r+#          — enable de-rotator (AltAz only; no reply)
+      :r-#          — disable de-rotator (AltAz only; no reply)
+      :GX98#        — probe: 'D'=derotator capable, 'R'=rotator only, '0'=absent
+      :SX98,0/1#    — de-rotate parallactic: 0=no, 1=yes (reply '1')
+
+    INDI Properties (Rotator tab, via RotatorInterface):
+      ABS_ROTATOR_ANGLE    IP_RW  1 number: target angle (deg)
+      ROTATOR_ABORT_MOTION IP_RW  1 switch
+      ROTATOR_BACKLASH     IP_RW  1 number: backlash steps
+      OSX_ROT_DEROTATE     IP_RW  ISR_1OFMANY  2 switches: Off / On  (AltAz only)
+      OSX_ROT_PARALLACTIC  IP_RW  ISR_1OFMANY  2 switches: Off / On  (AltAz only)
 */
 
 #pragma once
@@ -25,35 +52,6 @@
 
 class OnStepXComm;
 
-// Encapsulates rotator wiring for the device classes.
-//
-// This helper is NOT a RotatorInterface subclass.  Instead it provides
-// concrete implementations of the RotatorInterface virtuals; the device
-// class (which IS a RotatorInterface subclass) simply delegates each
-// virtual to its m_rotator member.
-//
-// GotoRotatorNP, RotatorBacklashNP, etc. are protected in RotatorInterface,
-// so the helper cannot access them directly.  Instead, pollStatus() and
-// readInitial() return plain structs; the device class applies the values
-// to its own RI properties.
-//
-// Protocol (OnStepX v10.24c):
-//   :rG#     — get angle (sexagesimal DDD:MM:SS.S, reply '#'-terminated)
-//   :rT#     — status ('M'=moving, 'S'=stopped)
-//   :rS±DDD:MM:SS# — goto angle (reply '1')
-//   :rC#     — goto home (no reply)
-//   :rQ#     — abort (no reply, does NOT abort de-rotator)
-//   :rb[n]#  — set backlash n steps (reply '1')
-//   :rb#     — get backlash (reply: integer '#'-terminated)
-//   :r+#     — enable de-rotator (AltAz only; no reply)
-//   :r-#     — disable de-rotator (AltAz only; no reply)
-//   :GX98#   — probe: 'D'=derotator capable, 'R'=rotator only, '0'=absent
-//   :SX98,0/1# — de-rotate parallactic: 0=no, 1=yes (reply '1')
-//
-// Capabilities set: CAN_ABORT | CAN_HOME | HAS_BACKLASH
-//
-// De-rotator properties are created only when hasDerotator is true
-// (driven by cap.hasDerotator from probeController).
 class OnStepXRotator
 {
     public:

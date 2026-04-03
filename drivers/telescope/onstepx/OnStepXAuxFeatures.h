@@ -1,34 +1,32 @@
 /*
     OnStep X INDI Driver — Auxiliary feature helper (shared by both binaries)
 
-    Handles dynamic discovery and control of OnStepX aux feature slots 1-8.
-
-    Protocol (OnStepX v10.24c):
-      :GXY0#   — 8-char mask ('1'=configured, '0'=not), positions 0-7 = slots 1-8
-      :GXY[n]# — slot info: "name,T" where T = 0(SWITCH) 1(ANALOG) 2(DEW) 3(IVO)
-      :GXX[n]# — current value (integer, '#'-terminated)
-      :SXX[n],V[v]# — set value (SWITCH 0/1, ANALOG 0-255, DEW power %)
-      :SXX[n],E[v]# — DEW enable (1) / disable (0)
-      :SXX[n],Z[v]# — DEW zero point (°C × 10, integer)
-      :SXX[n],S[v]# — DEW span (°C × 10, integer)
-      :SXX[n],D[v]# — INTERVALOMETER exposure duration (ms)
-      :SXX[n],C[v]# — INTERVALOMETER count (0=unlimited)
-      All :SXX# commands reply '1' on success.
-
-    Tabs:
-      SWITCH  and ANALOG    -> "Outputs"
-      DEW_HEATER            -> "Dew Heaters"
-      INTERVALOMETER        -> "Intervalometer"
-
-    Note: INDI::OutputInterface was considered but skipped because
-    initProperties() needs the output count at driver-init time, while
-    OnStepX slot counts are only known after probing.  Plain INDI
-    properties provide equivalent functionality.
-
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
     License as published by the Free Software Foundation; either
     version 2.1 of the License, or (at your option) any later version.
+
+    Handles dynamic discovery and control of OnStepX aux feature slots 1-8.
+    Slot count and types are probed after connect.  INDI::OutputInterface was
+    not used because it requires the output count at initProperties() time,
+    before the firmware has been queried.
+
+    Protocol (OnStepX v10.24c):
+      :GXY0#        — 8-char mask ('1'=configured, '0'=not), positions 0-7 = slots 1-8
+      :GXY[n]#      — slot info: "name,T" where T = 0(SWITCH) 1(ANALOG) 2(DEW) 3(IVO)
+      :GXX[n]#      — current value (integer, '#'-terminated)
+      :SXX[n],V[v]# — set value (SWITCH 0/1, ANALOG 0-255, DEW power %)
+      :SXX[n],E[v]# — DEW enable (1) / disable (0)
+      :SXX[n],Z[v]# — DEW zero point (deg C x 10, integer)
+      :SXX[n],S[v]# — DEW span (deg C x 10, integer)
+      :SXX[n],D[v]# — INTERVALOMETER exposure duration (ms)
+      :SXX[n],C[v]# — INTERVALOMETER count (0=unlimited)
+      All :SXX# commands reply '1' on success.
+
+    INDI Properties:
+      SWITCH / ANALOG slots   -> "Outputs" tab      (OSX_OUT_[label])
+      DEW_HEATER slots        -> "Dew Heaters" tab  (OSX_DEW_[label])
+      INTERVALOMETER slots    -> "Intervalometer" tab (OSX_IVO_[label])
 */
 
 #pragma once

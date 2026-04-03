@@ -1,5 +1,5 @@
 /*
-    OnStep X INDI Driver — Weather sensor helper (both binaries)
+    OnStep X INDI Driver — Weather sensor helper (shared by both binaries)
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -14,6 +14,25 @@
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+    Plain C++ helper -- no INDI base class.  Holds borrowed pointer (non-owning).
+    WeatherInterface::setParameterValue() is protected; readSensors() returns a
+    SensorData struct so the caller (a WeatherInterface subclass) applies the
+    values directly.  Missing or non-numeric replies are returned with ok=false.
+
+    Protocol (OnStepX v10.24c):
+      :GX9A# — ambient temperature (deg C, float)
+      :GX9B# — barometric pressure (hPa, float)
+      :GX9C# — relative humidity (%, float)
+      :GX9E# — dew point (deg C, float)
+      :GX9F# — MCU temperature (deg C, float; optional, requires hasMcuTemp)
+
+    INDI Properties (Weather tab, via WeatherInterface):
+      WEATHER_TEMPERATURE  IP_RO
+      WEATHER_PRESSURE     IP_RO
+      WEATHER_HUMIDITY     IP_RO
+      WEATHER_DEWPOINT     IP_RO
+      OSX_MCU_TEMP         IP_RO  (hasMcuTemp only)
 */
 
 #pragma once
@@ -21,21 +40,6 @@
 #include <indiapi.h>   // IPState
 
 class OnStepXComm;
-
-// Encapsulates the weather sensor poll sequence shared by both binaries.
-// Plain C++ — no INDI base class.  Holds borrowed pointer (non-owning).
-//
-// WeatherInterface::setParameterValue() is protected, so this helper
-// cannot call it directly.  Instead, readSensors() returns a SensorData
-// struct; the caller (which IS a WeatherInterface subclass) applies the
-// values via setParameterValue().
-//
-// Sensor map:
-//   :GX9A# -> WEATHER_TEMPERATURE   (ambient, °C)
-//   :GX9B# -> WEATHER_PRESSURE      (hPa)
-//   :GX9C# -> WEATHER_HUMIDITY      (%)
-//   :GX9E# -> WEATHER_DEWPOINT      (°C)
-//   :GX9F# -> OSX_MCU_TEMP          (MCU temperature, °C — optional)
 
 struct WeatherReading
 {
