@@ -44,6 +44,7 @@ struct Capabilities
     bool    hasMcuTemp      = false;
     int     numFocusers     = 0;        // 0-6
     uint8_t featureMask     = 0;        // bits 0-7, one per aux feature slot
+    uint8_t portMask        = 0;        // bits 0-7, one per USB port
 
     char firmwareVersion[16] {};
     char firmwareDate[16]    {};

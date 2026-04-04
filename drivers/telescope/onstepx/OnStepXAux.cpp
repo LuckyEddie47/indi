@@ -21,7 +21,7 @@
 #define WEATHER_TAB "Weather"   // tab name for WeatherInterface properties
 
 OnStepXAux::OnStepXAux() : INDI::RotatorInterface(this),
-                           INDI::WeatherInterface(this)
+    INDI::WeatherInterface(this)
 {
     setVersion(0, 1);
     m_core.setDevice(this);
@@ -120,6 +120,10 @@ bool OnStepXAux::updateProperties()
 
         if (m_core.caps().featureMask)
             m_auxFeatures.discoverAndDefine(m_core.caps().featureMask);
+
+        if(m_core.caps().portMask)
+            m_usbPorts.discoverAndDefine(m_core.caps().portMask);
+
     }
     else
     {
@@ -128,6 +132,7 @@ bool OnStepXAux::updateProperties()
             m_rotator.updateProperties(false, false);
         m_auxFeatures.deleteAll();
         m_weather.updateProperties(false);
+        m_usbPorts.deleteAll();
     }
 
     return true;

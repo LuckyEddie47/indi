@@ -180,3 +180,18 @@ target_link_libraries(test_onstepxalignment
 )
 
 add_test(test-onstepxalignment test_onstepxalignment)
+
+add_executable(test_onstepxusbplugin
+    test_onstepxusbplugin.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXComm.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXUsbPlugin.cpp"
+)
+target_link_libraries(test_onstepxusbplugin
+    indidriver
+    ${GTEST_LIBRARIES}
+    ${GMOCK_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+add_test(test-onstepxusbplugin test_onstepxusbplugin)
+

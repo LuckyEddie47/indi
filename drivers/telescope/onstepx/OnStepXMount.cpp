@@ -40,8 +40,8 @@ enum { TRACK_SIDEREAL = 0, TRACK_LUNAR = 1, TRACK_SOLAR = 2, TRACK_KING = 3 };
 // Constructor
 // ---------------------------------------------------------------------------
 OnStepXMount::OnStepXMount() : INDI::GuiderInterface(this),
-                               INDI::RotatorInterface(this),
-                               INDI::WeatherInterface(this)
+    INDI::RotatorInterface(this),
+    INDI::WeatherInterface(this)
 {
     setVersion(0, 1);
     m_alignment.setDevice(this);
@@ -201,6 +201,9 @@ bool OnStepXMount::updateProperties()
         if (m_core.caps().featureMask)
             m_auxFeatures.discoverAndDefine(m_core.caps().featureMask);
 
+        if(m_core.caps().portMask)
+            m_usbPorts.discoverAndDefine(m_core.caps().portMask);
+
         if (m_core.caps().hasPec)
             m_pec.updateProperties(true);
 
@@ -220,6 +223,7 @@ bool OnStepXMount::updateProperties()
         m_auxFeatures.deleteAll();
         if (m_core.caps().hasPec)
             m_pec.updateProperties(false);
+        m_usbPorts.deleteAll();
     }
 
     return true;
@@ -554,7 +558,7 @@ bool OnStepXMount::Sync(double ra, double dec)
         char azReply[256], altReply[256];
         double az = 0, alt = 0;
         if (m_core.comm().sendCommand(":GZH#", azReply)  && f_scansexa(azReply,  &az)  == 0 &&
-            m_core.comm().sendCommand(":GAH#", altReply) && f_scansexa(altReply, &alt) == 0)
+                m_core.comm().sendCommand(":GAH#", altReply) && f_scansexa(altReply, &alt) == 0)
         {
             INDI::IHorizontalCoordinates hor { az, alt };
             AlignmentDatabaseEntry entry;
@@ -651,10 +655,18 @@ bool OnStepXMount::SetTrackMode(uint8_t mode)
     const char *cmd = nullptr;
     switch (mode)
     {
-        case TRACK_SIDEREAL: cmd = ":T+#"; break;
-        case TRACK_LUNAR:    cmd = ":TL#"; break;
-        case TRACK_SOLAR:    cmd = ":TS#"; break;
-        case TRACK_KING:     cmd = ":TK#"; break;
+        case TRACK_SIDEREAL:
+            cmd = ":T+#";
+            break;
+        case TRACK_LUNAR:
+            cmd = ":TL#";
+            break;
+        case TRACK_SOLAR:
+            cmd = ":TS#";
+            break;
+        case TRACK_KING:
+            cmd = ":TK#";
+            break;
         default:
             LOGF_ERROR("SetTrackMode: unknown mode %d", mode);
             return false;
@@ -803,10 +815,22 @@ IPState OnStepXMount::updateWeather()
 // ---------------------------------------------------------------------------
 // Guide pulse methods — delegate to OnStepXGuide
 // ---------------------------------------------------------------------------
-IPState OnStepXMount::GuideNorth(uint32_t ms) { return m_guide.guideNorth(ms); }
-IPState OnStepXMount::GuideSouth(uint32_t ms) { return m_guide.guideSouth(ms); }
-IPState OnStepXMount::GuideEast(uint32_t ms)  { return m_guide.guideEast(ms);  }
-IPState OnStepXMount::GuideWest(uint32_t ms)  { return m_guide.guideWest(ms);  }
+IPState OnStepXMount::GuideNorth(uint32_t ms)
+{
+    return m_guide.guideNorth(ms);
+}
+IPState OnStepXMount::GuideSouth(uint32_t ms)
+{
+    return m_guide.guideSouth(ms);
+}
+IPState OnStepXMount::GuideEast(uint32_t ms)
+{
+    return m_guide.guideEast(ms);
+}
+IPState OnStepXMount::GuideWest(uint32_t ms)
+{
+    return m_guide.guideWest(ms);
+}
 
 // ---------------------------------------------------------------------------
 // createFocusers — called once from updateProperties on first connect.

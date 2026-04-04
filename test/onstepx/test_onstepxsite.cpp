@@ -77,10 +77,14 @@ private:
 
                 // Strip ':' prefix and '#' suffix to look up rule.
                 std::string key = full.substr(1, full.size() - 2);
-                std::string rep = "1";             // default ACK
                 auto it = m_rules.find(key);
-                if (it != m_rules.end())
-                    rep = it->second;
+                // Empty string means blind/no-reply command.
+                if (it != m_rules.end() && it->second.empty())
+                {
+                    pos = 0;
+                    continue;
+                }
+                std::string rep = (it != m_rules.end()) ? it->second : "1"; // default ACK
                 rep += "#";
                 if (write(m_fd, rep.c_str(), rep.size()) < 0) break;
                 pos = 0;
@@ -429,6 +433,7 @@ TEST_F(SiteTest, SelectSite_UpdatesActiveSite)
 
 TEST_F(SiteTest, SelectSite_SetsLocationUpdatedFlag)
 {
+    m_responder.addRule("W1",  "");             // blind — no reply
     m_responder.addRule("GtH", "+51:28:38.0");
     m_responder.addRule("GgH", "000:27:28.0");
     m_responder.addRule("Gv",  "17");
@@ -451,7 +456,8 @@ TEST_F(SiteTest, SelectSite_SetsLocationUpdatedFlag)
 
 TEST_F(SiteTest, SelectSite_BlindSendDoesNotExpectReply)
 {
-    // :W[n]# is blind — the responder default '1' reply must not block
+    // :W[n]# is blind — no reply from responder, matches real firmware behaviour
+    m_responder.addRule("W4",  "");             // blind — no reply
     m_responder.addRule("GtH", "-33:52:00.0");
     m_responder.addRule("GgH", "151:12:00.0");
     m_responder.addRule("Gv",  "0");

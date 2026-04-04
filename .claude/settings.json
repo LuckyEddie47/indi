@@ -14,7 +14,10 @@
       "Bash(gcc -Wall -Wunused-result -c /tmp/test_warn.c -o /tmp/test_warn.o)",
       "Bash(grep -n \"struct Responder\" /home/ed/Data/Code/indi-onstepx/indi/test/onstepx/*.cpp)",
       "Bash(cmake --build . --target test_onstepxguide test_onstepxtracking test_onstepxfocuser test_onstepxrotator test_onstepxauxfeatures test_onstepxpec test_onstepxalignment)",
-      "Bash(ctest -R onstepx --output-on-failure)"
+      "Bash(ctest -R onstepx --output-on-failure)",
+      "Bash(ctest -N)",
+      "Bash(cmake --build build --target test_onstepxsite)",
+      "Bash(cmake --build . --target test_onstepxsite)"
     ]
   }
 }

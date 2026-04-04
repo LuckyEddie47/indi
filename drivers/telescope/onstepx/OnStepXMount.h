@@ -38,6 +38,7 @@
 #include "OnStepXStatus.h"
 #include "OnStepXTracking.h"
 #include "OnStepXWeather.h"
+#include "OnStepXUsbPlugin.h"
 
 #include <array>
 #include <memory>
@@ -50,10 +51,10 @@
 
 
 class OnStepXMount : public INDI::Telescope,
-                     public INDI::AlignmentSubsystem::AlignmentSubsystemForDrivers,
-                     public INDI::GuiderInterface,
-                     public INDI::RotatorInterface,
-                     public INDI::WeatherInterface
+    public INDI::AlignmentSubsystem::AlignmentSubsystemForDrivers,
+    public INDI::GuiderInterface,
+    public INDI::RotatorInterface,
+    public INDI::WeatherInterface
 {
     public:
         OnStepXMount();
@@ -134,6 +135,7 @@ class OnStepXMount : public INDI::Telescope,
         OnStepXSite        m_site;
         OnStepXTracking    m_tracking;
         OnStepXWeather     m_weather;
+        OnStepXUsbPlugin   m_usbPorts;
 
         // Focuser child devices — created after Handshake, slot 1..numFocusers
         std::array<std::unique_ptr<OnStepXFocuser>, 6> m_focusers;

@@ -16,7 +16,8 @@ add_executable(indi_onstepx
     OnStepXSite.cpp
     OnStepXStatus.cpp
     OnStepXTracking.cpp
-    OnStepXWeather.cpp)
+    OnStepXWeather.cpp
+    OnStepXUsbPlugin.cpp)
 
 target_link_libraries(indi_onstepx AlignmentDriver indidriver)
 
@@ -31,7 +32,8 @@ add_executable(indi_onstepx_aux
     OnStepXFocuser.cpp
     OnStepXAux.cpp
     OnStepXRotator.cpp
-    OnStepXWeather.cpp)
+    OnStepXWeather.cpp
+    OnStepXUsbPlugin.cpp)
 
 target_link_libraries(indi_onstepx_aux indidriver)
 
