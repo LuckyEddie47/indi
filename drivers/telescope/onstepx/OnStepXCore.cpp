@@ -89,23 +89,37 @@ bool OnStepXCore::probeController()
 {
     char reply[256];
 
-    // :GVP# — identity check (must be "OnStepX")
+    // :GVP# — product identity (both OnStep and OnStepX return "On-Step")
     if (!m_comm.sendCommand(":GVP#", reply))
     {
         OSX_CORE_LOGF_ERROR("probeController: no response to :GVP#");
         return false;
     }
-    m_cap.isOnStepX = (strcmp(reply, "OnStepX") == 0);
-    if (!m_cap.isOnStepX)
+    if (strcmp(reply, "On-Step") != 0)
     {
-        OSX_CORE_LOGF_WARN("Not an OnStepX controller (received: '%s'). "
-                           "Minimum firmware: OnStepX.", reply);
+        OSX_CORE_LOGF_WARN("probeController: unrecognised product string '%s'", reply);
         return false;
     }
 
-    // Firmware strings (best-effort — do not abort on failure)
-    if (m_comm.sendCommand(":GVN#", reply))
-        snprintf(m_cap.firmwareVersion, sizeof(m_cap.firmwareVersion), "%s", reply);
+    // :GVN# — firmware version string, format "Major.MinorPatch" e.g. "10.24c"
+    // OnStepX firmware started at major version 10; anything lower is classic OnStep.
+    if (!m_comm.sendCommand(":GVN#", reply))
+    {
+        OSX_CORE_LOGF_ERROR("probeController: no response to :GVN#");
+        return false;
+    }
+    snprintf(m_cap.firmwareVersion, sizeof(m_cap.firmwareVersion), "%s", reply);
+
+    char *dotPos  = nullptr;
+    long  major   = strtol(reply, &dotPos, 10);
+    m_cap.isOnStepX = (dotPos != reply && major >= 10);
+    if (!m_cap.isOnStepX)
+    {
+        OSX_CORE_LOGF_WARN("OnStep firmware v%s detected; OnStepX (v10+) required.", reply);
+        return false;
+    }
+
+    // Remaining firmware strings (best-effort — do not abort on failure)
     if (m_comm.sendCommand(":GVD#", reply))
         snprintf(m_cap.firmwareDate,    sizeof(m_cap.firmwareDate),    "%s", reply);
     if (m_comm.sendCommand(":GVT#", reply))

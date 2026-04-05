@@ -110,7 +110,7 @@ static void addPhase1Responses(MockDevice &dev,
                                 const char *featReply = "10000000#", // featureMask=1
                                 const char *wxReply   = "15.0#")    // hasWeatherRead
 {
-    dev.setResponse(":GVP", "OnStepX#");
+    dev.setResponse(":GVP", "On-Step#");
     dev.setResponse(":GVN", "10.24c#");
     dev.setResponse(":GVD", "Mar 2026#");
     dev.setResponse(":GVT", "12:00#");
@@ -185,12 +185,34 @@ TEST(OnStepXProbeTest, test_probe_full_mount)
 
 // ---------------------------------------------------------------------------
 // test_probe_not_onstepx
-// :GVP# returns "LX200" → probeController must return false; isOnStepX false.
+// :GVP# returns an unrecognised product string → probeController must return
+// false at the first gate (before :GVN# is even queried).
 // ---------------------------------------------------------------------------
 TEST(OnStepXProbeTest, test_probe_not_onstepx)
 {
     MockDevice dev;
     dev.setResponse(":GVP", "LX200#");
+    int fd = dev.start();
+
+    OnStepXCore core;
+    core.setFd(fd);
+
+    EXPECT_FALSE(core.probeController());
+    EXPECT_FALSE(core.caps().isOnStepX);
+
+    dev.stop();
+}
+
+// ---------------------------------------------------------------------------
+// test_probe_classic_onstep
+// :GVP# returns "On-Step" (correct) but :GVN# reports firmware "4.12f"
+// (major version 4, classic OnStep) → probeController must return false.
+// ---------------------------------------------------------------------------
+TEST(OnStepXProbeTest, test_probe_classic_onstep)
+{
+    MockDevice dev;
+    dev.setResponse(":GVP", "On-Step#");
+    dev.setResponse(":GVN", "4.12f#");
     int fd = dev.start();
 
     OnStepXCore core;
