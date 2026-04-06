@@ -56,7 +56,7 @@ void OnStepXComm::setDevice(INDI::DefaultDevice *dev)
 
 // Send '#'-terminated command; read '#'-terminated reply.
 // buf must be at least 256 bytes.
-bool OnStepXComm::sendCommand(const char *cmd, char *reply, int timeout_ms)
+bool OnStepXComm::sendCommand(const char *cmd, char *reply, int timeout_ms, bool quiet)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -70,7 +70,8 @@ bool OnStepXComm::sendCommand(const char *cmd, char *reply, int timeout_ms)
 
     if (!writeCommand(cmd))
     {
-        OSX_COMM_LOGF_ERROR("sendCommand: write failed for cmd '%s'", cmd);
+        auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
+        OSX_COMM_LOGF(lvl, "sendCommand: write failed for cmd '%s'", cmd);
         return false;
     }
 
@@ -79,7 +80,8 @@ bool OnStepXComm::sendCommand(const char *cmd, char *reply, int timeout_ms)
     reply[0] = '\0';
     if (!readUntilHash(reply, 256, timeout_ms))
     {
-        OSX_COMM_LOGF_ERROR("sendCommand: timeout/read error for cmd '%s'", cmd);
+        auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
+        OSX_COMM_LOGF(lvl, "sendCommand: no reply for cmd '%s'", cmd);
         return false;
     }
 
@@ -109,7 +111,7 @@ bool OnStepXComm::sendCommandBlind(const char *cmd)
 }
 
 // Send command; read a single-char reply (no '#' terminator).
-bool OnStepXComm::sendCommandSingleChar(const char *cmd, char &reply, int timeout_ms)
+bool OnStepXComm::sendCommandSingleChar(const char *cmd, char &reply, int timeout_ms, bool quiet)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -123,7 +125,8 @@ bool OnStepXComm::sendCommandSingleChar(const char *cmd, char &reply, int timeou
 
     if (!writeCommand(cmd))
     {
-        OSX_COMM_LOGF_ERROR("sendCommandSingleChar: write failed for cmd '%s'", cmd);
+        auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
+        OSX_COMM_LOGF(lvl, "sendCommandSingleChar: write failed for cmd '%s'", cmd);
         return false;
     }
 
@@ -136,13 +139,15 @@ bool OnStepXComm::sendCommandSingleChar(const char *cmd, char &reply, int timeou
 
     if (select(m_fd + 1, &rfd, nullptr, nullptr, &tv) <= 0)
     {
-        OSX_COMM_LOGF_ERROR("sendCommandSingleChar: timeout for cmd '%s'", cmd);
+        auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
+        OSX_COMM_LOGF(lvl, "sendCommandSingleChar: no reply for cmd '%s'", cmd);
         return false;
     }
 
     if (read(m_fd, &reply, 1) != 1)
     {
-        OSX_COMM_LOGF_ERROR("sendCommandSingleChar: read failed for cmd '%s'", cmd);
+        auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
+        OSX_COMM_LOGF(lvl, "sendCommandSingleChar: read failed for cmd '%s'", cmd);
         return false;
     }
 
@@ -158,7 +163,7 @@ void OnStepXComm::flushIO()
 }
 
 // Send command; read exactly nbytes bytes (for binary protocols with no '#' terminator).
-bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, int timeout_ms)
+bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, int timeout_ms, bool quiet)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -172,7 +177,8 @@ bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, in
 
     if (!writeCommand(cmd))
     {
-        OSX_COMM_LOGF_ERROR("sendCommandReadN: write failed for cmd '%s'", cmd);
+        auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
+        OSX_COMM_LOGF(lvl, "sendCommandReadN: write failed for cmd '%s'", cmd);
         return false;
     }
 
@@ -192,8 +198,9 @@ bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, in
 
         if (remaining_ms <= 0)
         {
-            OSX_COMM_LOGF_ERROR("sendCommandReadN: timeout after %d/%d bytes for cmd '%s'",
-                                received, nbytes, cmd);
+            auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
+            OSX_COMM_LOGF(lvl, "sendCommandReadN: timeout after %d/%d bytes for cmd '%s'",
+                          received, nbytes, cmd);
             return false;
         }
 
@@ -204,14 +211,16 @@ bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, in
 
         if (select(m_fd + 1, &rfd, nullptr, nullptr, &tv) <= 0)
         {
-            OSX_COMM_LOGF_ERROR("sendCommandReadN: select timeout/error for cmd '%s'", cmd);
+            auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
+            OSX_COMM_LOGF(lvl, "sendCommandReadN: no reply for cmd '%s'", cmd);
             return false;
         }
 
         ssize_t n = read(m_fd, buf + received, nbytes - received);
         if (n <= 0)
         {
-            OSX_COMM_LOGF_ERROR("sendCommandReadN: read error for cmd '%s'", cmd);
+            auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
+            OSX_COMM_LOGF(lvl, "sendCommandReadN: read error for cmd '%s'", cmd);
             return false;
         }
         received += static_cast<int>(n);

@@ -28,6 +28,7 @@ OnStepXAux::OnStepXAux() : INDI::RotatorInterface(this),
     m_auxFeatures.setDevice(this);
     m_rotator.setDevice(this);
     m_weather.setDevice(this);
+    m_usbPorts.setDevice(this);
 }
 
 const char *OnStepXAux::getDefaultName()
@@ -299,4 +300,13 @@ IPState OnStepXAux::HomeRotator()
 bool OnStepXAux::SetRotatorBacklash(int32_t steps)
 {
     return m_rotator.setBacklash(steps);
+}
+
+// ---------------------------------------------------------------------------
+// updateUsbStates — poll USB port values (~5 poll throttle)
+// ---------------------------------------------------------------------------
+void OnStepXAux::updateUsbStates()
+{
+    if (m_core.caps().portMask)
+        m_usbPorts.pollStatus();
 }

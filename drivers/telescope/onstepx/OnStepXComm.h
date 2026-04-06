@@ -38,7 +38,8 @@ class OnStepXComm
 
         // Send '#'-terminated command; read '#'-terminated reply into buf (must be >= 256 bytes).
         // m_mutex held for entire send+receive. flushIO called before every send.
-        bool sendCommand(const char *cmd, char *reply, int timeout_ms = 2000);
+        // quiet=true: failure messages logged at DBG_DEBUG instead of DBG_ERROR (use during probing).
+        bool sendCommand(const char *cmd, char *reply, int timeout_ms = 2000, bool quiet = false);
 
         // Send command; discard any reply.
         bool sendCommandBlind(const char *cmd);
@@ -50,10 +51,12 @@ class OnStepXComm
         bool sendCommandBlindFocuser(int slot, const char *cmd);
 
         // Send command; read a single char reply with no '#' terminator.
-        bool sendCommandSingleChar(const char *cmd, char &reply, int timeout_ms = 2000);
+        // quiet=true: failure messages logged at DBG_DEBUG instead of DBG_ERROR (use during probing).
+        bool sendCommandSingleChar(const char *cmd, char &reply, int timeout_ms = 2000, bool quiet = false);
 
         // Send command; read exactly nbytes bytes (no '#' terminator — for binary protocols).
-        bool sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, int timeout_ms = 2000);
+        // quiet=true: failure messages logged at DBG_DEBUG instead of DBG_ERROR (use during probing).
+        bool sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, int timeout_ms = 2000, bool quiet = false);
 
         // Drain all pending input bytes from the fd.
         void flushIO();

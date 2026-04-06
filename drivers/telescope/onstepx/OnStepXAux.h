@@ -71,6 +71,7 @@ class OnStepXAux : public INDI::DefaultDevice,
         void pollFocusers();
         void updateRotatorState();
         void pollFeatures();
+        void updateUsbStates();
 
         OnStepXCore        m_core;
         OnStepXAuxFeatures m_auxFeatures;

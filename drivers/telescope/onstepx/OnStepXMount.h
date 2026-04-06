@@ -121,6 +121,7 @@ class OnStepXMount : public INDI::Telescope,
         void updateAlignmentStatus();
         void updatePecStatus();
         void updateTrackingProperties();
+        void updateUsbStates();
 
         bool isEquatorial() const;
 

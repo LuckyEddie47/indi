@@ -56,6 +56,7 @@ OnStepXMount::OnStepXMount() : INDI::GuiderInterface(this),
     m_site.setDevice(this);
     m_tracking.setDevice(this);
     m_weather.setDevice(this);
+    m_usbPorts.setDevice(this);
     // comm pointers set in updateProperties after connect
 
     // Provisional capability set — refined in Handshake() once probed.
@@ -172,6 +173,7 @@ bool OnStepXMount::updateProperties()
         m_rotator.setComm(&m_core.comm());
         m_tracking.setComm(&m_core.comm());
         m_weather.setComm(&m_core.comm());
+        m_usbPorts.setComm(&m_core.comm());
         m_weather.updateProperties(true);
         m_limits.updateProperties(true, m_core.caps().hasHomeSense);
         m_tracking.updateProperties(true);
@@ -935,6 +937,15 @@ void OnStepXMount::updateFocuserStates()
         if (f)
             f->pollStatus();
     }
+}
+
+// ---------------------------------------------------------------------------
+// updateUsbStates — poll USB port values (~5 poll throttle)
+// ---------------------------------------------------------------------------
+void OnStepXMount::updateUsbStates()
+{
+    if (m_core.caps().portMask)
+        m_usbPorts.pollStatus();
 }
 
 // ---------------------------------------------------------------------------
