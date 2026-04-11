@@ -16,6 +16,13 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+// Debug only
+
+// #include <signal.h>
+// #include <unistd.h>
+
+// Debug only end
+
 #include "OnStepXMount.h"
 
 #include <indicom.h>
@@ -43,6 +50,14 @@ OnStepXMount::OnStepXMount() : INDI::GuiderInterface(this),
     INDI::RotatorInterface(this),
     INDI::WeatherInterface(this)
 {
+    // Debug only
+
+    // Halts the process at this point. Allows remote debugger to attach which is required
+    // when launching the driver from a client eg. Ekos
+    // kill(getpid(), SIGSTOP);
+
+    // Debug only end
+
     setVersion(0, 1);
     m_alignment.setDevice(this);
     m_core.setDevice(this);
