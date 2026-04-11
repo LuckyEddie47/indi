@@ -163,9 +163,25 @@ bool OnStepXCore::probeController()
     }
     OSX_CORE_LOGF_DEBUG("featureMask=0x%02X", m_cap.featureMask);
 
+    // :GUY0# — 8-char bitfield, bit n → USB port slot n active
+    if (m_comm.sendCommand(":GUY0#", reply, 2000, true) && strlen(reply) >= 8)
+    {
+        m_cap.portMask = 0;
+        for (int i = 0; i < 8; i++)
+            if (reply[i] == '1')
+                m_cap.portMask |= static_cast<uint8_t>(1 << i);
+    }
+    OSX_CORE_LOGF_DEBUG("portMask=0x%02X", m_cap.portMask);
+
     // :GX9A# — weather: pass if reply is a valid float (sensor present)
     if (m_comm.sendCommand(":GX9A#", reply, 2000, true))
-        m_cap.hasWeatherRead = isNumeric(reply);
+    {
+        bool validStart = (reply[0] >= '0' && reply[0] <= '9') ||
+                          reply[0] == '-' || reply[0] == '+' || reply[0] == '.';
+        char *end = nullptr;
+        double val = validStart ? strtod(reply, &end) : 0.0;
+        m_cap.hasWeatherRead = validStart && end != reply && val != 0.0;
+    }
 
     // :SX9A,15.0# — weather write: single-char '1' if writable
     if (m_cap.hasWeatherRead)
@@ -216,11 +232,21 @@ bool OnStepXCore::probeMount()
     m_cap.hasMount = true;
     switch (reply[0])
     {
-        case 'G': m_cap.mountType = MountType::GEM;    break;
-        case 'P': m_cap.mountType = MountType::FORK;   break;
-        case 'A': m_cap.mountType = MountType::ALTAZM; break;
-        case 'L': m_cap.mountType = MountType::ALTALT; break;
-        default:  m_cap.mountType = MountType::UNKNOWN; break;
+        case 'G':
+            m_cap.mountType = MountType::GEM;
+            break;
+        case 'P':
+            m_cap.mountType = MountType::FORK;
+            break;
+        case 'A':
+            m_cap.mountType = MountType::ALTAZM;
+            break;
+        case 'L':
+            m_cap.mountType = MountType::ALTALT;
+            break;
+        default:
+            m_cap.mountType = MountType::UNKNOWN;
+            break;
     }
     m_cap.hasGoto = (strlen(reply) >= 3 && reply[2] != 'N');
 
@@ -233,7 +259,11 @@ bool OnStepXCore::probeMount()
         {
             bool allHigh = true;
             for (int i = 0; i < 9; i++)
-                if (bin[i] < 0x80) { allHigh = false; break; }
+                if (bin[i] < 0x80)
+                {
+                    allHigh = false;
+                    break;
+                }
             m_cap.hasBinaryStatus = allHigh;
         }
     }
