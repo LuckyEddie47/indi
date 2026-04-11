@@ -207,10 +207,11 @@ void OnStepXAux::TimerHit()
         return;
 
     m_pollCount++;
-    WI::checkWeatherUpdate();
-    if (m_pollCount % 5  == 0) pollFocusers();
-    if (m_pollCount % 5  == 0) pollFeatures();
-    if (m_pollCount % 10 == 0) updateRotatorState();
+    if (m_pollCount % 10 == 0) WI::checkWeatherUpdate();
+    if (m_pollCount % 5 == 0) pollFocusers();
+    if (m_pollCount % 5 == 0) pollFeatures();
+    if (m_pollCount % 5 == 0) pollUsbPorts();
+    if (m_pollCount % 5 == 0) updateRotatorState();
 
     SetTimer(getCurrentPollingPeriod());
 }
@@ -303,9 +304,9 @@ bool OnStepXAux::SetRotatorBacklash(int32_t steps)
 }
 
 // ---------------------------------------------------------------------------
-// updateUsbStates — poll USB port values (~5 poll throttle)
+// pollUsbPorts — poll USB port values (~5 poll throttle)
 // ---------------------------------------------------------------------------
-void OnStepXAux::updateUsbStates()
+void OnStepXAux::pollUsbPorts()
 {
     if (m_core.caps().portMask)
         m_usbPorts.pollStatus();

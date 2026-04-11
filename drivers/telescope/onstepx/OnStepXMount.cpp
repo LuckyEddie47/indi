@@ -294,11 +294,12 @@ bool OnStepXMount::ReadScopeStatus()
 
     m_pollCount++;
     if (m_pollCount % 5  == 0) updateFocuserStates();
-    if (m_pollCount % 10 == 0) updateRotatorState();
+    if (m_pollCount % 5 == 0) updateRotatorState();
     if (m_pollCount % 10 == 0) updatePecStatus();
-    if (m_pollCount % 30 == 0) updateAlignmentStatus();
+    if (m_pollCount % 10 == 0) updateAlignmentStatus();
     if (m_pollCount % 30 == 0) updateWeatherState();
     if (m_pollCount % 5  == 0) updateFeatureStates();
+    if (m_pollCount % 5  == 0) pollUsbPorts();
     m_info.updateStatus(m_status);
 
     return true;
@@ -940,15 +941,6 @@ void OnStepXMount::updateFocuserStates()
 }
 
 // ---------------------------------------------------------------------------
-// updateUsbStates — poll USB port values (~5 poll throttle)
-// ---------------------------------------------------------------------------
-void OnStepXMount::updateUsbStates()
-{
-    if (m_core.caps().portMask)
-        m_usbPorts.pollStatus();
-}
-
-// ---------------------------------------------------------------------------
 // ISNew* — forward unhandled events to base class
 // ---------------------------------------------------------------------------
 bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
@@ -1052,4 +1044,13 @@ IPState OnStepXMount::ExecuteHomeAction(TelescopeHomeAction action)
         default:
             return IPS_ALERT;
     }
+}
+
+// ---------------------------------------------------------------------------
+// pollUsbPorts — poll USB port values (~5 poll throttle)
+// ---------------------------------------------------------------------------
+void OnStepXMount::pollUsbPorts()
+{
+    if (m_core.caps().portMask)
+        m_usbPorts.pollStatus();
 }
