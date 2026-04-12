@@ -96,27 +96,25 @@ TEST(OnStepXCommTest, test_sendCommand_timeout)
 // ---------------------------------------------------------------------------
 // test_sendCommand_no_hash
 //
-// The responder sends 260 bytes with no '#'. readUntilHash fills its 256-byte
-// buffer (maxLen-1 = 255 data bytes) and returns false without a hash ever
-// arriving. sendCommand must return false.
-// ---------------------------------------------------------------------------
-TEST(OnStepXCommTest, test_sendCommand_no_hash)
+// A short reply with no '#' terminator — valid, inter-char timeout completes it.
+TEST(OnStepXCommTest, test_sendCommand_no_hash_valid)
 {
     int fds[2];
     ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
 
     std::thread responder([&]()
     {
-        readCmd(fds[1]);                        // consume the command
-        std::string noHash(260, 'X');
-        if (write(fds[1], noHash.c_str(), noHash.size()) < 0) {}
+        readCmd(fds[1]);
+        // Send "0" with no '#' — the firmware "not compiled in" response
+        if (write(fds[1], "0", 1) < 0) {}
     });
 
     OnStepXComm comm;
     comm.setFd(fds[0]);
 
     char reply[256];
-    EXPECT_FALSE(comm.sendCommand(":GVP#", reply, 2000));
+    EXPECT_TRUE(comm.sendCommand(":GX98#", reply, 2000));
+    EXPECT_STREQ(reply, "0");
 
     responder.join();
     close(fds[0]);
@@ -149,9 +147,12 @@ TEST(OnStepXCommTest, test_flushIO_clears_stale)
     fd_set rfd;
     FD_ZERO(&rfd);
     FD_SET(fds[0], &rfd);
-    struct timeval tv { 0, 5000 }; // 5 ms
+    struct timeval tv
+    {
+        0, 5000
+    }; // 5 ms
     EXPECT_EQ(select(fds[0] + 1, &rfd, nullptr, nullptr, &tv), 0)
-        << "flushIO must drain all stale data";
+            << "flushIO must drain all stale data";
 
     // Verify a clean sendCommand works after the flush.
     std::thread responder([&]()
@@ -217,6 +218,30 @@ TEST(OnStepXCommTest, test_mutex_concurrent)
 
     EXPECT_EQ(successCount.load(), N);
 
+    close(fds[0]);
+    close(fds[1]);
+}
+
+// Some commands may return "0#" (with terminator) vs "0" (without). Both should work:
+TEST(OnStepXCommTest, test_sendCommand_zero_with_hash)
+{
+    int fds[2];
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    std::thread responder([&]()
+    {
+        readCmd(fds[1]);
+        writeReply(fds[1], "0");   // sends "0#"
+    });
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    char reply[256];
+    EXPECT_TRUE(comm.sendCommand(":GX98#", reply, 2000));
+    EXPECT_STREQ(reply, "0");
+
+    responder.join();
     close(fds[0]);
     close(fds[1]);
 }

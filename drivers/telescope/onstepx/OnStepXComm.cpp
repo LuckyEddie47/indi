@@ -78,7 +78,7 @@ bool OnStepXComm::sendCommand(const char *cmd, char *reply, int timeout_ms, bool
     OSX_COMM_LOGF_DEBUG("CMD: %s", cmd);
 
     reply[0] = '\0';
-    if (!readUntilHash(reply, 256, timeout_ms))
+    if (!readReply(reply, 256, timeout_ms))
     {
         auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
         OSX_COMM_LOGF(lvl, "sendCommand: no reply for cmd '%s'", cmd);
@@ -135,7 +135,10 @@ bool OnStepXComm::sendCommandSingleChar(const char *cmd, char &reply, int timeou
     fd_set rfd;
     FD_ZERO(&rfd);
     FD_SET(m_fd, &rfd);
-    struct timeval tv { timeout_ms / 1000, (timeout_ms % 1000) * 1000L };
+    struct timeval tv
+    {
+        timeout_ms / 1000, (timeout_ms % 1000) * 1000L
+    };
 
     if (select(m_fd + 1, &rfd, nullptr, nullptr, &tv) <= 0)
     {
@@ -193,7 +196,7 @@ bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, in
         struct timespec now;
         clock_gettime(CLOCK_MONOTONIC, &now);
         long elapsed_ms = (now.tv_sec - start.tv_sec) * 1000L
-                        + (now.tv_nsec - start.tv_nsec) / 1000000L;
+                          + (now.tv_nsec - start.tv_nsec) / 1000000L;
         long remaining_ms = timeout_ms - elapsed_ms;
 
         if (remaining_ms <= 0)
@@ -207,7 +210,10 @@ bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, in
         fd_set rfd;
         FD_ZERO(&rfd);
         FD_SET(m_fd, &rfd);
-        struct timeval tv { remaining_ms / 1000, (remaining_ms % 1000) * 1000L };
+        struct timeval tv
+        {
+            remaining_ms / 1000, (remaining_ms % 1000) * 1000L
+        };
 
         if (select(m_fd + 1, &rfd, nullptr, nullptr, &tv) <= 0)
         {
@@ -278,7 +284,7 @@ bool OnStepXComm::sendCommandFocuser(int slot, const char *cmd, char *reply, int
     }
 
     reply[0] = '\0';
-    if (!readUntilHash(reply, 256, timeout_ms))
+    if (!readReply(reply, 256, timeout_ms))
     {
         OSX_COMM_LOGF_ERROR("sendCommandFocuser: timeout for cmd '%s' (slot %d)", cmd, slot);
         return false;
@@ -343,7 +349,10 @@ void OnStepXComm::doFlush()
         fd_set rfd;
         FD_ZERO(&rfd);
         FD_SET(m_fd, &rfd);
-        struct timeval tv { 0, 0 };
+        struct timeval tv
+        {
+            0, 0
+        };
         if (select(m_fd + 1, &rfd, nullptr, nullptr, &tv) <= 0)
             break;
         if (read(m_fd, buf, sizeof(buf)) <= 0)
@@ -367,9 +376,9 @@ bool OnStepXComm::writeCommand(const char *cmd)
     return true;
 }
 
-// Read bytes into buf until '#' received or timeout/buffer-full.
-// Stores reply without the trailing '#'. buf must be at least maxLen bytes.
-bool OnStepXComm::readUntilHash(char *buf, int maxLen, int timeout_ms)
+// Read bytes into buf until '#' received, inter-character timeout or timeout/buffer-full.
+// Stores reply without the trailing '#'. buf must be no more than maxLen bytes.
+bool OnStepXComm::readReply(char *buf, int maxLen, int timeout_ms, int inter_char_ms)
 {
     struct timespec start;
     clock_gettime(CLOCK_MONOTONIC, &start);
@@ -380,23 +389,39 @@ bool OnStepXComm::readUntilHash(char *buf, int maxLen, int timeout_ms)
         struct timespec now;
         clock_gettime(CLOCK_MONOTONIC, &now);
         long elapsed_ms = (now.tv_sec - start.tv_sec) * 1000L
-                        + (now.tv_nsec - start.tv_nsec) / 1000000L;
+                          + (now.tv_nsec - start.tv_nsec) / 1000000L;
         long remaining_ms = timeout_ms - elapsed_ms;
-
         if (remaining_ms <= 0)
-            return false;
+            break;
+
+        // Once we have data, use inter-char timeout instead of overall remaining
+        long wait_ms = (len > 0) ? inter_char_ms : remaining_ms;
 
         fd_set rfd;
         FD_ZERO(&rfd);
         FD_SET(m_fd, &rfd);
-        struct timeval tv { remaining_ms / 1000, (remaining_ms % 1000) * 1000L };
+        struct timeval tv
+        {
+            wait_ms / 1000, (wait_ms % 1000) * 1000L
+        };
 
-        if (select(m_fd + 1, &rfd, nullptr, nullptr, &tv) <= 0)
+        int sel = select(m_fd + 1, &rfd, nullptr, nullptr, &tv);
+        if (sel <= 0)
+        {
+            // If we have data and inter-char timeout fired, reply is complete
+            if (len > 0)
+                break;
+            // No data at all — I/O failure
+            buf[0] = '\0';
             return false;
+        }
 
         char c;
         if (read(m_fd, &c, 1) != 1)
+        {
+            buf[len] = '\0';
             return false;
+        }
 
         if (c == '#')
         {
@@ -407,9 +432,9 @@ bool OnStepXComm::readUntilHash(char *buf, int maxLen, int timeout_ms)
         buf[len++] = c;
     }
 
-    // Buffer full without seeing '#'
     buf[len] = '\0';
-    return false;
+    // Valid if we accumulated something
+    return len > 0;
 }
 
 // Read exactly one byte with a timeout; no locking (caller holds mutex).
@@ -418,7 +443,10 @@ bool OnStepXComm::readSingleChar(char &c, int timeout_ms)
     fd_set rfd;
     FD_ZERO(&rfd);
     FD_SET(m_fd, &rfd);
-    struct timeval tv { timeout_ms / 1000, (timeout_ms % 1000) * 1000L };
+    struct timeval tv
+    {
+        timeout_ms / 1000, (timeout_ms % 1000) * 1000L
+    };
 
     if (select(m_fd + 1, &rfd, nullptr, nullptr, &tv) <= 0)
         return false;

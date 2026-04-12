@@ -27,7 +27,10 @@
 
 #include <mutex>
 
-namespace INDI { class DefaultDevice; }
+namespace INDI
+{
+class DefaultDevice;
+}
 
 // All LX200 framing in one place. Zero raw read()/write() calls outside this class.
 class OnStepXComm
@@ -68,6 +71,6 @@ class OnStepXComm
 
         void doFlush();                                        // no-lock; called from within locked context
         bool writeCommand(const char *cmd);                    // no-lock
-        bool readUntilHash(char *buf, int maxLen, int timeout_ms);  // no-lock
+        bool readReply(char *buf, int maxLen, int timeout_ms, int inter_char_ms = 50);  // no-lock
         bool readSingleChar(char &c, int timeout_ms);          // no-lock
 };
