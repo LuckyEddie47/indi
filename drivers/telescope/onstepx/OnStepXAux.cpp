@@ -58,8 +58,6 @@ bool OnStepXAux::initProperties()
     RI::initProperties("Rotator");
     m_rotator.initProperties(false);  // hasDerotator known only after Handshake
 
-    m_weather.initProperties();
-
     // --- OSX_FIRMWARE ---
     m_firmwareTP[0].fill("FIRMWARE_VERSION", "Version", "");
     m_firmwareTP[1].fill("FIRMWARE_DATE",    "Date",    "");
@@ -68,12 +66,6 @@ bool OnStepXAux::initProperties()
     m_firmwareTP.fill(getDeviceName(), "OSX_FIRMWARE", "Firmware Info",
                       "OnStepX", IP_RO, 60, IPS_IDLE);
 
-    WI::initProperties(WEATHER_TAB, WEATHER_TAB);
-    addParameter("WEATHER_TEMPERATURE", "Temperature (C)",    -40,  80, 15);
-    addParameter("WEATHER_PRESSURE",    "Pressure (hPa)",     800, 1100, 15);
-    addParameter("WEATHER_HUMIDITY",    "Humidity (%)",         0,  100, 15);
-    addParameter("WEATHER_DEWPOINT",    "Dew Point (C)",      -40,   40, 15);
-    addParameter("OSX_MCU_TEMP",        "MCU Temp (C)",       -20,   80, 15);
 
     m_serialConnection = new Connection::Serial(this);
     m_serialConnection->registerHandshake([&]()
@@ -100,8 +92,21 @@ bool OnStepXAux::initProperties()
 bool OnStepXAux::updateProperties()
 {
     INDI::DefaultDevice::updateProperties();
-    RI::updateProperties();
-    WI::updateProperties();
+
+    if (m_core.caps().hasRotator)
+        RI::updateProperties();
+
+    if (m_core.caps().hasWeatherRead)
+    {
+        WI::initProperties(WEATHER_TAB, WEATHER_TAB);
+        addParameter("WEATHER_TEMPERATURE", "Temperature (C)",    -40,  80, 15);
+        addParameter("WEATHER_PRESSURE",    "Pressure (hPa)",     800, 1100, 15);
+        addParameter("WEATHER_HUMIDITY",    "Humidity (%)",         0,  100, 15);
+        addParameter("WEATHER_DEWPOINT",    "Dew Point (C)",      -40,   40, 15);
+        addParameter("OSX_MCU_TEMP",        "MCU Temp (C)",       -20,   80, 15);
+        WI::updateProperties();
+        m_weather.initProperties();
+    }
 
     if (isConnected())
     {
@@ -144,10 +149,14 @@ bool OnStepXAux::updateProperties()
     else
     {
         deleteProperty(m_firmwareTP);
+
         if (m_core.caps().hasRotator)
             m_rotator.updateProperties(false, false);
+
+        if (m_core.caps().hasWeatherRead)
+            m_weather.updateProperties(false);
+
         m_auxFeatures.deleteAll();
-        m_weather.updateProperties(false);
         m_usbPorts.deleteAll();
     }
 

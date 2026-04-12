@@ -145,9 +145,6 @@ bool OnStepXMount::initProperties()
     // Info (firmware display, status text, reticle)
     m_info.initProperties();
 
-    // Weather calibration and DUT1 (owned by weather helper, shown on Weather tab)
-    m_weather.initProperties();
-
     // Weather interface — tab name, parameter group name
     WI::initProperties(WEATHER_TAB, WEATHER_TAB);
     addParameter("WEATHER_TEMPERATURE", "Temperature (C)",    -40,  80, 15);
@@ -168,10 +165,23 @@ bool OnStepXMount::initProperties()
 bool OnStepXMount::updateProperties()
 {
     INDI::Telescope::updateProperties();
-    GI::updateProperties();
-    RI::updateProperties();
-    WI::updateProperties();
 
+    GI::updateProperties();
+
+    if (m_core.caps().hasRotator)
+        RI::updateProperties();
+
+    if (m_core.caps().hasWeatherRead)
+    {
+        WI::initProperties(WEATHER_TAB, WEATHER_TAB);
+        addParameter("WEATHER_TEMPERATURE", "Temperature (C)",    -40,  80, 15);
+        addParameter("WEATHER_PRESSURE",    "Pressure (hPa)",     800, 1100, 15);
+        addParameter("WEATHER_HUMIDITY",    "Humidity (%)",         0,  100, 15);
+        addParameter("WEATHER_DEWPOINT",    "Dew Point (C)",      -40,   40, 15);
+        addParameter("OSX_MCU_TEMP",        "MCU Temp (C)",       -20,   80, 15);
+        WI::updateProperties();
+        m_weather.initProperties();
+    }
     if (isConnected())
     {
         if (!isEquatorial())
@@ -234,12 +244,17 @@ bool OnStepXMount::updateProperties()
         m_guide.updateProperties(false);
         m_info.updateProperties(false, {});
         m_site.updateProperties(false);
-        m_weather.updateProperties(false);
+
+        if (m_core.caps().hasWeatherRead)
+            m_weather.updateProperties(false);
+
         if (m_core.caps().hasRotator)
             m_rotator.updateProperties(false, false);
-        m_auxFeatures.deleteAll();
+
         if (m_core.caps().hasPec)
             m_pec.updateProperties(false);
+
+        m_auxFeatures.deleteAll();
         m_usbPorts.deleteAll();
     }
 
