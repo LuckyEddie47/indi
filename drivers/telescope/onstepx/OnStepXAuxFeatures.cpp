@@ -266,7 +266,7 @@ bool OnStepXAuxFeatures::probeSlot(int idx, Slot &slot)
     // Expected reply format: "name,T" where T is a type digit
     // e.g. "DEW_A,2"
     char *comma = strrchr(reply, ',');
-    char typeChar = '1';   // default: ANALOG
+    char typeChar = '1';   // default: SWITCH
 
     if (comma && comma[1] != '\0')
     {
@@ -433,10 +433,10 @@ OnStepXAuxFeatures::FeatureType OnStepXAuxFeatures::parseType(char t)
 {
     switch (t)
     {
-        case '0': case 'S': case 's': return FeatureType::SWITCH;
-        case '1': case 'A': case 'a': return FeatureType::ANALOG;
-        case '2': case 'D': case 'd': return FeatureType::DEW_HEATER;
-        case '3': case 'I': case 'i': return FeatureType::INTERVALOMETER;
+        case '1': case 'S': case 's': return FeatureType::SWITCH;
+        case '2': case 'A': case 'a': return FeatureType::ANALOG;
+        case '3': case 'D': case 'd': return FeatureType::DEW_HEATER;
+        case '4': case 'I': case 'i': return FeatureType::INTERVALOMETER;
         default:                      return FeatureType::UNKNOWN;
     }
 }

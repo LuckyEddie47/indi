@@ -16,6 +16,13 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+// Debug only
+
+// #include <signal.h>
+// #include <unistd.h>
+
+// Debug only end
+
 #include "OnStepXAux.h"
 
 #define WEATHER_TAB "Weather"   // tab name for WeatherInterface properties
@@ -23,6 +30,14 @@
 OnStepXAux::OnStepXAux() : INDI::RotatorInterface(this),
     INDI::WeatherInterface(this)
 {
+    // Debug only
+
+    // Halts the process at this point. Allows remote debugger to attach which is required
+    // when launching the driver from a client eg. Ekos
+    // kill(getpid(), SIGSTOP);
+
+    // Debug only end
+
     setVersion(0, 1);
     m_core.setDevice(this);
     m_auxFeatures.setDevice(this);
@@ -153,6 +168,7 @@ bool OnStepXAux::Handshake()
     }
 
     m_auxFeatures.setComm(&m_core.comm());
+    m_usbPorts.setComm(&m_core.comm());
     m_rotator.setComm(&m_core.comm());
     m_weather.setComm(&m_core.comm());
     m_weather.updateProperties(true);
