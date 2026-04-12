@@ -73,29 +73,29 @@ TEST(AuxFeatures, PropBase_SpecialChars)
 // ---------------------------------------------------------------------------
 TEST(AuxFeatures, ParseType_Switch)
 {
-    // '0' and 'S'/'s' -> SWITCH (0)
-    EXPECT_EQ(TestableAux::typeOf('0'), 0);
+    // '1' and 'S'/'s' -> SWITCH (1)
+    EXPECT_EQ(TestableAux::typeOf('1'), 0);
     EXPECT_EQ(TestableAux::typeOf('S'), 0);
     EXPECT_EQ(TestableAux::typeOf('s'), 0);
 }
 
 TEST(AuxFeatures, ParseType_Analog)
 {
-    EXPECT_EQ(TestableAux::typeOf('1'), 1);
+    EXPECT_EQ(TestableAux::typeOf('2'), 1);
     EXPECT_EQ(TestableAux::typeOf('A'), 1);
     EXPECT_EQ(TestableAux::typeOf('a'), 1);
 }
 
 TEST(AuxFeatures, ParseType_DewHeater)
 {
-    EXPECT_EQ(TestableAux::typeOf('2'), 2);
+    EXPECT_EQ(TestableAux::typeOf('3'), 2);
     EXPECT_EQ(TestableAux::typeOf('D'), 2);
     EXPECT_EQ(TestableAux::typeOf('d'), 2);
 }
 
 TEST(AuxFeatures, ParseType_Intervalometer)
 {
-    EXPECT_EQ(TestableAux::typeOf('3'), 3);
+    EXPECT_EQ(TestableAux::typeOf('4'), 3);
     EXPECT_EQ(TestableAux::typeOf('I'), 3);
     EXPECT_EQ(TestableAux::typeOf('i'), 3);
 }
