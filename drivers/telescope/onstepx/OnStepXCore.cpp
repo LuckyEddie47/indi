@@ -50,6 +50,9 @@ static bool isNumeric(const char *s)
 {
     if (!s || *s == '\0')
         return false;
+    // "0" with no decimal point is the OnStepX "not compiled in" sentinel
+    if (strcmp(s, "0") == 0)
+        return false;
     char *end = nullptr;
     strtod(s, &end);
     return end != s && *end == '\0';
