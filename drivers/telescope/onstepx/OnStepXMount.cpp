@@ -147,11 +147,6 @@ bool OnStepXMount::initProperties()
 
     // Weather interface — tab name, parameter group name
     WI::initProperties(WEATHER_TAB, WEATHER_TAB);
-    addParameter("WEATHER_TEMPERATURE", "Temperature (C)",    -40,  80, 15);
-    addParameter("WEATHER_PRESSURE",    "Pressure (hPa)",     800, 1100, 15);
-    addParameter("WEATHER_HUMIDITY",    "Humidity (%)",         0,  100, 15);
-    addParameter("WEATHER_DEWPOINT",    "Dew Point (C)",      -40,   40, 15);
-    addParameter("OSX_MCU_TEMP",        "MCU Temp (C)",       -20,   80, 15);
 
     // Alignment subsystem — initialised after Handshake for AltAz only,
     // but the AlignmentSubsystemForDrivers members are harmless to construct.
@@ -171,34 +166,60 @@ bool OnStepXMount::updateProperties()
     if (m_core.caps().hasRotator)
         RI::updateProperties();
 
-    if (m_core.caps().hasWeatherRead)
-    {
-        WI::initProperties(WEATHER_TAB, WEATHER_TAB);
-        addParameter("WEATHER_TEMPERATURE", "Temperature (C)",    -40,  80, 15);
-        addParameter("WEATHER_PRESSURE",    "Pressure (hPa)",     800, 1100, 15);
-        addParameter("WEATHER_HUMIDITY",    "Humidity (%)",         0,  100, 15);
-        addParameter("WEATHER_DEWPOINT",    "Dew Point (C)",      -40,   40, 15);
-        addParameter("OSX_MCU_TEMP",        "MCU Temp (C)",       -20,   80, 15);
-        WI::updateProperties();
-        m_weather.initProperties();
-    }
     if (isConnected())
     {
-        if (!isEquatorial())
-            InitAlignmentProperties(this);
-
         m_alignment.setComm(&m_core.comm());
         m_auxFeatures.setComm(&m_core.comm());
         m_guide.setComm(&m_core.comm());
         m_info.setComm(&m_core.comm());
         m_pec.setComm(&m_core.comm());
         m_site.setComm(&m_core.comm());
-        m_site.updateProperties(true);
         m_limits.setComm(&m_core.comm());
         m_rotator.setComm(&m_core.comm());
         m_tracking.setComm(&m_core.comm());
         m_weather.setComm(&m_core.comm());
         m_usbPorts.setComm(&m_core.comm());
+    }
+
+    if (m_core.caps().hasWeatherRead)
+    {
+        if (isConnected())
+        {
+            // addParameter() calls are deferred to here because hasWeatherRead
+            // and hasMcuTemp are not known until after Handshake()/probeController().
+            // Only register OSX_MCU_TEMP when the hardware sensor is present.
+            addParameter("WEATHER_TEMPERATURE", "Temperature (C)", -40,   80, 15);
+            addParameter("WEATHER_PRESSURE",    "Pressure (hPa)",  800, 1100, 15);
+            addParameter("WEATHER_HUMIDITY",    "Humidity (%)",      0,  100, 15);
+            addParameter("WEATHER_DEWPOINT",    "Dew Point (C)",   -40,   40, 15);
+            if (m_core.caps().hasMcuTemp)
+                addParameter("OSX_MCU_TEMP",    "MCU Temp (C)",    -20,   80, 15);
+
+            WI::updateProperties();
+
+            // Disable the WI internal timer.  Weather reads are driven
+            // solely by the ReadScopeStatus poll throttle (every 30 polls)
+            // to keep all hardware I/O on a single thread.  The timer
+            // fires on its own thread and races with the polling thread
+            // on m_comm, causing a crash via a null or contended mutex.
+            UpdatePeriodNP[0].setValue(0);
+            UpdatePeriodNP.apply();
+
+            m_weather.initProperties();
+
+        }
+        else
+        {
+            WI::updateProperties();   // disconnect path — deletes WI properties
+        }
+    }
+    if (isConnected())
+    {
+        if (!isEquatorial())
+            InitAlignmentProperties(this);
+
+
+        m_site.updateProperties(true);
         m_weather.updateProperties(true);
         m_limits.updateProperties(true, m_core.caps().hasHomeSense);
         m_tracking.updateProperties(true);
@@ -327,7 +348,7 @@ bool OnStepXMount::ReadScopeStatus()
     if (m_pollCount % 5 == 0) updateRotatorState();
     if (m_pollCount % 10 == 0) updatePecStatus();
     if (m_pollCount % 10 == 0) updateAlignmentStatus();
-    if (m_pollCount % 30 == 0) updateWeatherState();
+    if (m_pollCount % 30 == 0) updateWeatherDirect();
     if (m_pollCount % 5  == 0) updateFeatureStates();
     if (m_pollCount % 5  == 0) pollUsbPorts();
     m_info.updateStatus(m_status);
@@ -826,9 +847,16 @@ bool OnStepXMount::updateTime(ln_date *utc, double utc_offset)
 // ---------------------------------------------------------------------------
 // updateWeatherState — called from ReadScopeStatus throttle (every ~30 polls)
 // ---------------------------------------------------------------------------
-void OnStepXMount::updateWeatherState()
+void OnStepXMount::updateWeatherDirect()
 {
     WI::checkWeatherUpdate();
+    if (!m_core.caps().hasWeatherRead)
+        return;
+    IPState state = updateWeather();
+    // Propagate the returned state to the WI parameter lights so clients
+    // see the correct OK/ALERT status without going through checkWeatherUpdate().
+    ParametersNP.setState(state);
+    ParametersNP.apply();
 }
 
 // ---------------------------------------------------------------------------

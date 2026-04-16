@@ -116,7 +116,7 @@ class OnStepXMount : public INDI::Telescope,
         // Throttled subsystem updaters
         void updateFocuserStates();
         void updateRotatorState();
-        void updateWeatherState();
+        void updateWeatherDirect();
         void updateFeatureStates();
         void updateAlignmentStatus();
         void updatePecStatus();
