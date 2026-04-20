@@ -53,7 +53,17 @@ class OnStepXFocuser : public INDI::Focuser
         explicit OnStepXFocuser(int slot);
 
         // Called by parent after Handshake: wire in the shared comm object.
-        void setComm(OnStepXComm *comm) { m_comm = comm; }
+        void setComm(OnStepXComm *comm)
+        {
+            m_comm = comm;
+        }
+
+        // Returns the 1-based focuser slot number.
+        // Required by OnStepXFocuserHotPlugHandler for duplicate detection.
+        int slot() const
+        {
+            return m_slot;
+        }
 
         // Periodic status update — call from parent's poll throttle (every ~5 s).
         void pollStatus();

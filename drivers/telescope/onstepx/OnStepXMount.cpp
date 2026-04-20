@@ -24,6 +24,7 @@
 // Debug only end
 
 #include "OnStepXMount.h"
+#include "hotplugmanager.h"
 
 #include <indicom.h>
 #include <libastro.h>
@@ -161,11 +162,9 @@ bool OnStepXMount::updateProperties()
 {
     INDI::Telescope::updateProperties();
 
-    GI::updateProperties();
-
-    if (m_core.caps().hasRotator)
-        RI::updateProperties();
-
+    // Wire comm into all subsystems before any updateProperties() call that
+    // may immediately poll hardware (e.g. WI::updateProperties() triggers
+    // checkWeatherUpdate() which reaches m_weather.readSensors()).
     if (isConnected())
     {
         m_alignment.setComm(&m_core.comm());
@@ -180,6 +179,11 @@ bool OnStepXMount::updateProperties()
         m_weather.setComm(&m_core.comm());
         m_usbPorts.setComm(&m_core.comm());
     }
+
+    GI::updateProperties();
+
+    if (m_core.caps().hasRotator)
+        RI::updateProperties();
 
     if (m_core.caps().hasWeatherRead)
     {
@@ -213,11 +217,11 @@ bool OnStepXMount::updateProperties()
             WI::updateProperties();   // disconnect path — deletes WI properties
         }
     }
+
     if (isConnected())
     {
         if (!isEquatorial())
             InitAlignmentProperties(this);
-
 
         m_site.updateProperties(true);
         m_weather.updateProperties(true);
@@ -225,7 +229,15 @@ bool OnStepXMount::updateProperties()
         m_tracking.updateProperties(true);
         m_guide.updateProperties(true);
         m_info.updateProperties(true, m_core.caps());
-        createFocusers();
+
+        // Register focuser handler with HotPlugManager.
+        // oneShot=true: one discovery pass only — slots already known from probe.
+        if (m_core.caps().numFocusers > 0 && !m_focuserHandler)
+        {
+            m_focuserHandler = std::make_shared<OnStepXFocuserHotPlugHandler>(&m_core);
+            INDI::HotPlugManager::getInstance().registerHandler(m_focuserHandler);
+            INDI::HotPlugManager::getInstance().start(0, true);
+        }
 
         if (m_core.caps().hasRotator)
         {
@@ -259,6 +271,13 @@ bool OnStepXMount::updateProperties()
     }
     else
     {
+        // Unregister focuser handler so devices are cleaned up.
+        if (m_focuserHandler)
+        {
+            INDI::HotPlugManager::getInstance().unregisterHandler(m_focuserHandler);
+            m_focuserHandler.reset();
+        }
+
         m_alignment.updateProperties(false);
         m_limits.updateProperties(false, false);
         m_tracking.updateProperties(false);
@@ -894,30 +913,6 @@ IPState OnStepXMount::GuideWest(uint32_t ms)
 }
 
 // ---------------------------------------------------------------------------
-// createFocusers — called once from updateProperties on first connect.
-// Instantiates OnStepXFocuser objects for each detected slot (1..numFocusers),
-// hands them the shared comm object, and announces them to the INDI bus.
-// ---------------------------------------------------------------------------
-void OnStepXMount::createFocusers()
-{
-    int nf = m_core.caps().numFocusers;
-    for (int i = 0; i < nf && i < (int)m_focusers.size(); i++)
-    {
-        if (m_focusers[i])
-            continue;  // already created (shouldn't happen, but guard anyway)
-
-        m_focusers[i] = std::make_unique<OnStepXFocuser>(i + 1);
-        m_focusers[i]->setComm(&m_core.comm());
-        // Announce the device: registers it in the global device list so that
-        // clients (Ekos) see it as a separate focuser device in the same process.
-        m_focusers[i]->ISGetProperties(nullptr);
-        // Mark it as connected (no own port — parent's connection is shared)
-        m_focusers[i]->setConnected(true, IPS_OK);
-        m_focusers[i]->updateProperties();
-    }
-}
-
-// ---------------------------------------------------------------------------
 // updatePecStatus — poll :$QZ?# state (~10 poll throttle)
 // ---------------------------------------------------------------------------
 void OnStepXMount::updatePecStatus()
@@ -991,8 +986,11 @@ bool OnStepXMount::SetRotatorBacklash(int32_t steps)
 // ---------------------------------------------------------------------------
 void OnStepXMount::updateFocuserStates()
 {
-    for (auto &f : m_focusers)
+    if (!m_focuserHandler)
+        return;
+    for (const auto &kv : m_focuserHandler->getManagedDevices())
     {
+        auto f = std::dynamic_pointer_cast<OnStepXFocuser>(kv.second);
         if (f)
             f->pollStatus();
     }

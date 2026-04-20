@@ -7,6 +7,7 @@ add_executable(indi_onstepx
     OnStepXCore.cpp
     OnStepXComm.cpp
     OnStepXFocuser.cpp
+    OnStepXFocuserHotPlugHandler.cpp
     OnStepXGuide.cpp
     OnStepXInfo.cpp
     OnStepXLimits.cpp
@@ -30,6 +31,7 @@ add_executable(indi_onstepx_aux
     OnStepXCore.cpp
     OnStepXComm.cpp
     OnStepXFocuser.cpp
+    OnStepXFocuserHotPlugHandler.cpp
     OnStepXAux.cpp
     OnStepXRotator.cpp
     OnStepXWeather.cpp

@@ -28,7 +28,7 @@
 #include "OnStepXAlignment.h"
 #include "OnStepXAuxFeatures.h"
 #include "OnStepXCore.h"
-#include "OnStepXFocuser.h"
+#include "OnStepXFocuserHotPlugHandler.h"
 #include "OnStepXGuide.h"
 #include "OnStepXInfo.h"
 #include "OnStepXLimits.h"
@@ -40,7 +40,6 @@
 #include "OnStepXWeather.h"
 #include "OnStepXUsbPlugin.h"
 
-#include <array>
 #include <memory>
 
 #include <inditelescope.h>
@@ -138,8 +137,8 @@ class OnStepXMount : public INDI::Telescope,
         OnStepXWeather     m_weather;
         OnStepXUsbPlugin   m_usbPorts;
 
-        // Focuser child devices — created after Handshake, slot 1..numFocusers
-        std::array<std::unique_ptr<OnStepXFocuser>, 6> m_focusers;
+        // Focuser handler — registered with HotPlugManager after Handshake
+        std::shared_ptr<OnStepXFocuserHotPlugHandler> m_focuserHandler;
         MountStatus    m_status;
 
         // Poll throttle — counts ReadScopeStatus calls
