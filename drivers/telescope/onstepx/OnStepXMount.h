@@ -110,7 +110,6 @@ class OnStepXMount : public INDI::Telescope,
         bool updateCoordinates();
         void updateTrackingState(const MountStatus &s);
         void updateSlewState(const MountStatus &s);
-        void createFocusers();
 
         // Throttled subsystem updaters
         void updateFocuserStates();

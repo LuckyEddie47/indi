@@ -21,12 +21,19 @@
     discoverConnectedDeviceIdentifiers() returns the slot numbers ("1".."N")
     that probeController() found populated.  createDevice() constructs the
     OnStepXFocuser, wires in the shared OnStepXComm, and returns it as a
-    shared_ptr<DefaultDevice>.  The manager handles server registration.
+    shared_ptr<DefaultDevice>.
 
-    Usage (from OnStepXMount::updateProperties after Handshake):
-        m_focuserHandler = std::make_shared<OnStepXFocuserHotPlugHandler>(&m_core);
-        INDI::HotPlugManager::getInstance().registerHandler(m_focuserHandler);
-        INDI::HotPlugManager::getInstance().start(0, true);  // oneShot
+    Because HotPlugManager::start() contains an early-return guard
+    "if (hotPlugTimer.isActive()) return", another driver loaded in the
+    same process (e.g. ASI CCD) may have already started the singleton
+    timer before our driver connects.  In that case start() is a no-op
+    and our handler would never receive its first poll tick in time.
+
+    performInitialScan() replicates one checkHotPlugEvents() pass
+    synchronously so devices are always created immediately on connect,
+    regardless of whether the manager timer was already running.
+    registerHandler() + start() are still called so that subsequent
+    hotplug events continue to be handled by the manager.
 */
 
 #pragma once
@@ -60,6 +67,14 @@ class OnStepXFocuserHotPlugHandler : public INDI::HotPlugCapableDevice
 
         const std::map<std::string, std::shared_ptr<INDI::DefaultDevice>> &
             getManagedDevices() const override;
+
+        // Perform one discovery+creation pass synchronously.
+        // Called directly from OnStepXMount::updateProperties() because
+        // HotPlugManager::start() is a no-op if the singleton timer is
+        // already running (e.g. started by another driver such as ASI CCD).
+        // When no other driver has called start(), this still creates devices
+        // immediately rather than waiting for the first timer tick.
+        void performInitialScan();
 
     private:
         OnStepXCore *m_core { nullptr };

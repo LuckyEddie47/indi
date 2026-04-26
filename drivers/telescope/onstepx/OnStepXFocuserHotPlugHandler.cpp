@@ -40,9 +40,9 @@ OnStepXFocuserHotPlugHandler::~OnStepXFocuserHotPlugHandler()
 // ---------------------------------------------------------------------------
 // discoverConnectedDeviceIdentifiers
 //
-// Called by HotPlugManager to find out which devices exist.
-// We return the slot numbers that probeController() already found.
-// Slot numbers are 1-based strings: "1", "2", ... "N".
+// Returns the slot numbers that probeController() already established.
+// No hardware communication needed here — the probe already confirmed
+// which slots are populated.
 // ---------------------------------------------------------------------------
 std::vector<std::string>
 OnStepXFocuserHotPlugHandler::discoverConnectedDeviceIdentifiers()
@@ -55,15 +55,15 @@ OnStepXFocuserHotPlugHandler::discoverConnectedDeviceIdentifiers()
     for (int i = 1; i <= n; i++)
         ids.push_back(std::to_string(i));
 
+    LOGF_DEBUG("OnStepXFocuserHotPlugHandler: discovered %d focuser slot(s)", n);
     return ids;
 }
 
 // ---------------------------------------------------------------------------
 // createDevice
 //
-// Called by HotPlugManager for each identifier returned by discover().
-// Constructs the focuser, wires in the shared comm, and returns it.
-// HotPlugManager registers the returned device with the INDI server.
+// Constructs the focuser for the given slot identifier, wires in the
+// shared comm, and returns it as a shared_ptr<DefaultDevice>.
 // ---------------------------------------------------------------------------
 std::shared_ptr<INDI::DefaultDevice>
 OnStepXFocuserHotPlugHandler::createDevice(const std::string &identifier)
@@ -111,11 +111,14 @@ void OnStepXFocuserHotPlugHandler::destroyDevice(
         return;
     }
 
+    f->setConnected(false, IPS_OK);  // Drive updateProperties() disconnect branch before forcibly unpublishing
     f->deleteProperty(nullptr);
 
     auto it = std::remove_if(m_focusers.begin(), m_focusers.end(),
                              [&](const std::shared_ptr<OnStepXFocuser> &d)
-                             { return d == f; });
+    {
+        return d == f;
+    });
     if (it != m_focusers.end())
         m_focusers.erase(it, m_focusers.end());
 }
@@ -124,10 +127,50 @@ void OnStepXFocuserHotPlugHandler::destroyDevice(
 // getManagedDevices
 // ---------------------------------------------------------------------------
 const std::map<std::string, std::shared_ptr<INDI::DefaultDevice>> &
-OnStepXFocuserHotPlugHandler::getManagedDevices() const
+        OnStepXFocuserHotPlugHandler::getManagedDevices() const
 {
     m_view.clear();
     for (const auto &f : m_focusers)
         m_view[std::to_string(f->slot())] = f;
     return m_view;
+}
+
+// ---------------------------------------------------------------------------
+// performInitialScan
+//
+// Replicates one HotPlugManager::checkHotPlugEvents() pass synchronously.
+// Used because HotPlugManager::start() is guarded by
+// "if (hotPlugTimer.isActive()) return" — if another driver (e.g. ASI CCD)
+// has already called start(), our subsequent start() call is silently
+// ignored and our handler is never polled on the first tick.
+//
+// This is called unconditionally so devices are always created immediately
+// on connect regardless of timer state.  registerHandler() + start() are
+// still called so that subsequent hotplug events are handled by the manager.
+// ---------------------------------------------------------------------------
+void OnStepXFocuserHotPlugHandler::performInitialScan()
+{
+    LOG_DEBUG("OnStepXFocuserHotPlugHandler::performInitialScan called");
+
+    std::vector<std::string> ids = discoverConnectedDeviceIdentifiers();
+    const auto &managed = getManagedDevices();
+
+    for (const std::string &id : ids)
+    {
+        if (managed.find(id) == managed.end())
+        {
+            LOGF_DEBUG("OnStepXFocuserHotPlugHandler: creating device for slot %s", id.c_str());
+            auto dev = createDevice(id);
+            if (dev)
+            {
+                LOGF_DEBUG("OnStepXFocuserHotPlugHandler: calling ISGetProperties for slot %s", id.c_str());
+                dev->ISGetProperties(nullptr);
+                dev->setConnected(true, IPS_OK);  // Must follow ISGetProperties() so clients receive the base property list before connected-branch properties
+            }
+            else
+            {
+                LOGF_ERROR("OnStepXFocuserHotPlugHandler: createDevice returned null for slot %s", id.c_str());
+            }
+        }
+    }
 }

@@ -237,6 +237,7 @@ bool OnStepXMount::updateProperties()
             m_focuserHandler = std::make_shared<OnStepXFocuserHotPlugHandler>(&m_core);
             INDI::HotPlugManager::getInstance().registerHandler(m_focuserHandler);
             INDI::HotPlugManager::getInstance().start(0, true);
+            m_focuserHandler->performInitialScan();   // Workaround: timer may already be running (e.g. ASI CCD), so replicate one discovery pass synchronously
         }
 
         if (m_core.caps().hasRotator)
@@ -274,6 +275,13 @@ bool OnStepXMount::updateProperties()
         // Unregister focuser handler so devices are cleaned up.
         if (m_focuserHandler)
         {
+            // Capture a copy of the map first — destroyDevice() erases from
+            // m_focusers during iteration, which would invalidate getManagedDevices()
+            // on each loop pass if we iterated a reference directly.
+            auto managed = m_focuserHandler->getManagedDevices();
+            for (auto &kv : managed)
+                m_focuserHandler->destroyDevice(kv.second);
+
             INDI::HotPlugManager::getInstance().unregisterHandler(m_focuserHandler);
             m_focuserHandler.reset();
         }
