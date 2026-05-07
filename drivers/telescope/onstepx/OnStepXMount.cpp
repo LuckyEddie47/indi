@@ -225,7 +225,7 @@ bool OnStepXMount::updateProperties()
         m_tracking.updateProperties(true);
         m_guide.updateProperties(true);
         m_info.updateProperties(true, m_core.caps());
-        createFocusers();
+//        createFocusers();
 
         if (m_core.caps().hasRotator)
         {
@@ -315,6 +315,8 @@ bool OnStepXMount::Handshake()
         telescopeCaps |= TELESCOPE_HAS_PIER_SIDE;
 
     SetTelescopeCapability(telescopeCaps, 4);
+
+    createFocusers();
 
     return true;
 }
@@ -908,11 +910,15 @@ void OnStepXMount::createFocusers()
 
         m_focusers[i] = std::make_unique<OnStepXFocuser>(i + 1);
         m_focusers[i]->setComm(&m_core.comm());
+
+        m_focusers[i]->initProperties();
+        m_focusers[i]->setConnected(true, IPS_OK);
+        
         // Announce the device: registers it in the global device list so that
         // clients (Ekos) see it as a separate focuser device in the same process.
         m_focusers[i]->ISGetProperties(nullptr);
         // Mark it as connected (no own port — parent's connection is shared)
-        m_focusers[i]->setConnected(true, IPS_OK);
+        
         m_focusers[i]->updateProperties();
     }
 }

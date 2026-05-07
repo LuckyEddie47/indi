@@ -28,6 +28,8 @@ OnStepXFocuser::OnStepXFocuser(int slot) : m_slot(slot)
 {
     snprintf(m_name, sizeof(m_name), "OnStep X Focuser %d", slot);
 
+    setDeviceName(m_name);
+
     // No Serial/TCP connection — parent device activates us
     setSupportedConnections(CONNECTION_NONE);
 

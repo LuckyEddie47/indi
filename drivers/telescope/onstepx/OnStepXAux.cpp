@@ -118,7 +118,7 @@ bool OnStepXAux::updateProperties()
         m_firmwareTP.setState(IPS_OK);
         m_firmwareTP.apply();
 
-        createFocusers();
+//        createFocusers();
 
         if (m_core.caps().hasRotator)
         {
@@ -181,6 +181,9 @@ bool OnStepXAux::Handshake()
     m_rotator.setComm(&m_core.comm());
     m_weather.setComm(&m_core.comm());
     m_weather.updateProperties(true);
+
+    createFocusers();
+
     return true;
 }
 
@@ -250,11 +253,19 @@ void OnStepXAux::createFocusers()
     for (int i = 0; i < nf && i < (int)m_focusers.size(); i++)
     {
         if (m_focusers[i])
-            continue;
+            continue;  // already created (shouldn't happen, but guard anyway)
+
         m_focusers[i] = std::make_unique<OnStepXFocuser>(i + 1);
         m_focusers[i]->setComm(&m_core.comm());
-        m_focusers[i]->ISGetProperties(nullptr);
+
+        m_focusers[i]->initProperties();
         m_focusers[i]->setConnected(true, IPS_OK);
+        
+        // Announce the device: registers it in the global device list so that
+        // clients (Ekos) see it as a separate focuser device in the same process.
+        m_focusers[i]->ISGetProperties(nullptr);
+        // Mark it as connected (no own port — parent's connection is shared)
+        
         m_focusers[i]->updateProperties();
     }
 }
