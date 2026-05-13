@@ -26,9 +26,11 @@
 
 OnStepXFocuser::OnStepXFocuser(int slot) : m_slot(slot)
 {
-    snprintf(m_name, sizeof(m_name), "OnStep X Focuser %d", slot);
+    snprintf(m_name, sizeof(m_name), "OnStepX_Focuser%d", slot);
 
     setDeviceName(m_name);
+
+    setVersion(0,1);
 
     // No Serial/TCP connection — parent device activates us
     setSupportedConnections(CONNECTION_NONE);
@@ -63,6 +65,10 @@ bool OnStepXFocuser::initProperties()
     m_temperatureNP.fill(getDeviceName(), "FOCUS_TEMPERATURE_NP",
                          "Temperature", FOCUS_TAB, IP_RO, 60, IPS_IDLE);
 
+                         // No connection interface — parent owns the physical connection.
+
+    setDriverInterface(FOCUSER_INTERFACE);
+    addAuxControls();
     return true;
 }
 
@@ -70,7 +76,8 @@ bool OnStepXFocuser::updateProperties()
 {
     INDI::Focuser::updateProperties();
 
-    if (isConnected())
+//    if (isConnected())
+    if (m_comm != nullptr)
     {
         defineProperty(m_temperatureNP);
 

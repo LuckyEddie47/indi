@@ -34,7 +34,7 @@
 
 #define WEATHER_TAB "Weather"   // tab name for WeatherInterface properties
 
-// Bring alignment types into scope without polluting the global namespace.
+// Bring alignment types into scope without polluting the global names
 using INDI::AlignmentSubsystem::AlignmentDatabaseEntry;
 using INDI::AlignmentSubsystem::TelescopeDirectionVector;
 
@@ -225,7 +225,7 @@ bool OnStepXMount::updateProperties()
         m_tracking.updateProperties(true);
         m_guide.updateProperties(true);
         m_info.updateProperties(true, m_core.caps());
-//        createFocusers();
+        createFocusers();
 
         if (m_core.caps().hasRotator)
         {
@@ -316,7 +316,7 @@ bool OnStepXMount::Handshake()
 
     SetTelescopeCapability(telescopeCaps, 4);
 
-    createFocusers();
+    //createFocusers();
 
     return true;
 }
@@ -911,15 +911,22 @@ void OnStepXMount::createFocusers()
         m_focusers[i] = std::make_unique<OnStepXFocuser>(i + 1);
         m_focusers[i]->setComm(&m_core.comm());
 
-        m_focusers[i]->initProperties();
-        m_focusers[i]->setConnected(true, IPS_OK);
+//        m_focusers[i]->initProperties();
+        
         
         // Announce the device: registers it in the global device list so that
         // clients (Ekos) see it as a separate focuser device in the same process.
         m_focusers[i]->ISGetProperties(nullptr);
         // Mark it as connected (no own port — parent's connection is shared)
-        
-        m_focusers[i]->updateProperties();
+        m_focusers[i]->setConnected(true, IPS_OK);
+
+        // Defer updateProperties so Ekos has time to process newDevice first
+        INDI::Timer::singleShot(1000, [this, i]()
+        {
+            if (m_focusers[i])
+                m_focusers[i]->updateProperties();
+        });
+//        m_focusers[i]->updateProperties();
     }
 }
 
