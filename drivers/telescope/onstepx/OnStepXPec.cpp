@@ -18,17 +18,6 @@
 
 #define PEC_TAB "PEC"
 
-// Logging helpers
-#define OSX_PEC_LOGF(priority, fmt, ...) \
-    do { \
-        if (m_dev) \
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(), priority, __FILE__, __LINE__, \
-                                              fmt, ##__VA_ARGS__); \
-    } while (0)
-#define OSX_PEC_LOG_INFO(msg)           OSX_PEC_LOGF(INDI::Logger::DBG_SESSION, "%s", msg)
-#define OSX_PEC_LOGF_WARN(fmt, ...)     OSX_PEC_LOGF(INDI::Logger::DBG_WARNING, fmt, ##__VA_ARGS__)
-#define OSX_PEC_LOGF_ERROR(fmt, ...)    OSX_PEC_LOGF(INDI::Logger::DBG_ERROR,   fmt, ##__VA_ARGS__)
-
 // ---------------------------------------------------------------------------
 // Control switch indices
 // ---------------------------------------------------------------------------
@@ -121,7 +110,7 @@ bool OnStepXPec::handleSwitch(const char *name, ISState *states, char *names[], 
     m_controlSP.apply();
 
     if (!ok)
-        OSX_PEC_LOGF_ERROR("PEC command '%s' rejected by firmware", cmd);
+        LOGF_ERROR("PEC command '%s' rejected by firmware", cmd);
 
     return true;
 }

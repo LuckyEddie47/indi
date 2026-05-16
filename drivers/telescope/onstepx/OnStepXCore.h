@@ -31,6 +31,7 @@
 
 #pragma once
 
+#include <defaultdevice.h>
 #include "OnStepXComm.h"
 #include "OnStepXCapabilities.h"
 
@@ -57,4 +58,8 @@ class OnStepXCore
         OnStepXComm          m_comm;
         Capabilities         m_cap;
         INDI::DefaultDevice *m_dev { nullptr };
+
+        const char* getDeviceName() const { 
+            return m_dev ? m_dev->getDeviceName() : "Unknown"; 
+        }
 };

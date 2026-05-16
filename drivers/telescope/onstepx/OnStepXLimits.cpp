@@ -19,9 +19,6 @@
 #include "OnStepXLimits.h"
 #include "OnStepXComm.h"
 
-#include <defaultdevice.h>
-#include <indilogger.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -33,7 +30,7 @@
 // initProperties
 // ---------------------------------------------------------------------------
 void OnStepXLimits::initProperties()
-{
+{  
     // --- Home action switch ---
     m_homeActionSP[0].fill("HOME_FIND", "Find Home",    ISS_OFF);
     m_homeActionSP[1].fill("HOME_SET",  "Set Home Here",ISS_OFF);
@@ -291,15 +288,11 @@ bool OnStepXLimits::homeFind()
     if (!m_comm->sendCommand(":hC#", reply) || reply[0] != '1')
     {
         if (m_dev)
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-                INDI::Logger::DBG_ERROR, __FILE__, __LINE__,
-                "Home Find (:hC#) failed");
+            LOG_ERROR("Home Find (:hC#) failed");
         return false;
     }
     if (m_dev)
-        INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-            INDI::Logger::DBG_SESSION, __FILE__, __LINE__,
-            "Homing started -- watch status for 'h' flag");
+        LOG_DEBUG("Homing started -- watch status for 'h' flag");
     return true;
 }
 
@@ -312,15 +305,11 @@ bool OnStepXLimits::homeSet()
     if (!m_comm->sendCommand(":hF#", reply) || reply[0] != '1')
     {
         if (m_dev)
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-                INDI::Logger::DBG_ERROR, __FILE__, __LINE__,
-                "Home Set (:hF#) failed");
+            LOG_ERROR("Home Set (:hF#) failed");
         return false;
     }
     if (m_dev)
-        INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-            INDI::Logger::DBG_SESSION, __FILE__, __LINE__,
-            "Home position set to current position");
+        LOG_DEBUG("Home position set to current position");
     return true;
 }
 
@@ -334,9 +323,7 @@ bool OnStepXLimits::setAutoHome(bool enabled)
     if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1')
     {
         if (m_dev)
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-                INDI::Logger::DBG_ERROR, __FILE__, __LINE__,
-                "Auto home command failed");
+            LOG_ERROR("Auto home command failed");
         return false;
     }
     return true;
@@ -358,8 +345,6 @@ bool OnStepXLimits::writeHomeOffsets(double axis1, double axis2)
     if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1') ok = false;
 
     if (!ok && m_dev)
-        INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-            INDI::Logger::DBG_ERROR, __FILE__, __LINE__,
-            "Failed to write home offsets");
+        LOG_ERROR("Failed to write home offsets");
     return ok;
 }

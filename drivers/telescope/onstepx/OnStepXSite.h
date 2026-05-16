@@ -43,6 +43,8 @@
 #include <indipropertyswitch.h>
 #include <indipropertytext.h>
 
+#include <defaultdevice.h>
+
 class OnStepXComm;
 namespace INDI { class DefaultDevice; }
 
@@ -106,4 +108,8 @@ class OnStepXSite
         // Send :W[n]#, re-read location, update name field.
         // Returns the callback needed by OnStepXMount to refresh GEOGRAPHIC_COORD.
         bool selectSite(int n, double &lat, double &lon, double &elev);
+
+        const char* getDeviceName() const { 
+            return m_dev ? m_dev->getDeviceName() : "Unknown"; 
+        }
 };

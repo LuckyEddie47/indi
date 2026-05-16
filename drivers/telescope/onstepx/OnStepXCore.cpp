@@ -26,23 +26,6 @@
 #include <cstring>
 
 // ---------------------------------------------------------------------------
-// Logging helpers — route through INDI::Logger via the parent device pointer.
-// Guards prevent any call when m_dev is null (tests without a device).
-// ---------------------------------------------------------------------------
-#define OSX_CORE_LOGF(priority, fmt, ...)                                                               \
-    do {                                                                                                \
-        if (m_dev)                                                                                      \
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(), priority, __FILE__, __LINE__,    \
-                                              fmt, ##__VA_ARGS__);                                     \
-    } while (0)
-
-#define OSX_CORE_LOG_INFO(msg)          OSX_CORE_LOGF(INDI::Logger::DBG_SESSION, "%s", msg)
-#define OSX_CORE_LOGF_INFO(fmt, ...)    OSX_CORE_LOGF(INDI::Logger::DBG_SESSION, fmt, ##__VA_ARGS__)
-#define OSX_CORE_LOGF_WARN(fmt, ...)    OSX_CORE_LOGF(INDI::Logger::DBG_WARNING, fmt, ##__VA_ARGS__)
-#define OSX_CORE_LOGF_ERROR(fmt, ...)   OSX_CORE_LOGF(INDI::Logger::DBG_ERROR,   fmt, ##__VA_ARGS__)
-#define OSX_CORE_LOGF_DEBUG(fmt, ...)   OSX_CORE_LOGF(INDI::Logger::DBG_DEBUG,   fmt, ##__VA_ARGS__)
-
-// ---------------------------------------------------------------------------
 // Helper: return true when s can be parsed as a floating-point number.
 // Used to distinguish valid sensor readings from error strings.
 // ---------------------------------------------------------------------------
@@ -95,12 +78,12 @@ bool OnStepXCore::probeController()
     // :GVP# — product identity (both OnStep and OnStepX return "On-Step")
     if (!m_comm.sendCommand(":GVP#", reply))
     {
-        OSX_CORE_LOGF_ERROR("probeController: no response to :GVP#");
+        LOG_ERROR("probeController: no response to :GVP#");
         return false;
     }
     if (strcmp(reply, "On-Step") != 0)
     {
-        OSX_CORE_LOGF_WARN("probeController: unrecognised product string '%s'", reply);
+        LOGF_WARN("probeController: unrecognised product string '%s'", reply);
         return false;
     }
 
@@ -108,7 +91,7 @@ bool OnStepXCore::probeController()
     // OnStepX firmware started at major version 10; anything lower is classic OnStep.
     if (!m_comm.sendCommand(":GVN#", reply))
     {
-        OSX_CORE_LOGF_ERROR("probeController: no response to :GVN#");
+       LOG_ERROR("probeController: no response to :GVN#");
         return false;
     }
     snprintf(m_cap.firmwareVersion, sizeof(m_cap.firmwareVersion), "%s", reply);
@@ -118,7 +101,7 @@ bool OnStepXCore::probeController()
     m_cap.isOnStepX = (dotPos != reply && major >= 10);
     if (!m_cap.isOnStepX)
     {
-        OSX_CORE_LOGF_WARN("OnStep firmware v%s detected; OnStepX (v10+) required.", reply);
+        LOGF_WARN("OnStep firmware v%s detected; OnStepX (v10+) required.", reply);
         return false;
     }
 
@@ -130,7 +113,7 @@ bool OnStepXCore::probeController()
     if (m_comm.sendCommand(":GVC#", reply, 2000, true))
         snprintf(m_cap.configName,      sizeof(m_cap.configName),      "%s", reply);
 
-    OSX_CORE_LOGF_INFO("OnStepX firmware: %s  date: %s %s  config: %s",
+    LOGF_INFO("OnStepX firmware: %s  date: %s %s  config: %s",
                        m_cap.firmwareVersion, m_cap.firmwareDate,
                        m_cap.firmwareTime,    m_cap.configName);
 
@@ -140,7 +123,7 @@ bool OnStepXCore::probeController()
         m_cap.hasRotator   = (reply[0] == 'R' || reply[0] == 'D');
         m_cap.hasDerotator = (reply[0] == 'D');
     }
-    OSX_CORE_LOGF_DEBUG("hasRotator=%d  hasDerotator=%d", m_cap.hasRotator, m_cap.hasDerotator);
+    LOGF_DEBUG("hasRotator=%d  hasDerotator=%d", m_cap.hasRotator, m_cap.hasDerotator);
 
     // :FA1#..:FA6# — focuser presence (single-char '1'/'0', no '#' terminator)
     m_cap.numFocusers = 0;
@@ -154,7 +137,7 @@ bool OnStepXCore::probeController()
         else
             break;  // focusers are numbered sequentially; stop at first gap
     }
-    OSX_CORE_LOGF_DEBUG("numFocusers=%d", m_cap.numFocusers);
+    LOGF_DEBUG("numFocusers=%d", m_cap.numFocusers);
 
     // :GXY0# — 8-char bitfield, bit n → aux feature slot n active
     if (m_comm.sendCommand(":GXY0#", reply, 2000, true) && strlen(reply) >= 8)
@@ -164,7 +147,7 @@ bool OnStepXCore::probeController()
             if (reply[i] == '1')
                 m_cap.featureMask |= static_cast<uint8_t>(1 << i);
     }
-    OSX_CORE_LOGF_DEBUG("featureMask=0x%02X", m_cap.featureMask);
+    LOGF_DEBUG("featureMask=0x%02X", m_cap.featureMask);
 
     // :GUY0# — 8-char bitfield, bit n → USB port slot n active
     if (m_comm.sendCommand(":GUY0#", reply, 2000, true) && strlen(reply) >= 8)
@@ -174,7 +157,7 @@ bool OnStepXCore::probeController()
             if (reply[i] == '1')
                 m_cap.portMask |= static_cast<uint8_t>(1 << i);
     }
-    OSX_CORE_LOGF_DEBUG("portMask=0x%02X", m_cap.portMask);
+    LOGF_DEBUG("portMask=0x%02X", m_cap.portMask);
 
     // :GX9A# — weather: pass if reply is a valid float (sensor present)
     if (m_comm.sendCommand(":GX9A#", reply, 2000, true))
@@ -193,7 +176,7 @@ bool OnStepXCore::probeController()
         if (m_comm.sendCommandSingleChar(":SX9A,15.0#", c, 2000, true))
             m_cap.hasWeatherWrite = (c == '1');
     }
-    OSX_CORE_LOGF_DEBUG("hasWeatherRead=%d  hasWeatherWrite=%d",
+    LOGF_DEBUG("hasWeatherRead=%d  hasWeatherWrite=%d",
                         m_cap.hasWeatherRead, m_cap.hasWeatherWrite);
 
     // :Gv# — site elevation readable
@@ -204,10 +187,10 @@ bool OnStepXCore::probeController()
     if (m_comm.sendCommand(":GX9F#", reply, 2000, true))
         m_cap.hasMcuTemp = isNumeric(reply);
 
-    OSX_CORE_LOGF_DEBUG("hasElevation=%d  hasMcuTemp=%d",
+    LOGF_DEBUG("hasElevation=%d  hasMcuTemp=%d",
                         m_cap.hasElevation, m_cap.hasMcuTemp);
 
-    OSX_CORE_LOGF_INFO("Probe complete: rotator=%d  focusers=%d  features=0x%02X  "
+    LOGF_INFO("Probe complete: rotator=%d  focusers=%d  features=0x%02X  "
                        "weather=%d  elevation=%d  mcuTemp=%d",
                        m_cap.hasRotator, m_cap.numFocusers, m_cap.featureMask,
                        m_cap.hasWeatherRead, m_cap.hasElevation, m_cap.hasMcuTemp);
@@ -226,7 +209,7 @@ bool OnStepXCore::probeMount()
     // :GW# — mount type and goto capability (must be non-empty for a mount to be present)
     if (!m_comm.sendCommand(":GW#", reply) || reply[0] == '\0')
     {
-        OSX_CORE_LOG_INFO("No mount detected. "
+        LOG_INFO("No mount detected. "
                           "For mount-less OnStepX use indi_onstepx_aux instead.");
         m_cap.hasMount = false;
         return false;
@@ -253,7 +236,7 @@ bool OnStepXCore::probeMount()
     }
     m_cap.hasGoto = (strlen(reply) >= 3 && reply[2] != 'N');
 
-    OSX_CORE_LOGF_INFO("Mount type: %c  hasGoto=%d", reply[0], m_cap.hasGoto);
+    LOGF_INFO("Mount type: %c  hasGoto=%d", reply[0], m_cap.hasGoto);
 
     // :Gu# — binary status: 9 bytes all >= 0x80 means supported
     {
@@ -270,7 +253,7 @@ bool OnStepXCore::probeMount()
             m_cap.hasBinaryStatus = allHigh;
         }
     }
-    OSX_CORE_LOGF_DEBUG("hasBinaryStatus=%d", m_cap.hasBinaryStatus);
+    LOGF_DEBUG("hasBinaryStatus=%d", m_cap.hasBinaryStatus);
 
     // $QZ?# — PEC: supported if reply is a known PEC-state character
     if (m_comm.sendCommand("$QZ?#", reply, 2000, true))
@@ -279,17 +262,17 @@ bool OnStepXCore::probeMount()
                         reply[0] == 'p' || reply[0] == 'P' ||
                         reply[0] == 'r' || reply[0] == 'R');
     }
-    OSX_CORE_LOGF_DEBUG("hasPec=%d", m_cap.hasPec);
+    LOGF_DEBUG("hasPec=%d", m_cap.hasPec);
 
     // :h?# — home sense: first field '-1' means no home sensor
     if (m_comm.sendCommand(":h?#", reply, 2000, true))
         m_cap.hasHomeSense = !(strncmp(reply, "-1,", 3) == 0 || strcmp(reply, "-1") == 0);
-    OSX_CORE_LOGF_DEBUG("hasHomeSense=%d", m_cap.hasHomeSense);
+    LOGF_DEBUG("hasHomeSense=%d", m_cap.hasHomeSense);
 
     // :GU# — ASCII status string: 'S' present means PPS sync supported
     if (m_comm.sendCommand(":GU#", reply, 2000, true))
         m_cap.hasPPS = (strchr(reply, 'S') != nullptr);
-    OSX_CORE_LOGF_DEBUG("hasPPS=%d", m_cap.hasPPS);
+    LOGF_DEBUG("hasPPS=%d", m_cap.hasPPS);
 
     // :SU0.0# — DUT1 correction: single-char '1' if writable
     {
@@ -297,14 +280,14 @@ bool OnStepXCore::probeMount()
         if (m_comm.sendCommandSingleChar(":SU0.0#", c, 2000, true))
             m_cap.hasDUT1 = (c == '1');
     }
-    OSX_CORE_LOGF_DEBUG("hasDUT1=%d", m_cap.hasDUT1);
+    LOGF_DEBUG("hasDUT1=%d", m_cap.hasDUT1);
 
     // :Gm# — pier side: supported if reply is E, W, or N
     if (m_comm.sendCommand(":Gm#", reply, 2000, true))
         m_cap.hasPierSide = (reply[0] == 'E' || reply[0] == 'W' || reply[0] == 'N');
-    OSX_CORE_LOGF_DEBUG("hasPierSide=%d", m_cap.hasPierSide);
+    LOGF_DEBUG("hasPierSide=%d", m_cap.hasPierSide);
 
-    OSX_CORE_LOGF_INFO("Mount probe complete: pec=%d  homeSense=%d  pps=%d  "
+    LOGF_INFO("Mount probe complete: pec=%d  homeSense=%d  pps=%d  "
                        "dut1=%d  pierSide=%d  binaryStatus=%d",
                        m_cap.hasPec, m_cap.hasHomeSense, m_cap.hasPPS,
                        m_cap.hasDUT1, m_cap.hasPierSide, m_cap.hasBinaryStatus);

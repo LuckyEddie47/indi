@@ -44,6 +44,7 @@
 
 #pragma once
 
+#include <defaultdevice.h>
 #include <indipropertyswitch.h>
 #include <indipropertynumber.h>
 
@@ -105,4 +106,8 @@ class OnStepXLimits
         INDI::PropertyNumber m_horizonLimitNP  { 2 };// Min alt, Max alt (degrees)
         INDI::PropertyNumber m_meridianLimitNP { 2 };// East, West meridian (minutes)
         INDI::PropertyNumber m_backlashNP      { 2 };// Axis1 (RA/Az) / Axis2 (Dec/Alt) arcsec
+
+        const char* getDeviceName() const { 
+            return m_dev ? m_dev->getDeviceName() : "Unknown"; 
+        }
 };

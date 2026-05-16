@@ -84,4 +84,8 @@ class OnStepXUsbPlugin
         void deletePort(Port &port);
 
         bool sendWriteInt(int portIdx, char field, int value);
+
+        const char* getDeviceName() const { 
+            return m_dev ? m_dev->getDeviceName() : "Unknown"; 
+        }
 };

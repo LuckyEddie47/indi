@@ -111,4 +111,8 @@ class OnStepXRotator
 
         bool parseAngle(const char *reply, double &angleDeg);
         bool formatAngle(double angleDeg, char *buf, int bufLen);
+
+        const char* getDeviceName() const { 
+            return m_dev ? m_dev->getDeviceName() : "Unknown"; 
+        }
 };

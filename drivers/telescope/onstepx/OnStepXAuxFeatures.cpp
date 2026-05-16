@@ -22,17 +22,6 @@
 #define AUX_TAB_DEW          "Dew Heaters"
 #define AUX_TAB_IVO          "Intervalometer"
 
-// Logging helpers
-#define OSX_AUX_LOGF(priority, fmt, ...) \
-    do { \
-        if (m_dev) \
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(), priority, __FILE__, __LINE__, \
-                                              fmt, ##__VA_ARGS__); \
-    } while (0)
-#define OSX_AUX_LOGF_WARN(fmt, ...)  OSX_AUX_LOGF(INDI::Logger::DBG_WARNING, fmt, ##__VA_ARGS__)
-#define OSX_AUX_LOGF_ERROR(fmt, ...) OSX_AUX_LOGF(INDI::Logger::DBG_ERROR,   fmt, ##__VA_ARGS__)
-#define OSX_AUX_LOGF_DEBUG(fmt, ...) OSX_AUX_LOGF(INDI::Logger::DBG_DEBUG,   fmt, ##__VA_ARGS__)
-
 // ---------------------------------------------------------------------------
 // discoverAndDefine — probe each active slot and create INDI properties
 // ---------------------------------------------------------------------------
@@ -49,13 +38,13 @@ void OnStepXAuxFeatures::discoverAndDefine(uint8_t featureMask)
 
         if (!probeSlot(i + 1, slot))
         {
-            OSX_AUX_LOGF_WARN("Could not probe aux slot %d, skipping", i + 1);
+            LOGF_WARN("Could not probe aux slot %d, skipping", i + 1);
             continue;
         }
 
         slot.active = true;
         defineSlot(slot);
-        OSX_AUX_LOGF_DEBUG("Aux slot %d: '%s' type=%d", i + 1, slot.label, (int)slot.type);
+        LOGF_DEBUG("Aux slot %d: '%s' type=%d", i + 1, slot.label, (int)slot.type);
     }
 }
 

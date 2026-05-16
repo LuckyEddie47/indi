@@ -31,7 +31,6 @@
 #include <cstdio>
 
 class OnStepXComm;
-
 class OnStepXAlignment
 {
     public:
@@ -74,4 +73,8 @@ class OnStepXAlignment
         bool startAlignment(int stars);
         bool acceptStar();
         bool writeAlignment();
+
+        const char* getDeviceName() const { 
+            return m_dev ? m_dev->getDeviceName() : "Unknown"; 
+        }
 };

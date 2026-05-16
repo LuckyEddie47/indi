@@ -30,15 +30,6 @@
 
 #define ROTATOR_TAB "Rotator"
 
-// Logging helpers — safe to call even if m_dev is null (e.g. during tests)
-#define OSX_ROT_LOGF(priority, fmt, ...) \
-    do { \
-        if (m_dev) \
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(), priority, __FILE__, __LINE__, \
-                                              fmt, ##__VA_ARGS__); \
-    } while (0)
-#define OSX_ROT_LOGF_ERROR(fmt, ...) OSX_ROT_LOGF(INDI::Logger::DBG_ERROR, fmt, ##__VA_ARGS__)
-
 // ---------------------------------------------------------------------------
 // initProperties
 // ---------------------------------------------------------------------------
@@ -141,7 +132,7 @@ IPState OnStepXRotator::moveToAngle(double angle)
 
     if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1')
     {
-        OSX_ROT_LOGF_ERROR("MoveRotator: command '%s' failed", cmd);
+        LOGF_ERROR("MoveRotator: command '%s' failed", cmd);
         return IPS_ALERT;
     }
 

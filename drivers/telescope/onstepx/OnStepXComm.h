@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <defaultdevice.h>
+
 #include <mutex>
 
 namespace INDI
@@ -73,4 +75,8 @@ class OnStepXComm
         bool writeCommand(const char *cmd);                    // no-lock
         bool readReply(char *buf, int maxLen, int timeout_ms, int inter_char_ms = 50);  // no-lock
         bool readSingleChar(char &c, int timeout_ms);          // no-lock
+
+        const char* getDeviceName() const { 
+            return m_dev ? m_dev->getDeviceName() : "Unknown"; 
+        }
 };

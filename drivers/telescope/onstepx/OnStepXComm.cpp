@@ -27,20 +27,6 @@
 #include <sys/select.h>
 
 // ---------------------------------------------------------------------------
-// Logging helpers — safe to call even if m_dev is null (e.g. during tests)
-// ---------------------------------------------------------------------------
-#define OSX_COMM_LOGF(priority, fmt, ...)                                                                  \
-    do {                                                                                                    \
-        if (m_dev)                                                                                          \
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(), priority, __FILE__, __LINE__,        \
-                                              fmt, ##__VA_ARGS__);                                         \
-    } while (0)
-
-#define OSX_COMM_LOGF_DEBUG(fmt, ...)  OSX_COMM_LOGF(INDI::Logger::DBG_DEBUG,   fmt, ##__VA_ARGS__)
-#define OSX_COMM_LOGF_ERROR(fmt, ...)  OSX_COMM_LOGF(INDI::Logger::DBG_ERROR,   fmt, ##__VA_ARGS__)
-#define OSX_COMM_LOGF_WARN(fmt, ...)   OSX_COMM_LOGF(INDI::Logger::DBG_WARNING, fmt, ##__VA_ARGS__)
-
-// ---------------------------------------------------------------------------
 // Public interface
 // ---------------------------------------------------------------------------
 
@@ -62,7 +48,7 @@ bool OnStepXComm::sendCommand(const char *cmd, char *reply, int timeout_ms, bool
 
     if (m_fd < 0)
     {
-        OSX_COMM_LOGF_ERROR("sendCommand: fd not set");
+        LOG_ERROR("sendCommand: fd not set");
         return false;
     }
 
@@ -70,22 +56,34 @@ bool OnStepXComm::sendCommand(const char *cmd, char *reply, int timeout_ms, bool
 
     if (!writeCommand(cmd))
     {
-        auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
-        OSX_COMM_LOGF(lvl, "sendCommand: write failed for cmd '%s'", cmd);
+        if (quiet)
+        {
+            LOGF_DEBUG("sendCommand: write failed for cmd '%s'", cmd);
+        }
+        else
+        {
+            LOGF_ERROR("sendCommand: write failed for cmd '%s'", cmd);
+        }
         return false;
     }
 
-    OSX_COMM_LOGF_DEBUG("CMD: %s", cmd);
+    LOGF_DEBUG("CMD: %s", cmd);
 
     reply[0] = '\0';
     if (!readReply(reply, 256, timeout_ms))
     {
-        auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
-        OSX_COMM_LOGF(lvl, "sendCommand: no reply for cmd '%s'", cmd);
+        if (quiet)
+        {
+            LOGF_DEBUG("sendCommand: no reply for cmd '%s'", cmd);
+        }
+        else
+        {
+            LOGF_ERROR("sendCommand: no reply for cmd '%s'", cmd);
+        }
         return false;
     }
 
-    OSX_COMM_LOGF_DEBUG("REPLY: %s", reply);
+    LOGF_DEBUG("REPLY: %s", reply);
     return true;
 }
 
@@ -96,17 +94,17 @@ bool OnStepXComm::sendCommandBlind(const char *cmd)
 
     if (m_fd < 0)
     {
-        OSX_COMM_LOGF_ERROR("sendCommandBlind: fd not set");
+        LOG_ERROR("sendCommandBlind: fd not set");
         return false;
     }
 
     if (!writeCommand(cmd))
     {
-        OSX_COMM_LOGF_ERROR("sendCommandBlind: write failed for cmd '%s'", cmd);
+        LOGF_ERROR("sendCommandBlind: write failed for cmd '%s'", cmd);
         return false;
     }
 
-    OSX_COMM_LOGF_DEBUG("CMD (blind): %s", cmd);
+    LOGF_DEBUG("CMD (blind): %s", cmd);
     return true;
 }
 
@@ -117,7 +115,7 @@ bool OnStepXComm::sendCommandSingleChar(const char *cmd, char &reply, int timeou
 
     if (m_fd < 0)
     {
-        OSX_COMM_LOGF_ERROR("sendCommandSingleChar: fd not set");
+        LOG_ERROR("sendCommandSingleChar: fd not set");
         return false;
     }
 
@@ -125,12 +123,18 @@ bool OnStepXComm::sendCommandSingleChar(const char *cmd, char &reply, int timeou
 
     if (!writeCommand(cmd))
     {
-        auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
-        OSX_COMM_LOGF(lvl, "sendCommandSingleChar: write failed for cmd '%s'", cmd);
+        if (quiet)
+        {
+            LOGF_DEBUG("sendCommandSingleChar: write failed for cmd '%s'", cmd);
+        }
+        else
+        {
+            LOGF_ERROR("sendCommandSingleChar: write failed for cmd '%s'", cmd);
+        }
         return false;
     }
 
-    OSX_COMM_LOGF_DEBUG("CMD (single-char): %s", cmd);
+    LOGF_DEBUG("CMD (single-char): %s", cmd);
 
     fd_set rfd;
     FD_ZERO(&rfd);
@@ -142,19 +146,17 @@ bool OnStepXComm::sendCommandSingleChar(const char *cmd, char &reply, int timeou
 
     if (select(m_fd + 1, &rfd, nullptr, nullptr, &tv) <= 0)
     {
-        auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
-        OSX_COMM_LOGF(lvl, "sendCommandSingleChar: no reply for cmd '%s'", cmd);
+        LOGF_ERROR("sendCommandSingleChar: no reply for cmd '%s'", cmd);
         return false;
     }
 
     if (read(m_fd, &reply, 1) != 1)
     {
-        auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
-        OSX_COMM_LOGF(lvl, "sendCommandSingleChar: read failed for cmd '%s'", cmd);
+        LOGF_ERROR("sendCommandSingleChar: read failed for cmd '%s'", cmd);
         return false;
     }
 
-    OSX_COMM_LOGF_DEBUG("REPLY (single-char): %c (0x%02X)", reply, (unsigned char)reply);
+    LOGF_DEBUG("REPLY (single-char): %c (0x%02X)", reply, (unsigned char)reply);
     return true;
 }
 
@@ -172,7 +174,7 @@ bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, in
 
     if (m_fd < 0)
     {
-        OSX_COMM_LOGF_ERROR("sendCommandReadN: fd not set");
+        LOG_ERROR("sendCommandReadN: fd not set");
         return false;
     }
 
@@ -180,12 +182,18 @@ bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, in
 
     if (!writeCommand(cmd))
     {
-        auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
-        OSX_COMM_LOGF(lvl, "sendCommandReadN: write failed for cmd '%s'", cmd);
+        if (quiet)
+        {
+            LOGF_DEBUG("sendCommandReadN: write failed for cmd '%s'", cmd);
+        }
+        else
+        {
+            LOGF_ERROR("sendCommandReadN: write failed for cmd '%s'", cmd);
+        }
         return false;
     }
 
-    OSX_COMM_LOGF_DEBUG("CMD (readN=%d): %s", nbytes, cmd);
+    LOGF_DEBUG("CMD (readN=%d): %s", nbytes, cmd);
 
     struct timespec start;
     clock_gettime(CLOCK_MONOTONIC, &start);
@@ -201,9 +209,16 @@ bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, in
 
         if (remaining_ms <= 0)
         {
-            auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
-            OSX_COMM_LOGF(lvl, "sendCommandReadN: timeout after %d/%d bytes for cmd '%s'",
+            if (quiet)
+            {
+                LOGF_DEBUG("sendCommandReadN: timeout after %d/%d bytes for cmd '%s'",
                           received, nbytes, cmd);
+            }
+            else
+            {
+                LOGF_ERROR("sendCommandReadN: timeout after %d/%d bytes for cmd '%s'",
+                          received, nbytes, cmd);
+            }
             return false;
         }
 
@@ -217,22 +232,34 @@ bool OnStepXComm::sendCommandReadN(const char *cmd, uint8_t *buf, int nbytes, in
 
         if (select(m_fd + 1, &rfd, nullptr, nullptr, &tv) <= 0)
         {
-            auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
-            OSX_COMM_LOGF(lvl, "sendCommandReadN: no reply for cmd '%s'", cmd);
+            if (quiet)
+            {
+                LOGF_DEBUG("sendCommandReadN: no reply for cmd '%s'", cmd);
+            }
+            else
+            {
+                LOGF_ERROR("sendCommandReadN: no reply for cmd '%s'", cmd);
+            }
             return false;
         }
 
         ssize_t n = read(m_fd, buf + received, nbytes - received);
         if (n <= 0)
         {
-            auto lvl = quiet ? INDI::Logger::DBG_DEBUG : INDI::Logger::DBG_ERROR;
-            OSX_COMM_LOGF(lvl, "sendCommandReadN: read error for cmd '%s'", cmd);
+            if (quiet)
+            {
+                LOGF_DEBUG("sendCommandReadN: read error for cmd '%s'", cmd);
+            }
+            else
+            {
+                LOGF_ERROR("sendCommandReadN: read error for cmd '%s'", cmd);
+            }
             return false;
         }
         received += static_cast<int>(n);
     }
 
-    OSX_COMM_LOGF_DEBUG("REPLY (readN): %d bytes received", nbytes);
+    LOGF_DEBUG("REPLY (readN): %d bytes received", nbytes);
     return true;
 }
 
@@ -248,7 +275,7 @@ bool OnStepXComm::sendCommandFocuser(int slot, const char *cmd, char *reply, int
 
     if (m_fd < 0)
     {
-        OSX_COMM_LOGF_ERROR("sendCommandFocuser: fd not set");
+        LOG_ERROR("sendCommandFocuser: fd not set");
         return false;
     }
 
@@ -259,7 +286,7 @@ bool OnStepXComm::sendCommandFocuser(int slot, const char *cmd, char *reply, int
     snprintf(selectCmd, sizeof(selectCmd), ":FA%d#", slot);
     if (!writeCommand(selectCmd))
     {
-        OSX_COMM_LOGF_ERROR("sendCommandFocuser: select write failed (slot %d)", slot);
+        LOGF_ERROR("sendCommandFocuser: select write failed (slot %d)", slot);
         return false;
     }
 
@@ -267,30 +294,30 @@ bool OnStepXComm::sendCommandFocuser(int slot, const char *cmd, char *reply, int
     char sel = '0';
     if (!readSingleChar(sel, 500))
     {
-        OSX_COMM_LOGF_ERROR("sendCommandFocuser: no reply to :FA%d#", slot);
+        LOGF_ERROR("sendCommandFocuser: no reply to :FA%d#", slot);
         return false;
     }
     if (sel != '1')
     {
-        OSX_COMM_LOGF_ERROR("sendCommandFocuser: focuser %d not found (reply '%c')", slot, sel);
+        LOGF_ERROR("sendCommandFocuser: focuser %d not found (reply '%c')", slot, sel);
         return false;
     }
 
     // Send the actual command and read '#'-terminated reply
     if (!writeCommand(cmd))
     {
-        OSX_COMM_LOGF_ERROR("sendCommandFocuser: write failed for cmd '%s'", cmd);
+        LOGF_ERROR("sendCommandFocuser: write failed for cmd '%s'", cmd);
         return false;
     }
 
     reply[0] = '\0';
     if (!readReply(reply, 256, timeout_ms))
     {
-        OSX_COMM_LOGF_ERROR("sendCommandFocuser: timeout for cmd '%s' (slot %d)", cmd, slot);
+        LOGF_ERROR("sendCommandFocuser: timeout for cmd '%s' (slot %d)", cmd, slot);
         return false;
     }
 
-    OSX_COMM_LOGF_DEBUG("FOC%d CMD: %s  REPLY: %s", slot, cmd, reply);
+    LOGF_DEBUG("FOC%d CMD: %s  REPLY: %s", slot, cmd, reply);
     return true;
 }
 
@@ -300,7 +327,7 @@ bool OnStepXComm::sendCommandBlindFocuser(int slot, const char *cmd)
 
     if (m_fd < 0)
     {
-        OSX_COMM_LOGF_ERROR("sendCommandBlindFocuser: fd not set");
+        LOG_ERROR("sendCommandBlindFocuser: fd not set");
         return false;
     }
 
@@ -311,7 +338,7 @@ bool OnStepXComm::sendCommandBlindFocuser(int slot, const char *cmd)
     snprintf(selectCmd, sizeof(selectCmd), ":FA%d#", slot);
     if (!writeCommand(selectCmd))
     {
-        OSX_COMM_LOGF_ERROR("sendCommandBlindFocuser: select write failed (slot %d)", slot);
+        LOGF_ERROR("sendCommandBlindFocuser: select write failed (slot %d)", slot);
         return false;
     }
 
@@ -319,17 +346,17 @@ bool OnStepXComm::sendCommandBlindFocuser(int slot, const char *cmd)
     char sel = '0';
     if (!readSingleChar(sel, 500) || sel != '1')
     {
-        OSX_COMM_LOGF_ERROR("sendCommandBlindFocuser: focuser %d not found", slot);
+        LOGF_ERROR("sendCommandBlindFocuser: focuser %d not found", slot);
         return false;
     }
 
     if (!writeCommand(cmd))
     {
-        OSX_COMM_LOGF_ERROR("sendCommandBlindFocuser: write failed for cmd '%s'", cmd);
+        LOGF_ERROR("sendCommandBlindFocuser: write failed for cmd '%s'", cmd);
         return false;
     }
 
-    OSX_COMM_LOGF_DEBUG("FOC%d CMD (blind): %s", slot, cmd);
+    LOGF_DEBUG("FOC%d CMD (blind): %s", slot, cmd);
     return true;
 }
 

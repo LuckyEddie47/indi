@@ -20,17 +20,6 @@
 
 #define USB_TAB      "USB Ports"
 
-// Logging helpers
-#define OSX_USB_LOGF(priority, fmt, ...) \
-    do { \
-        if (m_dev) \
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(), priority, __FILE__, __LINE__, \
-                                              fmt, ##__VA_ARGS__); \
-    } while (0)
-#define OSX_USB_LOGF_WARN(fmt, ...)  OSX_USB_LOGF(INDI::Logger::DBG_WARNING, fmt, ##__VA_ARGS__)
-#define OSX_USB_LOGF_ERROR(fmt, ...) OSX_USB_LOGF(INDI::Logger::DBG_ERROR,   fmt, ##__VA_ARGS__)
-#define OSX_USB_LOGF_DEBUG(fmt, ...) OSX_USB_LOGF(INDI::Logger::DBG_DEBUG,   fmt, ##__VA_ARGS__)
-
 // ---------------------------------------------------------------------------
 // discoverAndDefine — probe each active port and create INDI properties
 // ---------------------------------------------------------------------------
@@ -47,13 +36,13 @@ void OnStepXUsbPlugin::discoverAndDefine(uint8_t portsMask)
 
         if (!probePort(i + 1, port))
         {
-            OSX_USB_LOGF_WARN("Could not probe USB port %d, skipping", i + 1);
+            LOGF_WARN("Could not probe USB port %d, skipping", i + 1);
             continue;
         }
 
         port.active = true;
         definePort(port);
-        OSX_USB_LOGF_DEBUG("USB port %d: '%s'", i + 1, port.label);
+        LOGF_DEBUG("USB port %d: '%s'", i + 1, port.label);
     }
 }
 

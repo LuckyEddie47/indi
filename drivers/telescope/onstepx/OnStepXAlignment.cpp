@@ -19,16 +19,6 @@
 
 #define ALIGN_TAB "Alignment"
 
-// Logging helpers
-#define OSX_ALIGN_LOGF(priority, fmt, ...) \
-    do { \
-        if (m_dev) \
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(), priority, __FILE__, __LINE__, \
-                                              fmt, ##__VA_ARGS__); \
-    } while (0)
-#define OSX_ALIGN_LOG_INFO(msg)         OSX_ALIGN_LOGF(INDI::Logger::DBG_SESSION, "%s", msg)
-#define OSX_ALIGN_LOGF_ERROR(fmt, ...)  OSX_ALIGN_LOGF(INDI::Logger::DBG_ERROR,   fmt, ##__VA_ARGS__)
-
 // Control switch indices
 enum { CTRL_START = 0, CTRL_ACCEPT = 1 };
 
@@ -228,7 +218,7 @@ bool OnStepXAlignment::startAlignment(int stars)
     char reply[8];
     bool ok = m_comm->sendCommand(cmd, reply) && reply[0] == '0';
     if (!ok)
-        OSX_ALIGN_LOGF_ERROR("Start alignment with %d stars failed", stars);
+        LOGF_ERROR("Start alignment with %d stars failed", stars);
     return ok;
 }
 
@@ -240,7 +230,7 @@ bool OnStepXAlignment::acceptStar()
     char reply[8];
     bool ok = m_comm->sendCommand(":A+#", reply) && reply[0] == '0';
     if (!ok)
-        OSX_ALIGN_LOGF_ERROR("Accept star command rejected by firmware");
+        LOG_ERROR("Accept star command rejected by firmware");
     return ok;
 }
 
@@ -252,8 +242,8 @@ bool OnStepXAlignment::writeAlignment()
     char reply[8];
     bool ok = m_comm->sendCommand(":AW#", reply) && reply[0] == '1';
     if (ok)
-        OSX_ALIGN_LOG_INFO("Alignment written to EEPROM");
+        LOG_INFO("Alignment written to EEPROM");
     else
-        OSX_ALIGN_LOGF_ERROR("Write alignment to EEPROM failed");
+        LOG_ERROR("Write alignment to EEPROM failed");
     return ok;
 }

@@ -65,4 +65,8 @@ class OnStepXPec
         INDI::PropertySwitch m_controlSP {5};
         // Worm period (read-only)
         INDI::PropertyNumber m_wormNP    {1};
+
+        const char* getDeviceName() const { 
+            return m_dev ? m_dev->getDeviceName() : "Unknown"; 
+        }
 };

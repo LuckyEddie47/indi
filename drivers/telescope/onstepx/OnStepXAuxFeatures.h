@@ -100,4 +100,8 @@ class OnStepXAuxFeatures
         void deleteSlot(Slot &slot);
 
         bool sendWriteInt(int slotIdx, char field, int value);
+
+        const char* getDeviceName() const { 
+            return m_dev ? m_dev->getDeviceName() : "Unknown"; 
+        }
 };

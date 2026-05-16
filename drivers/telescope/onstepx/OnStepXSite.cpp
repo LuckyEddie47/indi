@@ -19,8 +19,6 @@
 #include "OnStepXSite.h"
 #include "OnStepXComm.h"
 
-#include <defaultdevice.h>
-#include <indilogger.h>
 #include <indicom.h>                    // f_scansexa, getSexComponentsIID
 #include <libnova/utility.h>            // ln_date_to_zonedate
 #include <libnova/julian_day.h>
@@ -206,9 +204,7 @@ bool OnStepXSite::writeLocation(double latitude, double longitude, double elevat
     if (!m_comm->sendCommand(latCmd, reply) || reply[0] != '1')
     {
         if (m_dev)
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-                INDI::Logger::DBG_ERROR, __FILE__, __LINE__,
-                "Failed to set site latitude");
+            LOG_ERROR("Failed to set site latitude");
         return false;
     }
 
@@ -227,9 +223,7 @@ bool OnStepXSite::writeLocation(double latitude, double longitude, double elevat
     if (!m_comm->sendCommand(lonCmd, reply) || reply[0] != '1')
     {
         if (m_dev)
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-                INDI::Logger::DBG_ERROR, __FILE__, __LINE__,
-                "Failed to set site longitude");
+            LOG_ERROR("Failed to set site longitude");
         return false;
     }
 
@@ -239,16 +233,12 @@ bool OnStepXSite::writeLocation(double latitude, double longitude, double elevat
     if (!m_comm->sendCommand(elvCmd, reply) || reply[0] != '1')
     {
         if (m_dev)
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-                INDI::Logger::DBG_WARNING, __FILE__, __LINE__,
-                "Failed to set site elevation (non-critical)");
+            LOG_WARN("Failed to set site elevation (non-critical)");
         // Elevation write failure is non-critical -- continue.
     }
 
     if (m_dev)
-        INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-            INDI::Logger::DBG_SESSION, __FILE__, __LINE__,
-            "Site location sent to controller");
+        LOG_DEBUG("Site location sent to controller");
 
     return true;
 }
@@ -321,9 +311,7 @@ bool OnStepXSite::writeTime(const ln_date *utc, double utc_offset)
     if (!m_comm->sendCommand(tzCmd, reply) || reply[0] != '1')
     {
         if (m_dev)
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-                INDI::Logger::DBG_ERROR, __FILE__, __LINE__,
-                "Failed to set UTC offset (:SG#)");
+            LOG_ERROR("Failed to set UTC offset (:SG#)");
         return false;
     }
 
@@ -340,9 +328,7 @@ bool OnStepXSite::writeTime(const ln_date *utc, double utc_offset)
     if (!m_comm->sendCommand(timeCmd, reply) || reply[0] != '1')
     {
         if (m_dev)
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-                INDI::Logger::DBG_ERROR, __FILE__, __LINE__,
-                "Failed to set local time (:SL#)");
+            LOG_ERROR("Failed to set local time (:SL#)");
         return false;
     }
 
@@ -354,16 +340,12 @@ bool OnStepXSite::writeTime(const ln_date *utc, double utc_offset)
     if (!m_comm->sendCommand(dateCmd, reply) || reply[0] != '1')
     {
         if (m_dev)
-            INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-                INDI::Logger::DBG_ERROR, __FILE__, __LINE__,
-                "Failed to set local date (:SC#)");
+            LOG_ERROR("Failed to set local date (:SC#)");
         return false;
     }
 
     if (m_dev)
-        INDI::Logger::getInstance().print(m_dev->getDeviceName(),
-            INDI::Logger::DBG_SESSION, __FILE__, __LINE__,
-            "Date/time sent to controller");
+        LOG_DEBUG("Date/time sent to controller");
 
     return true;
 }
