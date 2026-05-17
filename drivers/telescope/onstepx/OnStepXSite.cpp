@@ -118,9 +118,9 @@ bool OnStepXSite::handleText(const char *name, char *texts[], char *names[], int
     int idx = m_activeSite - 1;
     if (idx < 0 || idx > 3) idx = 0;
 
-    char cmd[64];
+    char cmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(cmd, sizeof(cmd), "%s%s#", cmds[idx], newName);
-    char reply[4];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (m_comm->sendCommand(cmd, reply) && reply[0] == '1')
     {
         m_siteNameTP.setState(IPS_OK);
@@ -149,7 +149,7 @@ void OnStepXSite::saveConfig(FILE *fp)
 void OnStepXSite::readSiteNames()
 {
     const char *cmds[4]  = { ":GM#", ":GN#", ":GO#", ":GP#" };
-    char reply[64];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     char names[4][64]    = { "Site 1", "Site 2", "Site 3", "Site 4" };
 
     for (int i = 0; i < 4; i++)
@@ -176,7 +176,7 @@ void OnStepXSite::readSiteNames()
 bool OnStepXSite::selectSite(int n, double &lat, double &lon, double &elev)
 {
     // :W[n]# is blind (no reply)
-    char cmd[8];
+    char cmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(cmd, sizeof(cmd), ":W%d#", n);
     m_comm->sendCommandBlind(cmd);
 
@@ -191,15 +191,16 @@ bool OnStepXSite::selectSite(int n, double &lat, double &lon, double &elev)
 // ---------------------------------------------------------------------------
 bool OnStepXSite::writeLocation(double latitude, double longitude, double elevation)
 {
-    char reply[64];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     // --- Latitude  (+DD:MM:SS, signed) ---
     int latD, latM;
     double latS;
     getSexComponentsIID(std::fabs(latitude), &latD, &latM, &latS);
-    char latCmd[32];
-    snprintf(latCmd, sizeof(latCmd), ":St%c%02d:%02d:%04.1f#",
-             latitude >= 0 ? '+' : '-', latD, latM, latS);
+    normaliseDMS(&latD, &latM, &latS);
+    char latCmd[OnStepXComm::CMD_MAX_LEN];
+    snprintf(latCmd, sizeof(latCmd), ":St%+.02d:%02d:%.02f#",
+         (int)latD, latM, latS);
 
     if (!m_comm->sendCommand(latCmd, reply) || reply[0] != '1')
     {
@@ -217,8 +218,10 @@ bool OnStepXSite::writeLocation(double latitude, double longitude, double elevat
     int lonD, lonM;
     double lonS;
     getSexComponentsIID(osx_lon, &lonD, &lonM, &lonS);
-    char lonCmd[32];
-    snprintf(lonCmd, sizeof(lonCmd), ":Sg%03d:%02d:%04.1f#", lonD, lonM, lonS);
+    normaliseDMS(&lonD, &lonM, &lonS);
+    if (lonD >= 360) lonD -= 360;
+    char lonCmd[OnStepXComm::CMD_MAX_LEN];
+    snprintf(lonCmd, sizeof(lonCmd), ":Sg%.03d:%02d:%.02f#", lonD, lonM, lonS);
 
     if (!m_comm->sendCommand(lonCmd, reply) || reply[0] != '1')
     {
@@ -228,7 +231,7 @@ bool OnStepXSite::writeLocation(double latitude, double longitude, double elevat
     }
 
     // --- Elevation (integer metres) ---
-    char elvCmd[32];
+    char elvCmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(elvCmd, sizeof(elvCmd), ":Sv%d#", static_cast<int>(std::round(elevation)));
     if (!m_comm->sendCommand(elvCmd, reply) || reply[0] != '1')
     {
@@ -248,7 +251,7 @@ bool OnStepXSite::writeLocation(double latitude, double longitude, double elevat
 // ---------------------------------------------------------------------------
 bool OnStepXSite::readLocation(double &latitude, double &longitude, double &elevation)
 {
-    char reply[64];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     // Latitude -- :GtH# returns "+DD:MM:SS.S"
     if (!m_comm->sendCommand(":GtH#", reply))
@@ -286,7 +289,7 @@ bool OnStepXSite::readLocation(double &latitude, double &longitude, double &elev
 // ---------------------------------------------------------------------------
 bool OnStepXSite::writeTime(const ln_date *utc, double utc_offset)
 {
-    char reply[64];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     // 1. Set UTC offset (timezone).
     //    OnStepX accepts ":SG[sHH]#" or ":SG[sHH:MM]#" where MM is 00, 30, or 45.
@@ -302,7 +305,7 @@ bool OnStepXSite::writeTime(const ln_date *utc, double utc_offset)
     else if (fracMin < 53) fracMin = 45;
     else                 { fracMin = 0; tzH += (utc_offset >= 0 ? 1 : -1); }
 
-    char tzCmd[32];
+    char tzCmd[OnStepXComm::CMD_MAX_LEN];
     if (fracMin == 0)
         snprintf(tzCmd, sizeof(tzCmd), ":SG%+03d#", tzH);
     else
@@ -323,7 +326,7 @@ bool OnStepXSite::writeTime(const ln_date *utc, double utc_offset)
 
     // 3. Send local time  ":SLHH:MM:SS#"
     int secs = static_cast<int>(lzd.seconds);
-    char timeCmd[32];
+    char timeCmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(timeCmd, sizeof(timeCmd), ":SL%02d:%02d:%02d#", lzd.hours, lzd.minutes, secs);
     if (!m_comm->sendCommand(timeCmd, reply) || reply[0] != '1')
     {
@@ -334,7 +337,7 @@ bool OnStepXSite::writeTime(const ln_date *utc, double utc_offset)
 
     // 4. Send local date  ":SCMM/DD/YY#"
     //    Reply may be "1Updating        #" -- only first char matters.
-    char dateCmd[32];
+    char dateCmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(dateCmd, sizeof(dateCmd), ":SC%02d/%02d/%02d#",
              lzd.months, lzd.days, lzd.years % 100);
     if (!m_comm->sendCommand(dateCmd, reply) || reply[0] != '1')
@@ -350,3 +353,17 @@ bool OnStepXSite::writeTime(const ln_date *utc, double utc_offset)
     return true;
 }
 
+void OnStepXSite::normaliseDMS(int *d, int *m, double *s)
+{
+    // Round to 2dp first, matching the precision of the format string
+    *s = round(*s * 100.0) / 100.0;
+
+    if (*s >= 60.0) {
+        *s -= 60.0;
+        (*m)++;
+    }
+    if (*m >= 60) {
+        *m -= 60;
+        (*d)++;
+    }
+}

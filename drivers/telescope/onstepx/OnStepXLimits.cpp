@@ -154,10 +154,10 @@ bool OnStepXLimits::handleNumber(const char *name, double values[], char *names[
     if (m_horizonLimitNP.isNameMatch(name))
     {
         m_horizonLimitNP.update(values, names, n);
-        char cmd[32];
+        char cmd[OnStepXComm::CMD_MAX_LEN];
         bool ok = true;
         snprintf(cmd, sizeof(cmd), ":Sh%d#", static_cast<int>(m_horizonLimitNP[0].getValue()));
-        char reply[64];
+        char reply[OnStepXComm::REPLY_BUF_SIZE];
         if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1') ok = false;
         snprintf(cmd, sizeof(cmd), ":So%d#", static_cast<int>(m_horizonLimitNP[1].getValue()));
         if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1') ok = false;
@@ -169,9 +169,9 @@ bool OnStepXLimits::handleNumber(const char *name, double values[], char *names[
     if (m_meridianLimitNP.isNameMatch(name))
     {
         m_meridianLimitNP.update(values, names, n);
-        char cmd[32];
+        char cmd[OnStepXComm::CMD_MAX_LEN];
         bool ok = true;
-        char reply[64];
+        char reply[OnStepXComm::REPLY_BUF_SIZE];
         snprintf(cmd, sizeof(cmd), ":SXE9,%d#",
                  static_cast<int>(m_meridianLimitNP[0].getValue()));
         if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1') ok = false;
@@ -186,9 +186,9 @@ bool OnStepXLimits::handleNumber(const char *name, double values[], char *names[
     if (m_backlashNP.isNameMatch(name))
     {
         m_backlashNP.update(values, names, n);
-        char cmd[32];
+        char cmd[OnStepXComm::CMD_MAX_LEN];
         bool ok = true;
-        char reply[64];
+        char reply[OnStepXComm::REPLY_BUF_SIZE];
         snprintf(cmd, sizeof(cmd), ":$BR%d#", static_cast<int>(m_backlashNP[0].getValue()));
         if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1') ok = false;
         snprintf(cmd, sizeof(cmd), ":$BD%d#", static_cast<int>(m_backlashNP[1].getValue()));
@@ -206,8 +206,8 @@ bool OnStepXLimits::handleNumber(const char *name, double values[], char *names[
 // ---------------------------------------------------------------------------
 void OnStepXLimits::saveConfig(FILE *fp)
 {
-    m_autoBootSP.save(fp);
-    m_homeOffsetNP.save(fp);
+    // m_autoBootSP.save(fp);
+    // m_homeOffsetNP.save(fp);
     m_horizonLimitNP.save(fp);
     m_meridianLimitNP.save(fp);
     m_backlashNP.save(fp);
@@ -218,7 +218,7 @@ void OnStepXLimits::saveConfig(FILE *fp)
 // ---------------------------------------------------------------------------
 bool OnStepXLimits::readLimits()
 {
-    char reply[64];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     bool ok = true;
 
     // Horizon minimum (:Gh# returns integer degrees)
@@ -284,7 +284,7 @@ bool OnStepXLimits::readLimits()
 bool OnStepXLimits::homeFind()
 {
     // :hC# returns '1' on acceptance; firmware begins homing asynchronously.
-    char reply[64];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (!m_comm->sendCommand(":hC#", reply) || reply[0] != '1')
     {
         if (m_dev)
@@ -301,7 +301,7 @@ bool OnStepXLimits::homeFind()
 // ---------------------------------------------------------------------------
 bool OnStepXLimits::homeSet()
 {
-    char reply[64];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (!m_comm->sendCommand(":hF#", reply) || reply[0] != '1')
     {
         if (m_dev)
@@ -319,13 +319,8 @@ bool OnStepXLimits::homeSet()
 bool OnStepXLimits::setAutoHome(bool enabled)
 {
     const char *cmd = enabled ? ":hA1#" : ":hA0#";
-    char reply[64];
-    if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1')
-    {
-        if (m_dev)
-            LOG_ERROR("Auto home command failed");
-        return false;
-    }
+    m_comm->sendCommandBlind(cmd);
+    
     return true;
 }
 
@@ -334,17 +329,13 @@ bool OnStepXLimits::setAutoHome(bool enabled)
 // ---------------------------------------------------------------------------
 bool OnStepXLimits::writeHomeOffsets(double axis1, double axis2)
 {
-    char cmd[32];
-    char reply[64];
-    bool ok = true;
+    char cmd[OnStepXComm::CMD_MAX_LEN];
 
     snprintf(cmd, sizeof(cmd), ":hC1,%d#", static_cast<int>(axis1));
-    if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1') ok = false;
+    m_comm->sendCommandBlind(cmd);
 
     snprintf(cmd, sizeof(cmd), ":hC2,%d#", static_cast<int>(axis2));
-    if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1') ok = false;
+    m_comm->sendCommandBlind(cmd);
 
-    if (!ok && m_dev)
-        LOG_ERROR("Failed to write home offsets");
-    return ok;
+    return true;
 }

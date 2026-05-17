@@ -91,7 +91,7 @@ bool OnStepXRotator::handleSwitch(const char *name, ISState *states, char *names
     {
         m_parallacticSP.update(states, names, n);
         const char *cmd = (m_parallacticSP[1].getState() == ISS_ON) ? ":SX98,1#" : ":SX98,0#";
-        char reply[8];
+        char reply[OnStepXComm::REPLY_BUF_SIZE];
         if (m_comm->sendCommand(cmd, reply) && reply[0] == '1')
             m_parallacticSP.setState(IPS_OK);
         else
@@ -126,7 +126,7 @@ void OnStepXRotator::saveConfig(FILE *fp)
 // ---------------------------------------------------------------------------
 IPState OnStepXRotator::moveToAngle(double angle)
 {
-    char cmd[32], reply[8];
+    char cmd[OnStepXComm::CMD_MAX_LEN], reply[OnStepXComm::REPLY_BUF_SIZE];
     if (!formatAngle(angle, cmd, sizeof(cmd)))
         return IPS_ALERT;
 
@@ -152,7 +152,7 @@ IPState OnStepXRotator::homeRotator()
 
 bool OnStepXRotator::setBacklash(int32_t steps)
 {
-    char cmd[24], reply[8];
+    char cmd[OnStepXComm::CMD_MAX_LEN], reply[OnStepXComm::REPLY_BUF_SIZE];
     snprintf(cmd, sizeof(cmd), ":rb%d#", steps);
     if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1')
         return false;
@@ -165,7 +165,7 @@ bool OnStepXRotator::setBacklash(int32_t steps)
 OnStepXRotator::PollResult OnStepXRotator::pollStatus()
 {
     PollResult result;
-    char reply[32];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     // Read angle
     if (m_comm->sendCommand(":rG#", reply))
@@ -194,7 +194,7 @@ OnStepXRotator::PollResult OnStepXRotator::pollStatus()
 OnStepXRotator::InitialState OnStepXRotator::readInitial()
 {
     InitialState state;
-    char reply[32];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     // Current angle
     if (m_comm->sendCommand(":rG#", reply))

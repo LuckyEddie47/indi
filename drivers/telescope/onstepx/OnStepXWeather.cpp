@@ -77,9 +77,9 @@ bool OnStepXWeather::handleNumber(const char *name, double values[], char *names
         bool allOk = true;
         for (int i = 0; i < 3; i++)
         {
-            char cmd[32];
+            char cmd[OnStepXComm::CMD_MAX_LEN];
             snprintf(cmd, sizeof(cmd), cmds[i], m_weatherSetNP[i].getValue());
-            char reply[4];
+            char reply[OnStepXComm::REPLY_BUF_SIZE];
             if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1')
                 allOk = false;
         }
@@ -93,9 +93,9 @@ bool OnStepXWeather::handleNumber(const char *name, double values[], char *names
         m_dut1NP.update(values, names, n);
         double dut1 = m_dut1NP[0].getValue();
 
-        char cmd[16];
+        char cmd[OnStepXComm::CMD_MAX_LEN];
         snprintf(cmd, sizeof(cmd), ":SU%+.3f#", dut1);
-        char reply[4];
+        char reply[OnStepXComm::REPLY_BUF_SIZE];
         if (m_comm->sendCommand(cmd, reply) && reply[0] == '1')
             m_dut1NP.setState(IPS_OK);
         else
@@ -122,7 +122,7 @@ void OnStepXWeather::saveConfig(FILE *fp)
 // ---------------------------------------------------------------------------
 WeatherReading OnStepXWeather::tryRead(const char *cmd)
 {
-    char reply[64];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (!m_comm->sendCommand(cmd, reply))
         return {};
 

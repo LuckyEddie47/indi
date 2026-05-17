@@ -120,7 +120,7 @@ bool OnStepXTracking::handleSwitch(const char *name, ISState *states, char *name
         else if (m_trackCompSP[1].getState() == ISS_ON) cmd = ":Tr#";
         else                                             cmd = ":Tn#";
 
-        char reply[4];
+        char reply[OnStepXComm::REPLY_BUF_SIZE];
         if (m_comm->sendCommand(cmd, reply) && reply[0] == '1')
             m_trackCompSP.setState(IPS_OK);
         else
@@ -136,7 +136,7 @@ bool OnStepXTracking::handleSwitch(const char *name, ISState *states, char *name
         m_trackAxisSP.update(states, names, n);
         const char *cmd = (m_trackAxisSP[0].getState() == ISS_ON) ? ":T1#" : ":T2#";
 
-        char reply[4];
+        char reply[OnStepXComm::REPLY_BUF_SIZE];
         if (m_comm->sendCommand(cmd, reply) && reply[0] == '1')
             m_trackAxisSP.setState(IPS_OK);
         else
@@ -170,7 +170,7 @@ bool OnStepXTracking::handleSwitch(const char *name, ISState *states, char *name
         m_autoFlipSP.update(states, names, n);
         const char *cmd = (m_autoFlipSP[1].getState() == ISS_ON) ? ":SX95,1#" : ":SX95,0#";
 
-        char reply[4];
+        char reply[OnStepXComm::REPLY_BUF_SIZE];
         if (m_comm->sendCommand(cmd, reply) && reply[0] == '1')
             m_autoFlipSP.setState(IPS_OK);
         else
@@ -189,7 +189,7 @@ bool OnStepXTracking::handleSwitch(const char *name, ISState *states, char *name
         else if (m_preferredPierSP[1].getState() == ISS_ON) cmd = ":SX96,E#";
         else                                                 cmd = ":SX96,B#";
 
-        char reply[4];
+        char reply[OnStepXComm::REPLY_BUF_SIZE];
         if (m_comm->sendCommand(cmd, reply) && reply[0] == '1')
             m_preferredPierSP.setState(IPS_OK);
         else
@@ -213,9 +213,9 @@ bool OnStepXTracking::handleNumber(const char *name, double values[], char *name
     m_slewRateMaxNP.update(values, names, n);
     double rate = m_slewRateMaxNP[0].getValue();
 
-    char cmd[16];
+    char cmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(cmd, sizeof(cmd), ":Rs%.1f#", rate);
-    char reply[4];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (m_comm->sendCommand(cmd, reply) && reply[0] == '1')
         m_slewRateMaxNP.setState(IPS_OK);
     else
@@ -279,7 +279,7 @@ void OnStepXTracking::syncStatus(const MountStatus &s)
     // Poll :GT# every 10 calls to update tracking frequency display
     if ((++m_syncCount % 10) == 0)
     {
-        char reply[32];
+        char reply[OnStepXComm::REPLY_BUF_SIZE];
         if (m_comm && m_comm->sendCommand(":GT#", reply))
         {
             char *end;
@@ -300,7 +300,7 @@ void OnStepXTracking::syncStatus(const MountStatus &s)
 // ---------------------------------------------------------------------------
 void OnStepXTracking::readSettings()
 {
-    char reply[8];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     // Auto flip
     if (m_comm->sendCommand(":GX95#", reply))

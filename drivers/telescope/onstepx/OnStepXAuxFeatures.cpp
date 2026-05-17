@@ -162,14 +162,14 @@ bool OnStepXAuxFeatures::handleNumber(const char *name, double *values, char *na
 // ---------------------------------------------------------------------------
 void OnStepXAuxFeatures::pollStatus()
 {
-    char reply[32];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     for (auto &slot : m_slots)
     {
         if (!slot.active)
             continue;
 
-        char cmd[16];
+        char cmd[OnStepXComm::CMD_MAX_LEN];
         snprintf(cmd, sizeof(cmd), ":GXX%d#", slot.index);
         if (!m_comm->sendCommand(cmd, reply))
             continue;
@@ -247,7 +247,7 @@ void OnStepXAuxFeatures::saveConfig(FILE *fp)
 
 bool OnStepXAuxFeatures::probeSlot(int idx, Slot &slot)
 {
-    char cmd[16], reply[64];
+    char cmd[OnStepXComm::CMD_MAX_LEN], reply[OnStepXComm::REPLY_BUF_SIZE];
     snprintf(cmd, sizeof(cmd), ":GXY%d#", idx);
     if (!m_comm->sendCommand(cmd, reply))
         return false;
@@ -385,7 +385,7 @@ void OnStepXAuxFeatures::deleteSlot(Slot &slot)
 
 bool OnStepXAuxFeatures::sendWriteInt(int slotIdx, char field, int value)
 {
-    char cmd[32], reply[8];
+    char cmd[OnStepXComm::CMD_MAX_LEN], reply[OnStepXComm::REPLY_BUF_SIZE];
     snprintf(cmd, sizeof(cmd), ":SXX%d,%c%d#", slotIdx, field, value);
     if (!m_comm->sendCommand(cmd, reply))
         return false;

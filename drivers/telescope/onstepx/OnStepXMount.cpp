@@ -18,8 +18,8 @@
 
 // Debug only
 
-// #include <signal.h>
-// #include <unistd.h>
+ #include <signal.h>
+ #include <unistd.h>
 
 // Debug only end
 
@@ -54,7 +54,7 @@ OnStepXMount::OnStepXMount() : INDI::GuiderInterface(this),
 
     // Halts the process at this point. Allows remote debugger to attach which is required
     // when launching the driver from a client eg. Ekos
-    // kill(getpid(), SIGSTOP);
+     kill(getpid(), SIGSTOP);
 
     // Debug only end
 
@@ -374,7 +374,7 @@ bool OnStepXMount::refreshMountStatus()
         }
     }
 
-    char reply[256];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (!m_core.comm().sendCommand(":GU#", reply))
     {
         LOG_ERROR("Failed to read mount status (:GU#)");
@@ -395,7 +395,7 @@ bool OnStepXMount::refreshMountStatus()
 // ---------------------------------------------------------------------------
 bool OnStepXMount::updateCoordinates()
 {
-    char reply[256];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     if (isEquatorial())
     {
@@ -539,8 +539,8 @@ bool OnStepXMount::Goto(double ra, double dec)
     fs_sexa(raStr,  ra,  2, 360000);   // RA:  2-digit hour field,  0.1-arcsec precision
     fs_sexa(decStr, dec, 3, 360000);   // Dec: 3-digit degree field (±90)
 
-    char cmd[64];
-    char reply[64];
+    char cmd[OnStepXComm::CMD_MAX_LEN];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     // :Sr# and :Sd# reply '1' on acceptance, '0' on format error.
     // Must use sendCommand (not blind) so firmware rejection is detected.
@@ -558,7 +558,7 @@ bool OnStepXMount::Goto(double ra, double dec)
         return false;
     }
 
-    char msReply[256];
+    char msReply[OnStepXComm::REPLY_BUF_SIZE];
     if (!m_core.comm().sendCommand(":MS#", msReply))
     {
         LOG_ERROR("Goto: :MS# failed");
@@ -585,8 +585,8 @@ bool OnStepXMount::Sync(double ra, double dec)
     fs_sexa(raStr,  ra,  2, 360000);
     fs_sexa(decStr, dec, 3, 360000);
 
-    char cmd[64];
-    char reply[256];
+    char cmd[OnStepXComm::CMD_MAX_LEN];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     snprintf(cmd, sizeof(cmd), ":Sr%s#", raStr);
     if (!m_core.comm().sendCommand(cmd, reply) || reply[0] != '1')
@@ -611,7 +611,7 @@ bool OnStepXMount::Sync(double ra, double dec)
     // For AltAz mounts, add an alignment point to the subsystem.
     if (!isEquatorial())
     {
-        char azReply[256], altReply[256];
+        char azReply[OnStepXComm::REPLY_BUF_SIZE], altReply[OnStepXComm::REPLY_BUF_SIZE];
         double az = 0, alt = 0;
         if (m_core.comm().sendCommand(":GZH#", azReply)  && f_scansexa(azReply,  &az)  == 0 &&
                 m_core.comm().sendCommand(":GAH#", altReply) && f_scansexa(altReply, &alt) == 0)
@@ -764,7 +764,7 @@ bool OnStepXMount::SetSlewRate(int index)
 // ---------------------------------------------------------------------------
 bool OnStepXMount::SetTrackRate(double raRate, double deRate)
 {
-    char cmd[48], reply[4];
+    char cmd[OnStepXComm::CMD_MAX_LEN], reply[OnStepXComm::REPLY_BUF_SIZE];
 
     snprintf(cmd, sizeof(cmd), ":RA%f#", raRate);
     if (!m_core.comm().sendCommand(cmd, reply) || reply[0] != '1')

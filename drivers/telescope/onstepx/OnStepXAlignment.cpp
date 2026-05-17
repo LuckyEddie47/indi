@@ -153,7 +153,7 @@ void OnStepXAlignment::saveConfig(FILE * /*fp*/)
 // ---------------------------------------------------------------------------
 bool OnStepXAlignment::updateStatus()
 {
-    char reply[16] {};
+    char reply[OnStepXComm::REPLY_BUF_SIZE] {};
     if (!m_comm->sendCommand(":A?#", reply))
         return false;
 
@@ -192,7 +192,7 @@ bool OnStepXAlignment::updateStatus()
 // ---------------------------------------------------------------------------
 void OnStepXAlignment::updatePolarError()
 {
-    char reply[32];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     if (m_comm->sendCommand(":GX02#", reply))
     {
@@ -213,9 +213,9 @@ void OnStepXAlignment::updatePolarError()
 // ---------------------------------------------------------------------------
 bool OnStepXAlignment::startAlignment(int stars)
 {
-    char cmd[16];
+    char cmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(cmd, sizeof(cmd), ":A%d#", stars);
-    char reply[8];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     bool ok = m_comm->sendCommand(cmd, reply) && reply[0] == '0';
     if (!ok)
         LOGF_ERROR("Start alignment with %d stars failed", stars);
@@ -227,7 +227,7 @@ bool OnStepXAlignment::startAlignment(int stars)
 // ---------------------------------------------------------------------------
 bool OnStepXAlignment::acceptStar()
 {
-    char reply[8];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     bool ok = m_comm->sendCommand(":A+#", reply) && reply[0] == '0';
     if (!ok)
         LOG_ERROR("Accept star command rejected by firmware");
@@ -239,7 +239,7 @@ bool OnStepXAlignment::acceptStar()
 // ---------------------------------------------------------------------------
 bool OnStepXAlignment::writeAlignment()
 {
-    char reply[8];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     bool ok = m_comm->sendCommand(":AW#", reply) && reply[0] == '1';
     if (ok)
         LOG_INFO("Alignment written to EEPROM");

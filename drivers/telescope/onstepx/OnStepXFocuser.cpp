@@ -271,7 +271,7 @@ bool OnStepXFocuser::SetFocuserSpeed(int speed)
 // ---------------------------------------------------------------------------
 bool OnStepXFocuser::cmdGetPos(uint32_t &pos)
 {
-    char reply[64];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (!m_comm->sendCommandFocuser(m_slot, ":FG#", reply))
         return false;
     char *end;
@@ -284,7 +284,7 @@ bool OnStepXFocuser::cmdGetPos(uint32_t &pos)
 
 bool OnStepXFocuser::cmdGetMax(uint32_t &maxPos)
 {
-    char reply[64];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (!m_comm->sendCommandFocuser(m_slot, ":FM#", reply))
         return false;
     char *end;
@@ -297,7 +297,7 @@ bool OnStepXFocuser::cmdGetMax(uint32_t &maxPos)
 
 bool OnStepXFocuser::cmdGetStatus(bool &moving)
 {
-    char reply[8];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (!m_comm->sendCommandFocuser(m_slot, ":FT#", reply))
         return false;
     // 'M' = moving; anything else (including 'S', '0', 'H') = stopped
@@ -307,7 +307,7 @@ bool OnStepXFocuser::cmdGetStatus(bool &moving)
 
 bool OnStepXFocuser::cmdGetTemperature(double &tempC)
 {
-    char reply[32];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (!m_comm->sendCommandFocuser(m_slot, ":Ft#", reply))
         return false;
     char *end;
@@ -323,7 +323,7 @@ bool OnStepXFocuser::cmdGetTemperature(double &tempC)
 
 bool OnStepXFocuser::cmdGoto(uint32_t microns)
 {
-    char cmd[24], reply[8];
+    char cmd[OnStepXComm::CMD_MAX_LEN], reply[OnStepXComm::REPLY_BUF_SIZE];
     snprintf(cmd, sizeof(cmd), ":FN%u#", microns);
     if (!m_comm->sendCommandFocuser(m_slot, cmd, reply))
         return false;
@@ -332,7 +332,7 @@ bool OnStepXFocuser::cmdGoto(uint32_t microns)
 
 bool OnStepXFocuser::cmdMoveRel(int32_t microns)
 {
-    char cmd[24];
+    char cmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(cmd, sizeof(cmd), ":Fm%d#", microns);
     return m_comm->sendCommandBlindFocuser(m_slot, cmd);
 }
@@ -344,7 +344,7 @@ bool OnStepXFocuser::cmdAbort()
 
 bool OnStepXFocuser::cmdSetBacklash(int32_t steps)
 {
-    char cmd[24], reply[8];
+    char cmd[OnStepXComm::CMD_MAX_LEN], reply[OnStepXComm::REPLY_BUF_SIZE];
     snprintf(cmd, sizeof(cmd), ":FB%d#", steps);
     if (!m_comm->sendCommandFocuser(m_slot, cmd, reply))
         return false;
@@ -353,7 +353,7 @@ bool OnStepXFocuser::cmdSetBacklash(int32_t steps)
 
 bool OnStepXFocuser::cmdSetSpeed(int speed)
 {
-    char cmd[16], reply[8];
+    char cmd[OnStepXComm::CMD_MAX_LEN], reply[OnStepXComm::REPLY_BUF_SIZE];
     snprintf(cmd, sizeof(cmd), ":FP%d#", speed);
     if (!m_comm->sendCommandFocuser(m_slot, cmd, reply))
         return false;

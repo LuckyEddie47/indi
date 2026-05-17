@@ -103,7 +103,7 @@ bool OnStepXPec::handleSwitch(const char *name, ISState *states, char *names[], 
             return true;
     }
 
-    char reply[8];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     bool ok = m_comm->sendCommand(cmd, reply) && reply[0] == '1';
     m_controlSP.reset();   // momentary — all off after sending
     m_controlSP.setState(ok ? IPS_OK : IPS_ALERT);
@@ -128,7 +128,7 @@ void OnStepXPec::saveConfig(FILE * /*fp*/)
 // ---------------------------------------------------------------------------
 void OnStepXPec::pollStatus()
 {
-    char reply[16];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (!m_comm->sendCommand(":$QZ?#", reply))
         return;
 
@@ -188,7 +188,7 @@ void OnStepXPec::pollStatus()
 // ---------------------------------------------------------------------------
 void OnStepXPec::readWormSteps()
 {
-    char reply[32];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (!m_comm->sendCommand(":VW#", reply))
         return;
 

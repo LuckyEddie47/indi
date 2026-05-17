@@ -40,6 +40,8 @@ class OnStepXComm
     public:
         void setFd(int fd);
         void setDevice(INDI::DefaultDevice *dev);
+        static constexpr int CMD_MAX_LEN    = 32;
+        static constexpr int REPLY_BUF_SIZE = 64;
 
         // Send '#'-terminated command; read '#'-terminated reply into buf (must be >= 256 bytes).
         // m_mutex held for entire send+receive. flushIO called before every send.

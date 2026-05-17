@@ -112,4 +112,6 @@ class OnStepXSite
         const char* getDeviceName() const { 
             return m_dev ? m_dev->getDeviceName() : "Unknown"; 
         }
+
+        void normaliseDMS(int *d, int *m, double *s);
 };

@@ -73,7 +73,7 @@ OnStepXComm &OnStepXCore::comm()
 // ---------------------------------------------------------------------------
 bool OnStepXCore::probeController()
 {
-    char reply[256];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     // :GVP# — product identity (both OnStep and OnStepX return "On-Step")
     if (!m_comm.sendCommand(":GVP#", reply))
@@ -129,7 +129,7 @@ bool OnStepXCore::probeController()
     m_cap.numFocusers = 0;
     for (int n = 1; n <= 6; n++)
     {
-        char cmd[8];
+        char cmd[OnStepXComm::CMD_MAX_LEN];
         snprintf(cmd, sizeof(cmd), ":FA%d#", n);
         char c = '0';
         if (m_comm.sendCommandSingleChar(cmd, c, 2000, true) && c == '1')
@@ -204,7 +204,7 @@ bool OnStepXCore::probeController()
 // ---------------------------------------------------------------------------
 bool OnStepXCore::probeMount()
 {
-    char reply[256];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     // :GW# — mount type and goto capability (must be non-empty for a mount to be present)
     if (!m_comm.sendCommand(":GW#", reply) || reply[0] == '\0')

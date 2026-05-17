@@ -70,7 +70,7 @@ bool OnStepXGuide::handleNumber(const char *name, double values[], char *names[]
     if (idx < 0) idx = 0;
     if (idx > 9) idx = 9;
 
-    char cmd[8];
+    char cmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(cmd, sizeof(cmd), ":R%d#", idx);
     m_comm->sendCommandBlind(cmd);
 
@@ -94,7 +94,7 @@ void OnStepXGuide::saveConfig(FILE *fp)
 // ---------------------------------------------------------------------------
 IPState OnStepXGuide::guideNorth(uint32_t ms)
 {
-    char cmd[32];
+    char cmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(cmd, sizeof(cmd), ":MGn%u#", ms);
     m_comm->sendCommandBlind(cmd);
     m_guideEndNS = Clock::now() + std::chrono::milliseconds(ms);
@@ -104,7 +104,7 @@ IPState OnStepXGuide::guideNorth(uint32_t ms)
 
 IPState OnStepXGuide::guideSouth(uint32_t ms)
 {
-    char cmd[32];
+    char cmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(cmd, sizeof(cmd), ":MGs%u#", ms);
     m_comm->sendCommandBlind(cmd);
     m_guideEndNS = Clock::now() + std::chrono::milliseconds(ms);
@@ -114,7 +114,7 @@ IPState OnStepXGuide::guideSouth(uint32_t ms)
 
 IPState OnStepXGuide::guideEast(uint32_t ms)
 {
-    char cmd[32];
+    char cmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(cmd, sizeof(cmd), ":MGe%u#", ms);
     m_comm->sendCommandBlind(cmd);
     m_guideEndWE = Clock::now() + std::chrono::milliseconds(ms);
@@ -124,7 +124,7 @@ IPState OnStepXGuide::guideEast(uint32_t ms)
 
 IPState OnStepXGuide::guideWest(uint32_t ms)
 {
-    char cmd[32];
+    char cmd[OnStepXComm::CMD_MAX_LEN];
     snprintf(cmd, sizeof(cmd), ":MGw%u#", ms);
     m_comm->sendCommandBlind(cmd);
     m_guideEndWE = Clock::now() + std::chrono::milliseconds(ms);
@@ -157,7 +157,7 @@ void OnStepXGuide::checkComplete()
 // ---------------------------------------------------------------------------
 void OnStepXGuide::readGuideRate()
 {
-    char reply[32];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
     if (!m_comm->sendCommand(":GX90#", reply))
         return;
 

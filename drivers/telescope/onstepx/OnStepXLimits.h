@@ -28,7 +28,7 @@
       :SXEA,[n]#   — set meridian limit East (reply '1')
       :hC#         — find home (no reply)
       :hF#         — set current position as home (no reply)
-      :hA0/1#      — home-at-boot: 0=off, 1=on (reply '1')
+      :hA0/1#      — home-at-boot: 0=off, 1=on (no reply)
       :hC1,[n]#    — home offset axis 1 in arcmin (requires hasHomeSense)
       :hC2,[n]#    — home offset axis 2 in arcmin (requires hasHomeSense)
 

@@ -282,7 +282,7 @@ bool OnStepXComm::sendCommandFocuser(int slot, const char *cmd, char *reply, int
     doFlush();
 
     // Select focuser n
-    char selectCmd[8];
+    char selectCmd[CMD_MAX_LEN];
     snprintf(selectCmd, sizeof(selectCmd), ":FA%d#", slot);
     if (!writeCommand(selectCmd))
     {
@@ -334,7 +334,7 @@ bool OnStepXComm::sendCommandBlindFocuser(int slot, const char *cmd)
     doFlush();
 
     // Select focuser n
-    char selectCmd[8];
+    char selectCmd[CMD_MAX_LEN];
     snprintf(selectCmd, sizeof(selectCmd), ":FA%d#", slot);
     if (!writeCommand(selectCmd))
     {

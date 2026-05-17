@@ -88,14 +88,14 @@ bool OnStepXUsbPlugin::handleSwitch(const char *name, ISState *states, char *nam
 // ---------------------------------------------------------------------------
 void OnStepXUsbPlugin::pollStatus()
 {
-    char reply[32];
+    char reply[OnStepXComm::REPLY_BUF_SIZE];
 
     for (auto &port : m_ports)
     {
         if (!port.active)
             continue;
 
-        char cmd[16];
+        char cmd[OnStepXComm::CMD_MAX_LEN];
         snprintf(cmd, sizeof(cmd), ":GUX%d#", port.index);
         if (!m_comm->sendCommand(cmd, reply))
             continue;
@@ -133,7 +133,7 @@ void OnStepXUsbPlugin::saveConfig(FILE *fp)
 
 bool OnStepXUsbPlugin::probePort(int idx, Port &port)
 {
-    char cmd[16], reply[64];
+    char cmd[OnStepXComm::CMD_MAX_LEN], reply[OnStepXComm::REPLY_BUF_SIZE];
     snprintf(cmd, sizeof(cmd), ":GUY%d#", idx);
     if (!m_comm->sendCommand(cmd, reply))
         return false;
@@ -167,7 +167,7 @@ void OnStepXUsbPlugin::deletePort(Port &port)
 
 bool OnStepXUsbPlugin::sendWriteInt(int portIdx, char field, int value)
 {
-    char cmd[32], reply[8];
+    char cmd[OnStepXComm::CMD_MAX_LEN], reply[OnStepXComm::REPLY_BUF_SIZE];
     snprintf(cmd, sizeof(cmd), ":SUX%d,%c%d#", portIdx, field, value);
     if (!m_comm->sendCommand(cmd, reply))
         return false;
