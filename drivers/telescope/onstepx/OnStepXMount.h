@@ -26,6 +26,7 @@
 #pragma once
 
 #include "OnStepXAlignment.h"
+#include "OnStepXModelBuilder.h"
 #include "OnStepXAuxFeatures.h"
 #include "OnStepXCore.h"
 #include "OnStepXFocuser.h"
@@ -125,18 +126,19 @@ class OnStepXMount : public INDI::Telescope,
 
         bool isEquatorial() const;
 
-        OnStepXAlignment   m_alignment;
-        OnStepXCore        m_core;
-        OnStepXAuxFeatures m_auxFeatures;
-        OnStepXGuide       m_guide;
-        OnStepXInfo        m_info;
-        OnStepXLimits      m_limits;
-        OnStepXPec         m_pec;
-        OnStepXRotator     m_rotator;
-        OnStepXSite        m_site;
-        OnStepXTracking    m_tracking;
-        OnStepXWeather     m_weather;
-        OnStepXUsbPlugin   m_usbPorts;
+        OnStepXAlignment    m_alignment;
+        OnStepXModelBuilder m_modelBuilder;
+        OnStepXCore         m_core;
+        OnStepXAuxFeatures  m_auxFeatures;
+        OnStepXGuide        m_guide;
+        OnStepXInfo         m_info;
+        OnStepXLimits       m_limits;
+        OnStepXPec          m_pec;
+        OnStepXRotator      m_rotator;
+        OnStepXSite         m_site;
+        OnStepXTracking     m_tracking;
+        OnStepXWeather      m_weather;
+        OnStepXUsbPlugin    m_usbPorts;
 
         // Focuser child devices — created after Handshake, slot 1..numFocusers
         std::array<std::unique_ptr<OnStepXFocuser>, 6> m_focusers;

@@ -60,6 +60,7 @@ OnStepXMount::OnStepXMount() : INDI::GuiderInterface(this),
 
     setVersion(0, 1);
     m_alignment.setDevice(this);
+    m_modelBuilder.setDevice(this);
     m_core.setDevice(this);
     m_auxFeatures.setDevice(this);
     m_guide.setDevice(this);
@@ -129,6 +130,7 @@ bool OnStepXMount::initProperties()
 
     // Alignment
     m_alignment.initProperties();
+    m_modelBuilder.initProperties();
 
     // Rotator interface — standard ABS_ROTATOR_ANGLE, ROTATOR_ABORT_MOTION, etc.
     RI::initProperties("Rotator");
@@ -169,6 +171,7 @@ bool OnStepXMount::updateProperties()
     if (isConnected())
     {
         m_alignment.setComm(&m_core.comm());
+        m_modelBuilder.setComm(&m_core.comm());
         m_auxFeatures.setComm(&m_core.comm());
         m_guide.setComm(&m_core.comm());
         m_info.setComm(&m_core.comm());
@@ -256,10 +259,12 @@ bool OnStepXMount::updateProperties()
             m_pec.updateProperties(true);
 
         m_alignment.updateProperties(true);
+        m_modelBuilder.updateProperties(true);
     }
     else
     {
         m_alignment.updateProperties(false);
+        m_modelBuilder.updateProperties(false);
         m_limits.updateProperties(false, false);
         m_tracking.updateProperties(false);
         m_guide.updateProperties(false);
@@ -509,6 +514,8 @@ void OnStepXMount::updateTrackingState(const MountStatus &s)
 
     // Sync advanced tracking properties from status
     m_tracking.syncStatus(s);
+    m_modelBuilder.updateTrackingState(s.tracking);
+    m_modelBuilder.updateMountType(s.mountType);
 }
 
 // ---------------------------------------------------------------------------
@@ -581,6 +588,9 @@ bool OnStepXMount::Goto(double ra, double dec)
 // ---------------------------------------------------------------------------
 bool OnStepXMount::Sync(double ra, double dec)
 {
+    if (m_modelBuilder.captureSync(ra, dec, m_status.pierSide, m_status.mountType))
+        return true;
+
     char raStr[32], decStr[32];
     fs_sexa(raStr,  ra,  2, 360000);
     fs_sexa(decStr, dec, 3, 360000);
@@ -1044,6 +1054,8 @@ bool OnStepXMount::ISNewSwitch(const char *dev, const char *name, ISState *state
         return true;
     if (isConnected() && m_alignment.handleSwitch(name, states, names, n))
         return true;
+    if (isConnected() && m_modelBuilder.handleSwitch(name, states, names, n))
+        return true;
     if (isConnected() && !isEquatorial())
         ProcessAlignmentSwitchProperties(this, name, states, names, n);
     return INDI::Telescope::ISNewSwitch(dev, name, states, names, n);
@@ -1087,6 +1099,7 @@ bool OnStepXMount::saveConfigItems(FILE *fp)
     RI::saveConfigItems(fp);
     WI::saveConfigItems(fp);
     m_alignment.saveConfig(fp);
+    m_modelBuilder.saveConfig(fp);
     m_auxFeatures.saveConfig(fp);
     m_limits.saveConfig(fp);
     m_site.saveConfig(fp);
