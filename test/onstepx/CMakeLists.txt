@@ -195,3 +195,16 @@ target_link_libraries(test_onstepxusbplugin
 
 add_test(test-onstepxusbplugin test_onstepxusbplugin)
 
+add_executable(test_onstepxmodelmath
+    test_onstepxmodelmath.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXModelMath.cpp"
+)
+
+target_link_libraries(test_onstepxmodelmath
+    ${GTEST_LIBRARIES}
+    ${GTEST_MAIN_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+
+add_test(test-onstepxmodelmath test_onstepxmodelmath)
+

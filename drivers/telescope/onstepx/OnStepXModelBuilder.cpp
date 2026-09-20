@@ -238,163 +238,6 @@ double OnStepXModelBuilder::wrapHours(double hours)
     return hours;
 }
 
-double OnStepXModelBuilder::wrapRadians(double radians)
-{
-    constexpr double PI = 3.14159265358979323846;
-    constexpr double TWO_PI = 2.0 * PI;
-    while (radians > PI)
-        radians -= TWO_PI;
-    while (radians <= -PI)
-        radians += TWO_PI;
-    return radians;
-}
-
-void OnStepXModelBuilder::equatorialToNative(double ha, double dec,
-                                              double latitude,
-                                              MountStatus::MountType mountType,
-                                              double &axis1, double &axis2)
-{
-    constexpr double PI = 3.14159265358979323846;
-    constexpr double DEG90 = PI / 2.0;
-    constexpr double DEG180 = PI;
-    constexpr double DEG360 = 2.0 * PI;
-    constexpr double TENTH_ARCSEC = PI / (180.0 * 36000.0);
-
-    if (mountType == MountStatus::MountType::ALTAZM ||
-        mountType == MountStatus::MountType::ALTALT)
-    {
-        const double cosHA = std::cos(ha);
-        const double sinAlt = std::sin(dec) * std::sin(latitude) +
-                              std::cos(dec) * std::cos(latitude) * cosHA;
-        const double alt = std::asin(sinAlt);
-
-        double az;
-        if (std::fabs(dec - DEG90) < TENTH_ARCSEC)
-            az = 0.0;
-        else if (std::fabs(dec + DEG90) < TENTH_ARCSEC)
-            az = DEG180;
-        else
-        {
-            const double t1 = std::sin(ha);
-            const double t2 = cosHA * std::sin(latitude) -
-                              std::tan(dec) * std::cos(latitude);
-            az = std::atan2(t1, t2);
-            az += DEG180;
-        }
-        if (az > DEG180)
-            az -= DEG360;
-
-        if (mountType == MountStatus::MountType::ALTAZM)
-        {
-            axis1 = az;
-            axis2 = alt;
-            return;
-        }
-
-        // Exact Transform::horToAa() sequence from OnStepX.
-        const double cosAzm = std::cos(az);
-        const double sinAA2 = std::cos(alt) * cosAzm;
-        const double aa2 = std::asin(sinAA2);
-        const double t1 = std::sin(az);
-        const double t2 = -std::tan(alt);
-        double aa1 = std::atan2(t1, t2);
-        aa1 += DEG180;
-        if (aa1 > DEG180)
-            aa1 -= DEG360;
-
-        axis1 = aa1;
-        axis2 = aa2;
-        return;
-    }
-
-    // GEM and FORK use HA/Dec directly, exactly as GeoAlign::addStar().
-    axis1 = wrapRadians(ha);
-    axis2 = dec;
-}
-
-void OnStepXModelBuilder::mountToObservedPlace(double mountAxis1,
-                                                double mountAxis2,
-                                                MountStatus::PierSide pierSide,
-                                                MountStatus::MountType mountType,
-                                                double latitude,
-                                                const ModelCoefficients &model,
-                                                double &observedAxis1,
-                                                double &observedAxis2)
-{
-    constexpr double PI = 3.14159265358979323846;
-    constexpr double DEG90 = PI / 2.0;
-    constexpr double DEG180 = PI;
-    constexpr double DEG360 = 2.0 * PI;
-    constexpr double RAD_PER_DEG = PI / 180.0;
-    constexpr double ARCSEC_PER_RAD = 180.0 * 3600.0 / PI;
-    constexpr double POLE_GUARD = 89.98333333 * RAD_PER_DEG;
-
-    const double p = (pierSide == MountStatus::PierSide::WEST) ? -1.0 : 1.0;
-
-    double ax1 = mountAxis1 + model.ax1Cor;
-    double ax2 = mountAxis2 + model.ax2Cor * -p;
-
-    if (ax2 > DEG90) ax2 = DEG90;
-    if (ax2 < -DEG90) ax2 = -DEG90;
-
-    if (std::fabs(ax2) < POLE_GUARD)
-    {
-        const double sinAx2 = std::sin(ax2);
-        const double cosAx2 = std::cos(ax2);
-        const double sinAx1 = std::sin(ax1);
-        const double cosAx1 = std::cos(ax1);
-
-        const double doH = model.doCor / cosAx2 * p;
-        const double pdH = -model.pdCor * (sinAx2 / cosAx2) * p;
-
-        double dfD;
-        if (mountType == MountStatus::MountType::FORK ||
-            mountType == MountStatus::MountType::ALTAZM)
-            dfD = model.dfCor * cosAx1;
-        else
-            dfD = -model.dfCor *
-                  (std::cos(latitude) * cosAx1 +
-                   std::sin(latitude) * (sinAx2 / cosAx2));
-
-        const double tfH = model.tfCor *
-                           (std::cos(latitude) * sinAx1 / cosAx2);
-        const double tfD = model.tfCor *
-                           (std::cos(latitude) * cosAx1 * sinAx2 -
-                            std::sin(latitude) * cosAx2);
-
-        const double a1 = -model.azmCor * cosAx1 * (sinAx2 / cosAx2) +
-                           model.altCor * sinAx1 * (sinAx2 / cosAx2);
-        const double a2 = model.azmCor * sinAx1 +
-                           model.altCor * cosAx1;
-
-        const double hcp = model.hcpDeg * RAD_PER_DEG;
-        const double dcp = model.dcpDeg * RAD_PER_DEG;
-        const double cosH = std::cos(ax1 + hcp) * model.hca / ARCSEC_PER_RAD * p;
-        const double cosD = std::cos(ax2 + dcp) * model.dca / ARCSEC_PER_RAD * p;
-
-        ax1 = ax1 + a1 + pdH + doH + tfH + cosH;
-        ax2 = ax2 + a2 + dfD + tfD + cosD;
-    }
-
-    if (mountType == MountStatus::MountType::ALTAZM ||
-        mountType == MountStatus::MountType::ALTALT)
-    {
-        while (ax1 > DEG360) ax1 -= DEG360;
-        while (ax1 < -DEG360) ax1 += DEG360;
-    }
-    else
-    {
-        while (ax1 > DEG180) ax1 -= DEG360;
-        while (ax1 < -DEG180) ax1 += DEG360;
-    }
-
-    if (ax2 > DEG90) ax2 = DEG90;
-    if (ax2 < -DEG90) ax2 = -DEG90;
-
-    observedAxis1 = ax1;
-    observedAxis2 = ax2;
-}
-
 bool OnStepXModelBuilder::captureSync(double ra, double dec,
                                       MountStatus::PierSide pierSide,
                                       MountStatus::MountType mountType)
@@ -430,13 +273,37 @@ bool OnStepXModelBuilder::captureSync(double ra, double dec,
     obs.mountRAHours  = mountRA;
     obs.mountDecDeg   = mountDec;
     obs.lstHours      = lst;
-    obs.pierSide      = pierSide;
-    obs.mountType     = mountType;
+    OnStepXModelMath::MountType mathMountType;
+    switch (mountType)
+    {
+        case MountStatus::MountType::GEM:
+            mathMountType = OnStepXModelMath::MountType::GEM;
+            break;
+        case MountStatus::MountType::FORK:
+            mathMountType = OnStepXModelMath::MountType::FORK;
+            break;
+        case MountStatus::MountType::ALTAZM:
+            mathMountType = OnStepXModelMath::MountType::ALTAZM;
+            break;
+        case MountStatus::MountType::ALTALT:
+            mathMountType = OnStepXModelMath::MountType::ALTALT;
+            break;
+        default:
+            LOG_ERROR("Build Model: unsupported mount type");
+            return true;
+    }
 
-    equatorialToNative(actualHA, actualDec, latitude, mountType,
-                       obs.actualAxis1, obs.actualAxis2);
-    equatorialToNative(mountHA, mountDecRad, latitude, mountType,
-                       obs.mountAxis1, obs.mountAxis2);
+    obs.pierSide = (pierSide == MountStatus::PierSide::WEST)
+                       ? OnStepXModelMath::PierSide::WEST
+                       : OnStepXModelMath::PierSide::EAST;
+    obs.mountType = mathMountType;
+
+    OnStepXModelMath::equatorialToNative(actualHA, actualDec, latitude,
+                                         mathMountType,
+                                         obs.actualAxis1, obs.actualAxis2);
+    OnStepXModelMath::equatorialToNative(mountHA, mountDecRad, latitude,
+                                         mathMountType,
+                                         obs.mountAxis1, obs.mountAxis2);
 
     m_observations.push_back(obs);
 

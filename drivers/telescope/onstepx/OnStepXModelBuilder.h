@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "OnStepXModelMath.h"
 #include "OnStepXStatus.h"
 
 #include <defaultdevice.h>
@@ -21,6 +22,9 @@ class OnStepXComm;
 class OnStepXModelBuilder
 {
     public:
+        using Observation = OnStepXModelMath::Observation;
+        using ModelCoefficients = OnStepXModelMath::ModelCoefficients;
+
         void setDevice(INDI::DefaultDevice *dev) { m_dev = dev; }
         void setComm(OnStepXComm *comm)            { m_comm = comm; }
 
@@ -44,44 +48,6 @@ class OnStepXModelBuilder
         std::size_t observationCount() const { return m_observations.size(); }
 
     private:
-        struct Observation
-        {
-            // Native OnStepX model coordinates.  GEM/FORK: HA/Dec;
-            // ALTAZM: Az/Alt; ALTALT: AA1/AA2.
-            double actualAxis1 { 0.0 };
-            double actualAxis2 { 0.0 };
-            double mountAxis1  { 0.0 };
-            double mountAxis2  { 0.0 };
-
-            // Retain the equatorial source coordinates for diagnostics and
-            // for later fitter diagnostics.
-            double actualRAHours { 0.0 };
-            double actualDecDeg  { 0.0 };
-            double mountRAHours  { 0.0 };
-            double mountDecDeg   { 0.0 };
-            double lstHours      { 0.0 };
-            MountStatus::PierSide pierSide { MountStatus::PierSide::NONE };
-            MountStatus::MountType mountType { MountStatus::MountType::UNKNOWN };
-        };
-
-        struct ModelCoefficients
-        {
-            // Angular coefficients are radians except hcp/dcp, which are
-            // stored as degrees by the OnStepX protocol/model.
-            double ax1Cor { 0.0 };
-            double ax2Cor { 0.0 };
-            double altCor { 0.0 };
-            double azmCor { 0.0 };
-            double doCor  { 0.0 };
-            double pdCor  { 0.0 };
-            double dfCor  { 0.0 };
-            double tfCor  { 0.0 };
-            double hcpDeg { 0.0 };
-            double hca    { 0.0 };
-            double dcpDeg { 0.0 };
-            double dca    { 0.0 };
-        };
-
         INDI::DefaultDevice *m_dev  { nullptr };
         OnStepXComm         *m_comm { nullptr };
 
@@ -104,17 +70,6 @@ class OnStepXModelBuilder
         bool readLatitude(double &latitudeDeg);
 
         static double wrapHours(double hours);
-        static double wrapRadians(double radians);
-        static void equatorialToNative(double ha, double dec, double latitude,
-                                       MountStatus::MountType mountType,
-                                       double &axis1, double &axis2);
-        static void mountToObservedPlace(double mountAxis1, double mountAxis2,
-                                         MountStatus::PierSide pierSide,
-                                         MountStatus::MountType mountType,
-                                         double latitude,
-                                         const ModelCoefficients &model,
-                                         double &observedAxis1, double &observedAxis2);
-
         const char *getDeviceName() const
         {
             return m_dev ? m_dev->getDeviceName() : "Unknown";
