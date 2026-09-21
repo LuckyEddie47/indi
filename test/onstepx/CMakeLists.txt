@@ -208,3 +208,12 @@ target_link_libraries(test_onstepxmodelmath
 
 add_test(test-onstepxmodelmath test_onstepxmodelmath)
 
+add_executable(test_onstepxmodelfitter
+    test_onstepxmodelfitter.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXModelFitter.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXModelMath.cpp")
+
+target_link_libraries(test_onstepxmodelfitter
+    GTest::gtest_main)
+
+add_test(test-onstepxmodelfitter test_onstepxmodelfitter)
