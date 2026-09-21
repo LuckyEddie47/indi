@@ -13,6 +13,7 @@ add_executable(indi_onstepx
     OnStepXMount.cpp
     OnStepXModelBuilder.cpp
     OnStepXModelFitter.cpp
+    OnStepXModelProtocol.cpp
     OnStepXPec.cpp
     OnStepXRotator.cpp
     OnStepXSite.cpp

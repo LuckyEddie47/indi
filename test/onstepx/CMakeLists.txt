@@ -217,3 +217,13 @@ target_link_libraries(test_onstepxmodelfitter
     GTest::gtest_main)
 
 add_test(test-onstepxmodelfitter test_onstepxmodelfitter)
+
+add_executable(test_onstepxmodelprotocol
+    test_onstepxmodelprotocol.cpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXModelProtocol.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../drivers/telescope/onstepx/OnStepXModelMath.cpp")
+
+target_link_libraries(test_onstepxmodelprotocol
+    GTest::gtest_main)
+
+add_test(test-onstepxmodelprotocol test_onstepxmodelprotocol)
