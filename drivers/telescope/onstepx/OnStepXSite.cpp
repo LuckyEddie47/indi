@@ -196,11 +196,15 @@ bool OnStepXSite::writeLocation(double latitude, double longitude, double elevat
     // --- Latitude  (+DD:MM:SS, signed) ---
     int latD, latM;
     double latS;
+    
+    const char latSign = latitude < 0.0 ? '-' : '+';
+    
     getSexComponentsIID(std::fabs(latitude), &latD, &latM, &latS);
     normaliseDMS(&latD, &latM, &latS);
+    
     char latCmd[OnStepXComm::CMD_MAX_LEN];
-    snprintf(latCmd, sizeof(latCmd), ":St%+.02d:%02d:%.02f#",
-         (int)latD, latM, latS);
+    snprintf(latCmd, sizeof(latCmd), ":St%c%02d:%02d:%.2f#",
+             latSign, latD, latM, latS);
 
     if (!m_comm->sendCommand(latCmd, reply) || reply[0] != '1')
     {

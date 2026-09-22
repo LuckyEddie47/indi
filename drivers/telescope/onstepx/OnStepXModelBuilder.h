@@ -12,6 +12,8 @@
 
 #include "OnStepXModelMath.h"
 #include "OnStepXStatus.h"
+#include "OnStepXModelProtocol.h"
+#include "OnStepXStatus.h"
 
 #include <defaultdevice.h>
 #include <cstdio>
@@ -59,6 +61,14 @@ class OnStepXModelBuilder
         MountStatus::MountType m_mountType { MountStatus::MountType::UNKNOWN };
         double m_latitudeRad { 0.0 };
         std::vector<Observation> m_observations;
+
+        // Model produced by the most recent successful Calculate Model.
+        // It has already been quantised to the firmware protocol and then
+        // dequantised to represent the model that will actually exist in
+        // firmware after :SX0 writes.
+        ModelCoefficients m_pendingModel {};
+        OnStepXModelProtocol::Values m_pendingProtocol {};
+        bool m_hasPendingModel { false };
 
         enum { CONTROL_CALCULATE = 0, CONTROL_ABORT = 1 };
 

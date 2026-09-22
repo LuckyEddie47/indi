@@ -5,16 +5,20 @@
     No INDI device instance needed.
 */
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-
 #include <sys/socket.h>
 #include <unistd.h>
+
+#include <chrono>
+#include <condition_variable>
 #include <cstring>
+#include <map>
+#include <mutex>
 #include <string>
 #include <thread>
-#include <map>
 #include <vector>
+
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #include "OnStepXComm.h"
 #include "OnStepXLimits.h"
@@ -38,11 +42,43 @@ public:
 
     void stop()
     {
-        if (m_fd >= 0) { shutdown(m_fd, SHUT_RDWR); close(m_fd); m_fd = -1; }
-        if (m_thread.joinable()) m_thread.join();
+        if (m_fd >= 0)
+        {
+            shutdown(m_fd, SHUT_RDWR);
+            close(m_fd);
+            m_fd = -1;
+        }
+
+        if (m_thread.joinable())
+            m_thread.join();
     }
 
-    const std::vector<std::string> &cmds() const { return m_cmds; }
+    const std::vector<std::string> &cmds() const
+    {
+        return m_cmds;
+    }
+
+    // Wait until the responder has actually received the specified command.
+    // This is needed for blind commands because sendCommandBlind() returns
+    // immediately after write() and therefore provides no synchronization
+    // point with the responder thread.
+    bool waitForCommand(const std::string &expected, int timeoutMs = 1000)
+    {
+        std::unique_lock<std::mutex> lock(m_mutex);
+
+        return m_condition.wait_for(
+            lock,
+            std::chrono::milliseconds(timeoutMs),
+            [this, &expected]
+            {
+                for (const auto &command : m_cmds)
+                {
+                    if (command == expected)
+                        return true;
+                }
+                return false;
+            });
+    }
 
 private:
     int         m_fd { -1 };
@@ -50,28 +86,52 @@ private:
     std::map<std::string,std::string> m_rules;
     std::vector<std::string> m_cmds;
 
+    mutable std::mutex m_mutex;
+    std::condition_variable m_condition;
+
     void run()
     {
         char buf[256];
         int  pos = 0;
+
         while (true)
         {
             ssize_t n = read(m_fd, buf + pos, 1);
-            if (n <= 0) break;
+            if (n <= 0)
+                break;
+
             if (buf[pos] == '#')
             {
                 buf[pos + 1] = '\0';
                 std::string full(buf, pos + 1);
-                m_cmds.push_back(full);
+
+                {
+                    std::lock_guard<std::mutex> lock(m_mutex);
+                    m_cmds.push_back(full);
+                }
+
+                m_condition.notify_all();
+
                 std::string key = full.substr(1, full.size() - 2);
                 std::string rep = "1";
+
                 auto it = m_rules.find(key);
-                if (it != m_rules.end()) rep = it->second;
+                if (it != m_rules.end())
+                    rep = it->second;
+
                 rep += "#";
-                if (write(m_fd, rep.c_str(), rep.size()) < 0) break;
+
+                if (write(m_fd, rep.c_str(), rep.size()) < 0)
+                    break;
+
                 pos = 0;
             }
-            else { ++pos; if (pos >= 255) pos = 0; }
+            else
+            {
+                ++pos;
+                if (pos >= 255)
+                    pos = 0;
+            }
         }
     }
 };
@@ -86,10 +146,13 @@ protected:
     {
         int sv[2];
         ASSERT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, sv));
+
         m_driverFd = sv[0];
         m_mockFd   = sv[1];
+
         m_comm.setFd(m_driverFd);
         m_limits.setComm(&m_comm);
+
         // setDevice(nullptr) is fine for unit tests — logging suppressed
     }
 
@@ -127,6 +190,7 @@ TEST_F(LimitsTest, HomeFind_FailsOnNack)
     m_responder.start(m_mockFd);
     bool ok = m_limits.homeFind();
     m_responder.stop();
+
     EXPECT_FALSE(ok);
 }
 
@@ -151,6 +215,8 @@ TEST_F(LimitsTest, SetAutoHome_EnableSendsHA1)
 {
     m_responder.start(m_mockFd);
     bool ok = m_limits.setAutoHome(true);
+
+    ASSERT_TRUE(m_responder.waitForCommand(":hA1#"));
     m_responder.stop();
 
     EXPECT_TRUE(ok);
@@ -162,6 +228,8 @@ TEST_F(LimitsTest, SetAutoHome_DisableSendsHA0)
 {
     m_responder.start(m_mockFd);
     bool ok = m_limits.setAutoHome(false);
+
+    ASSERT_TRUE(m_responder.waitForCommand(":hA0#"));
     m_responder.stop();
 
     EXPECT_TRUE(ok);
@@ -176,18 +244,26 @@ TEST_F(LimitsTest, WriteHomeOffsets_SendsBothAxes)
 {
     m_responder.start(m_mockFd);
     bool ok = m_limits.writeHomeOffsets(120.0, -45.0);
+
+    ASSERT_TRUE(m_responder.waitForCommand(":hC1,120#"));
+    ASSERT_TRUE(m_responder.waitForCommand(":hC2,-45#"));
     m_responder.stop();
 
     EXPECT_TRUE(ok);
+
     const auto &cmds = m_responder.cmds();
     ASSERT_GE(cmds.size(), 2u);
 
     bool hasAx1 = false, hasAx2 = false;
     for (const auto &c : cmds)
     {
-        if (c.find(":hC1,") != std::string::npos) hasAx1 = true;
-        if (c.find(":hC2,") != std::string::npos) hasAx2 = true;
+        if (c.find(":hC1,") != std::string::npos)
+            hasAx1 = true;
+
+        if (c.find(":hC2,") != std::string::npos)
+            hasAx2 = true;
     }
+
     EXPECT_TRUE(hasAx1) << "Missing :hC1,# command";
     EXPECT_TRUE(hasAx2) << "Missing :hC2,# command";
 }
@@ -196,17 +272,29 @@ TEST_F(LimitsTest, WriteHomeOffsets_CorrectValues)
 {
     m_responder.start(m_mockFd);
     m_limits.writeHomeOffsets(300.0, -150.0);
+
+    ASSERT_TRUE(m_responder.waitForCommand(":hC1,300#"));
+    ASSERT_TRUE(m_responder.waitForCommand(":hC2,-150#"));
     m_responder.stop();
 
     const auto &cmds = m_responder.cmds();
+
     bool ax1ok = false, ax2ok = false;
     for (const auto &c : cmds)
     {
-        if (c.find(":hC1,300#") != std::string::npos) ax1ok = true;
-        if (c.find(":hC2,-150#") != std::string::npos) ax2ok = true;
+        if (c.find(":hC1,300#") != std::string::npos)
+            ax1ok = true;
+
+        if (c.find(":hC2,-150#") != std::string::npos)
+            ax2ok = true;
     }
-    EXPECT_TRUE(ax1ok) << "Expected :hC1,300# in: " << (cmds.empty() ? "(none)" : cmds[0]);
-    EXPECT_TRUE(ax2ok) << "Expected :hC2,-150# in commands";
+
+    EXPECT_TRUE(ax1ok)
+        << "Expected :hC1,300# in: "
+        << (cmds.empty() ? "(none)" : cmds[0]);
+
+    EXPECT_TRUE(ax2ok)
+        << "Expected :hC2,-150# in commands";
 }
 
 // ---------------------------------------------------------------------------
@@ -242,15 +330,26 @@ TEST_F(LimitsTest, HandleNumber_HorizonLimitsSendsShSo)
 
     double values[] = { -5.0, 85.0 };
     const char *names[] = { "HORIZON_MIN", "HORIZON_MAX" };
-    m_limits.handleNumber("HORIZON_LIMITS", values, const_cast<char **>(names), 2);
+
+    m_limits.handleNumber(
+        "HORIZON_LIMITS",
+        values,
+        const_cast<char **>(names),
+        2);
+
     m_responder.stop();
 
     bool hasSh = false, hasSo = false;
+
     for (const auto &c : m_responder.cmds())
     {
-        if (c.find(":Sh") != std::string::npos) hasSh = true;
-        if (c.find(":So") != std::string::npos) hasSo = true;
+        if (c.find(":Sh") != std::string::npos)
+            hasSh = true;
+
+        if (c.find(":So") != std::string::npos)
+            hasSo = true;
     }
+
     EXPECT_TRUE(hasSh) << "Missing :Sh# horizon min command";
     EXPECT_TRUE(hasSo) << "Missing :So# horizon max command";
 }
@@ -265,15 +364,26 @@ TEST_F(LimitsTest, HandleNumber_MeridianLimitsSendsSXE9SXEA)
 
     double values[] = { 20.0, 40.0 };
     const char *names[] = { "MERIDIAN_EAST", "MERIDIAN_WEST" };
-    m_limits.handleNumber("MERIDIAN_LIMITS", values, const_cast<char **>(names), 2);
+
+    m_limits.handleNumber(
+        "MERIDIAN_LIMITS",
+        values,
+        const_cast<char **>(names),
+        2);
+
     m_responder.stop();
 
     bool hasSXE9 = false, hasSXEA = false;
+
     for (const auto &c : m_responder.cmds())
     {
-        if (c.find(":SXE9,") != std::string::npos) hasSXE9 = true;
-        if (c.find(":SXEA,") != std::string::npos) hasSXEA = true;
+        if (c.find(":SXE9,") != std::string::npos)
+            hasSXE9 = true;
+
+        if (c.find(":SXEA,") != std::string::npos)
+            hasSXEA = true;
     }
+
     EXPECT_TRUE(hasSXE9) << "Missing :SXE9,# command";
     EXPECT_TRUE(hasSXEA) << "Missing :SXEA,# command";
 }
@@ -285,11 +395,13 @@ TEST_F(LimitsTest, Backlash_ReadOnConnect)
 {
     m_responder.addRule("%BR", "120");
     m_responder.addRule("%BD", "45");
+
     // Also add the existing limit rules so readLimits() doesn't fail
     m_responder.addRule("Gh",   "-10");
     m_responder.addRule("Go",   "89");
     m_responder.addRule("GXE9", "15");
     m_responder.addRule("GXEA", "30");
+
     m_responder.start(m_mockFd);
 
     m_limits.initProperties();
@@ -307,20 +419,38 @@ TEST_F(LimitsTest, Backlash_WriteAxis1SendsBR)
     m_responder.start(m_mockFd);
 
     double values[] = { 200.0, 80.0 };
-    const char *names[] = { "MOUNT_BACKLASH_AXIS1", "MOUNT_BACKLASH_AXIS2" };
-    bool handled = m_limits.handleNumber("OSX_MOUNT_BACKLASH",
-                                         values, const_cast<char **>(names), 2);
+    const char *names[] = {
+        "MOUNT_BACKLASH_AXIS1",
+        "MOUNT_BACKLASH_AXIS2"
+    };
+
+    bool handled = m_limits.handleNumber(
+        "OSX_MOUNT_BACKLASH",
+        values,
+        const_cast<char **>(names),
+        2);
+
     m_responder.stop();
 
     EXPECT_TRUE(handled);
+
     bool hasBR = false, hasBD = false;
+
     for (const auto &c : m_responder.cmds())
     {
-        if (c.find(":$BR200#") != std::string::npos) hasBR = true;
-        if (c.find(":$BD80#")  != std::string::npos) hasBD = true;
+        if (c.find(":$BR200#") != std::string::npos)
+            hasBR = true;
+
+        if (c.find(":$BD80#") != std::string::npos)
+            hasBD = true;
     }
-    EXPECT_TRUE(hasBR) << "Expected :$BR200# — got: "
-                       << (m_responder.cmds().empty() ? "(none)" : m_responder.cmds()[0]);
+
+    EXPECT_TRUE(hasBR)
+        << "Expected :$BR200# — got: "
+        << (m_responder.cmds().empty()
+            ? "(none)"
+            : m_responder.cmds()[0]);
+
     EXPECT_TRUE(hasBD) << "Expected :$BD80#";
 }
 
@@ -330,18 +460,31 @@ TEST_F(LimitsTest, Backlash_WriteBothAxesSentTogether)
     m_responder.start(m_mockFd);
 
     double values[] = { 500.0, 300.0 };
-    const char *names[] = { "MOUNT_BACKLASH_AXIS1", "MOUNT_BACKLASH_AXIS2" };
-    m_limits.handleNumber("OSX_MOUNT_BACKLASH",
-                          values, const_cast<char **>(names), 2);
+    const char *names[] = {
+        "MOUNT_BACKLASH_AXIS1",
+        "MOUNT_BACKLASH_AXIS2"
+    };
+
+    m_limits.handleNumber(
+        "OSX_MOUNT_BACKLASH",
+        values,
+        const_cast<char **>(names),
+        2);
+
     m_responder.stop();
 
     // Both commands must appear regardless of order
     int brCount = 0, bdCount = 0;
+
     for (const auto &c : m_responder.cmds())
     {
-        if (c.find(":$BR") != std::string::npos) brCount++;
-        if (c.find(":$BD") != std::string::npos) bdCount++;
+        if (c.find(":$BR") != std::string::npos)
+            brCount++;
+
+        if (c.find(":$BD") != std::string::npos)
+            bdCount++;
     }
+
     EXPECT_EQ(1, brCount) << "Expected exactly one :$BR# command";
     EXPECT_EQ(1, bdCount) << "Expected exactly one :$BD# command";
 }
@@ -349,15 +492,24 @@ TEST_F(LimitsTest, Backlash_WriteBothAxesSentTogether)
 TEST_F(LimitsTest, Backlash_NackSetsAlertState)
 {
     m_limits.initProperties();
+
     // Responder replies '0' (NACK) for all commands
     m_responder.addRule("$BR200", "0");
     m_responder.addRule("$BD80",  "0");
     m_responder.start(m_mockFd);
 
     double values[] = { 200.0, 80.0 };
-    const char *names[] = { "MOUNT_BACKLASH_AXIS1", "MOUNT_BACKLASH_AXIS2" };
-    m_limits.handleNumber("OSX_MOUNT_BACKLASH",
-                          values, const_cast<char **>(names), 2);
+    const char *names[] = {
+        "MOUNT_BACKLASH_AXIS1",
+        "MOUNT_BACKLASH_AXIS2"
+    };
+
+    m_limits.handleNumber(
+        "OSX_MOUNT_BACKLASH",
+        values,
+        const_cast<char **>(names),
+        2);
+
     m_responder.stop();
 
     EXPECT_EQ(IPS_ALERT, m_limits.backlashNP().getState());

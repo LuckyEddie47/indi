@@ -17,15 +17,99 @@
 
 #include "OnStepXModelBuilder.h"
 #include "OnStepXComm.h"
+#include "OnStepXModelFitter.h"
+#include "OnStepXModelProtocol.h"
 
 #include <indilogger.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 
 #define MODEL_TAB "Model"
 
 enum { BUILD_ON = 0 };
+
+namespace
+{
+constexpr double ARCSEC_PER_RAD =
+    206264.80624709636;
+
+struct ResidualStatistics
+{
+    double rmsArcsec { 0.0 };
+    double maxAbsArcsec { 0.0 };
+    bool finite { true };
+};
+
+ResidualStatistics evaluateResiduals(
+    const std::vector<OnStepXModelMath::Observation> &observations,
+    const OnStepXModelMath::ModelCoefficients &model,
+    double latitude)
+{
+    ResidualStatistics statistics;
+
+    double sumSquared = 0.0;
+    std::size_t count = 0;
+
+    for (const auto &observation : observations)
+    {
+        double r1 = 0.0;
+        double r2 = 0.0;
+
+        OnStepXModelMath::residual(
+            observation,
+            model,
+            latitude,
+            r1,
+            r2);
+
+        r1 *= ARCSEC_PER_RAD;
+        r2 *= ARCSEC_PER_RAD;
+
+        if (!std::isfinite(r1) ||
+            !std::isfinite(r2))
+        {
+            statistics.finite = false;
+            return statistics;
+        }
+
+        sumSquared += r1 * r1;
+        sumSquared += r2 * r2;
+
+        statistics.maxAbsArcsec =
+            std::max(
+                statistics.maxAbsArcsec,
+                std::abs(r1));
+
+        statistics.maxAbsArcsec =
+            std::max(
+                statistics.maxAbsArcsec,
+                std::abs(r2));
+
+        count += 2;
+    }
+
+    if (count == 0)
+    {
+        statistics.finite = false;
+        return statistics;
+    }
+
+    statistics.rmsArcsec =
+        std::sqrt(
+            sumSquared /
+            static_cast<double>(count));
+
+    if (!std::isfinite(statistics.rmsArcsec) ||
+        !std::isfinite(statistics.maxAbsArcsec))
+    {
+        statistics.finite = false;
+    }
+
+    return statistics;
+}
+}
 
 void OnStepXModelBuilder::initProperties()
 {
@@ -142,12 +226,15 @@ bool OnStepXModelBuilder::startBuild()
         return false;
     }
 
-    m_latitudeRad = latitudeDeg * 3.14159265358979323846 / 180.0;
+    m_latitudeRad =
+        latitudeDeg * 3.14159265358979323846 / 180.0;
+
     m_observations.clear();
+    m_pendingModel = ModelCoefficients {};
+    m_pendingProtocol = OnStepXModelProtocol::Values {};
+    m_hasPendingModel = false;
+
     m_building = true;
-    LOGF_INFO("Build Model started at site latitude %.8f deg; waiting for Ekos Mount Model Sync observations",
-              latitudeDeg);
-    return true;
 }
 
 bool OnStepXModelBuilder::abortBuild(const char *reason)
@@ -159,7 +246,13 @@ bool OnStepXModelBuilder::abortBuild(const char *reason)
     }
 
     const std::size_t count = m_observations.size();
+
     m_observations.clear();
+
+    m_pendingModel = ModelCoefficients {};
+    m_pendingProtocol = OnStepXModelProtocol::Values {};
+    m_hasPendingModel = false;
+
     m_building = false;
     m_buildSP[BUILD_ON].setState(ISS_OFF);
     m_buildSP.setState(IPS_OK);
@@ -173,15 +266,103 @@ bool OnStepXModelBuilder::calculateModel()
 {
     if (!m_building)
     {
-        LOG_ERROR("Calculate Model requested but Build Model is not active");
+        LOG_ERROR(
+            "Calculate Model requested but Build Model is not active");
+
         return false;
     }
 
-    // The numerical fitter and controlled model-replacement transaction are
-    // intentionally not part of Stage 1.
-    LOGF_ERROR("Calculate Model is not yet implemented; %zu observations retained",
-               m_observations.size());
-    return false;
+    const std::size_t observationCount =
+        m_observations.size();
+
+    LOGF_INFO(
+        "Calculate Model: fitting %zu observations",
+        observationCount);
+
+    const auto fit =
+        OnStepXModelFitter::fit(
+            m_observations,
+            m_latitudeRad);
+
+    if (!fit.success())
+    {
+        LOGF_ERROR(
+            "Calculate Model: fitter failed "
+            "(status %d, rank %zu, iterations %zu); "
+            "%zu observations retained",
+            static_cast<int>(fit.status),
+            fit.rank,
+            fit.iterations,
+            observationCount);
+
+        return false;
+    }
+
+    LOGF_INFO(
+        "Calculate Model: fit succeeded "
+        "(rank %zu, iterations %zu, RMS %.9f arcsec, "
+        "max %.9f arcsec)",
+        fit.rank,
+        fit.iterations,
+        fit.rmsArcsec,
+        fit.maxAbsResidualArcsec);
+
+    /*
+     * Convert the fitted floating-point model to the exact integer
+     * representation accepted by :SX0.
+     */
+    const auto protocol =
+        OnStepXModelProtocol::quantize(
+            fit.model);
+
+    /*
+     * Reconstruct the model exactly as it will exist in firmware after
+     * those integer values have been written.
+     */
+    const auto quantizedModel =
+        OnStepXModelProtocol::dequantize(
+            protocol);
+
+    /*
+     * Validate the actual post-quantisation model against the captured
+     * observations using the same residual geometry as the fitter.
+     */
+    const auto quantizedResiduals =
+        evaluateResiduals(
+            m_observations,
+            quantizedModel,
+            m_latitudeRad);
+
+    if (!quantizedResiduals.finite)
+    {
+        LOGF_ERROR(
+            "Calculate Model: quantised model produced "
+            "non-finite residuals; %zu observations retained",
+            observationCount);
+
+        return false;
+    }
+
+    LOGF_INFO(
+        "Calculate Model: quantised model validation "
+        "RMS %.9f arcsec, max %.9f arcsec",
+        quantizedResiduals.rmsArcsec,
+        quantizedResiduals.maxAbsArcsec);
+
+    /*
+     * Keep the exact protocol values as well as the reconstructed
+     * floating-point model. The next stage will use these values for
+     * the controlled :SX0 transaction.
+     */
+    m_pendingProtocol = protocol;
+    m_pendingModel = quantizedModel;
+    m_hasPendingModel = true;
+
+    LOG_INFO(
+        "Calculate Model: quantised model is ready for "
+        "firmware upload; Build Model remains active");
+
+    return true;
 }
 
 bool OnStepXModelBuilder::readCurrentMount(double &mountRAHours,
