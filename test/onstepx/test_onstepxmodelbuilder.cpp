@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "OnStepXModelMath.h"
+#include "OnStepXModelFitter.h"
 #include "OnStepXModelProtocol.h"
 #include "OnStepXStatus.h"
 
@@ -1293,6 +1294,166 @@ TEST(OnStepXModelBuilderLifecycle,
     EXPECT_FALSE(builder.m_tracking);
     EXPECT_FALSE(builder.isBuilding());
     EXPECT_EQ(builder.observationCount(), 0u);
+}
+
+
+TEST(OnStepXModelBuilderCalculate,
+     CalculateRequiresActiveBuild)
+{
+    OnStepXModelBuilder builder;
+
+    EXPECT_FALSE(builder.calculateModel());
+    EXPECT_FALSE(builder.isBuilding());
+    EXPECT_EQ(builder.observationCount(), 0u);
+    EXPECT_FALSE(builder.m_hasPendingModel);
+}
+
+
+TEST(OnStepXModelBuilderCalculate,
+     InsufficientObservationsRetainBuildSession)
+{
+    OnStepXModelBuilder builder;
+    builder.m_building = true;
+    builder.m_latitudeRad = 51.5 * 3.14159265358979323846 / 180.0;
+
+    EXPECT_FALSE(builder.calculateModel());
+    EXPECT_TRUE(builder.isBuilding());
+    EXPECT_EQ(builder.observationCount(), 0u);
+    EXPECT_FALSE(builder.m_hasPendingModel);
+}
+
+
+TEST(OnStepXModelBuilderCalculate,
+     FitterFailureRetainsObservationsAndDoesNotTouchFirmware)
+{
+    OnStepXModelBuilder builder;
+    builder.m_building = true;
+    builder.m_latitudeRad = 51.5 * 3.14159265358979323846 / 180.0;
+
+    OnStepXModelMath::Observation observation;
+    observation.mountAxis1 = 0.7;
+    observation.mountAxis2 = 0.5;
+    observation.actualAxis1 = 0.7;
+    observation.actualAxis2 = 0.5;
+    observation.pierSide = OnStepXModelMath::PierSide::EAST;
+    observation.mountType = OnStepXModelMath::MountType::GEM;
+
+    builder.m_observations.assign(24, observation);
+
+    const auto fit =
+        OnStepXModelFitter::fit(
+            builder.m_observations,
+            builder.m_latitudeRad);
+    ASSERT_FALSE(fit.success());
+
+    EXPECT_FALSE(builder.calculateModel());
+    EXPECT_TRUE(builder.isBuilding());
+    EXPECT_EQ(builder.observationCount(), 24u);
+    EXPECT_FALSE(builder.m_hasPendingModel);
+}
+
+
+TEST(OnStepXModelBuilderCalculate,
+     SuccessfulCalculateFitsQuantisesReplacesActivatesPersistsAndCompletes)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    constexpr double PI = 3.14159265358979323846;
+    const double latitude = 51.5 * PI / 180.0;
+
+    OnStepXModelBuilder builder;
+    builder.m_building = true;
+    builder.m_mountType = MountStatus::MountType::GEM;
+    builder.m_latitudeRad = latitude;
+
+    /*
+     * Generate a broad, zero-error synthetic data set from the same
+     * forward model used by the fitter.  The broad axis coverage and both
+     * pier sides are required to establish the twelve-parameter Jacobian
+     * rank.
+     */
+    const OnStepXModelMath::ModelCoefficients sourceModel {};
+
+    for (int side = 0; side < 2; ++side)
+    {
+        const auto pierSide =
+            side == 0 ? OnStepXModelMath::PierSide::EAST
+                      : OnStepXModelMath::PierSide::WEST;
+
+        for (int i = 0; i < 9; ++i)
+        {
+            const double axis1 = -2.4 + i * 0.6;
+
+            for (int j = 0; j < 5; ++j)
+            {
+                const double axis2 = -0.9 + j * 0.45;
+
+                OnStepXModelMath::Observation observation;
+                observation.mountAxis1 = axis1;
+                observation.mountAxis2 = axis2;
+                observation.pierSide = pierSide;
+                observation.mountType = OnStepXModelMath::MountType::GEM;
+
+                OnStepXModelMath::predictObserved(
+                    observation,
+                    sourceModel,
+                    latitude,
+                    observation.actualAxis1,
+                    observation.actualAxis2);
+
+                builder.m_observations.push_back(observation);
+            }
+        }
+    }
+
+    ASSERT_EQ(builder.observationCount(), 90u);
+
+    const auto fit =
+        OnStepXModelFitter::fit(
+            builder.m_observations,
+            latitude);
+    ASSERT_TRUE(fit.success());
+
+    const Values pending =
+        OnStepXModelProtocol::quantize(fit.model);
+    const Values original = makeValues(100);
+
+    std::vector<ExpectedCommand> expected =
+        readCommands(original, '7');
+    appendWriteCommands(expected, pending, '7');
+
+    for (const auto &[index, value] : valueEntries(pending, '7'))
+    {
+        (void)value;
+        expected.push_back({
+            std::string(":GX0") + index + "#"
+        });
+    }
+
+    appendActivationAndPersistence(expected);
+
+    StatefulFirmware peer(fds[1], original, std::move(expected));
+    peer.start();
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+    builder.setComm(&comm);
+
+    EXPECT_TRUE(builder.calculateModel());
+
+    peer.stop();
+    close(fds[0]);
+
+    EXPECT_TRUE(peer.complete());
+    EXPECT_FALSE(peer.protocolError());
+    EXPECT_TRUE(peer.activated());
+    expectProtocolValuesEqual(peer.model(), pending);
+    expectProtocolValuesEqual(peer.persistentModel(), pending);
+
+    EXPECT_FALSE(builder.isBuilding());
+    EXPECT_EQ(builder.observationCount(), 0u);
+    EXPECT_FALSE(builder.m_hasPendingModel);
 }
 
 
