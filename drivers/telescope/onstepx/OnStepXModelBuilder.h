@@ -13,7 +13,6 @@
 #include "OnStepXModelMath.h"
 #include "OnStepXStatus.h"
 #include "OnStepXModelProtocol.h"
-#include "OnStepXStatus.h"
 
 #include <defaultdevice.h>
 #include <cstdio>
@@ -75,6 +74,9 @@ class OnStepXModelBuilder
         bool startBuild();
         bool abortBuild(const char *reason);
         bool calculateModel();
+        bool replaceFirmwareModel();
+        bool readFirmwareModel(OnStepXModelProtocol::Values &values);
+        bool writeFirmwareModel(const OnStepXModelProtocol::Values &values);
         bool readCurrentMount(double &mountRAHours, double &mountDecDeg,
                               double &lstHours);
         bool readLatitude(double &latitudeDeg);

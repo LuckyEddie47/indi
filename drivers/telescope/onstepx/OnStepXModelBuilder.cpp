@@ -1,7 +1,7 @@
 /*
     OnStep X INDI Driver — PC-side pointing-model builder
 
-    Stage 2 implementation:
+    Stage 7 implementation:
       - Build Model mode control
       - Calculate Model / Abort Model controls
       - arbitrary-size observation store
@@ -10,9 +10,9 @@
         ALTAZM and ALTALT
       - exact GeoAlign::mountToObservedPlace() forward-model equations
       - tracking safety invariant
-
-    Numerical fitting, coefficient quantisation, model replacement and
-    rollback are deliberately added in later stages.
+      - numerical fitting and protocol quantisation
+      - readback-verified firmware coefficient replacement with rollback
+      - model activation and EEPROM persistence
 */
 
 #include "OnStepXModelBuilder.h"
@@ -23,8 +23,10 @@
 #include <indilogger.h>
 
 #include <algorithm>
+#include <cerrno>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 
 #define MODEL_TAB "Model"
 
@@ -235,6 +237,7 @@ bool OnStepXModelBuilder::startBuild()
     m_hasPendingModel = false;
 
     m_building = true;
+    return true;
 }
 
 bool OnStepXModelBuilder::abortBuild(const char *reason)
@@ -361,6 +364,204 @@ bool OnStepXModelBuilder::calculateModel()
     LOG_INFO(
         "Calculate Model: quantised model is ready for "
         "firmware upload; Build Model remains active");
+
+    if (!replaceFirmwareModel())
+    {
+        LOGF_ERROR(
+            "Calculate Model: firmware replacement failed; "
+            "%zu observations retained",
+            observationCount);
+        return false;
+    }
+
+    m_observations.clear();
+    m_pendingModel = ModelCoefficients {};
+    m_pendingProtocol = OnStepXModelProtocol::Values {};
+    m_hasPendingModel = false;
+    m_building = false;
+    m_buildSP[BUILD_ON].setState(ISS_OFF);
+    m_buildSP.setState(IPS_OK);
+    m_buildSP.apply();
+
+    LOG_INFO(
+        "Calculate Model: firmware model activated and persisted; "
+        "Build Model completed successfully");
+
+    return true;
+}
+
+bool OnStepXModelBuilder::readFirmwareModel(
+    OnStepXModelProtocol::Values &values)
+{
+    if (!m_comm)
+        return false;
+
+    const auto indices =
+        OnStepXModelProtocol::coefficientIndices();
+
+    char reply[OnStepXComm::REPLY_BUF_SIZE] {};
+
+    for (std::size_t i = 0; i < indices.size(); ++i)
+    {
+        char index = indices[i];
+        if (i == 6)
+            index = OnStepXModelProtocol::dfCoefficientIndex(
+                static_cast<OnStepXModelMath::MountType>(m_mountType));
+
+        char cmd[OnStepXComm::CMD_MAX_LEN];
+        snprintf(cmd, sizeof(cmd), ":GX0%c#", index);
+
+        if (!m_comm->sendCommand(cmd, reply))
+        {
+            LOGF_ERROR(
+                "Build Model: failed to read firmware coefficient %c",
+                index);
+            return false;
+        }
+
+        errno = 0;
+        char *end = nullptr;
+        const long long value = std::strtoll(reply, &end, 10);
+
+        if (errno == ERANGE || end == reply || *end != '\0')
+        {
+            LOGF_ERROR(
+                "Build Model: invalid firmware coefficient reply for %c: '%s'",
+                index, reply);
+            return false;
+        }
+
+        switch (i)
+        {
+            case 0: values.ax1Cor = value; break;
+            case 1: values.ax2Cor = value; break;
+            case 2: values.altCor = value; break;
+            case 3: values.azmCor = value; break;
+            case 4: values.doCor  = value; break;
+            case 5: values.pdCor  = value; break;
+            case 6: values.dfCor  = value; break;
+            case 7: values.tfCor  = value; break;
+            case 8: values.hcp    = value; break;
+            case 9: values.hca    = value; break;
+            case 10: values.dcp   = value; break;
+            case 11: values.dca   = value; break;
+        }
+    }
+
+    return true;
+}
+
+bool OnStepXModelBuilder::writeFirmwareModel(
+    const OnStepXModelProtocol::Values &values)
+{
+    if (!m_comm)
+        return false;
+
+    const auto indices =
+        OnStepXModelProtocol::coefficientIndices();
+
+    char reply[OnStepXComm::REPLY_BUF_SIZE] {};
+
+    for (std::size_t i = 0; i < indices.size(); ++i)
+    {
+        char index = indices[i];
+        if (i == 6)
+            index = OnStepXModelProtocol::dfCoefficientIndex(
+                static_cast<OnStepXModelMath::MountType>(m_mountType));
+
+        std::int64_t value = 0;
+        switch (i)
+        {
+            case 0: value = values.ax1Cor; break;
+            case 1: value = values.ax2Cor; break;
+            case 2: value = values.altCor; break;
+            case 3: value = values.azmCor; break;
+            case 4: value = values.doCor;  break;
+            case 5: value = values.pdCor;  break;
+            case 6: value = values.dfCor;  break;
+            case 7: value = values.tfCor;  break;
+            case 8: value = values.hcp;    break;
+            case 9: value = values.hca;    break;
+            case 10: value = values.dcp;   break;
+            case 11: value = values.dca;   break;
+        }
+
+        char cmd[OnStepXComm::CMD_MAX_LEN];
+        snprintf(cmd, sizeof(cmd), ":SX0%c,%lld#",
+                 index, static_cast<long long>(value));
+
+        if (!m_comm->sendCommand(cmd, reply) || reply[0] != '1')
+        {
+            LOGF_ERROR(
+                "Build Model: firmware coefficient write failed for %c",
+                index);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool OnStepXModelBuilder::replaceFirmwareModel()
+{
+    if (!m_hasPendingModel || !m_comm)
+    {
+        LOG_ERROR("Build Model: no pending model or communication unavailable");
+        return false;
+    }
+
+    OnStepXModelProtocol::Values original;
+    if (!readFirmwareModel(original))
+    {
+        LOG_ERROR(
+            "Build Model: unable to establish firmware-model rollback state; "
+            "no coefficients were changed");
+        return false;
+    }
+
+    if (!writeFirmwareModel(m_pendingProtocol))
+    {
+        const bool rollbackOk = writeFirmwareModel(original);
+        LOGF_ERROR(
+            "Build Model: coefficient upload failed; rollback %s",
+            rollbackOk ? "succeeded" : "FAILED");
+        return false;
+    }
+
+    OnStepXModelProtocol::Values readback;
+    if (!readFirmwareModel(readback) ||
+        readback.ax1Cor != m_pendingProtocol.ax1Cor ||
+        readback.ax2Cor != m_pendingProtocol.ax2Cor ||
+        readback.altCor != m_pendingProtocol.altCor ||
+        readback.azmCor != m_pendingProtocol.azmCor ||
+        readback.doCor  != m_pendingProtocol.doCor  ||
+        readback.pdCor  != m_pendingProtocol.pdCor  ||
+        readback.dfCor  != m_pendingProtocol.dfCor  ||
+        readback.tfCor  != m_pendingProtocol.tfCor  ||
+        readback.hcp    != m_pendingProtocol.hcp    ||
+        readback.hca    != m_pendingProtocol.hca    ||
+        readback.dcp    != m_pendingProtocol.dcp    ||
+        readback.dca    != m_pendingProtocol.dca)
+    {
+        const bool rollbackOk = writeFirmwareModel(original);
+        LOGF_ERROR(
+            "Build Model: firmware coefficient readback mismatch; rollback %s",
+            rollbackOk ? "succeeded" : "FAILED");
+        return false;
+    }
+
+    char reply[OnStepXComm::REPLY_BUF_SIZE] {};
+    if (!m_comm->sendCommand(":SX09,2#", reply) || reply[0] != '1')
+    {
+        LOG_ERROR("Build Model: firmware model activation failed");
+        return false;
+    }
+
+    if (!m_comm->sendCommand(":AW#", reply) || reply[0] != '1')
+    {
+        LOG_ERROR("Build Model: firmware model persistence failed");
+        return false;
+    }
 
     return true;
 }
