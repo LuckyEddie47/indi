@@ -54,6 +54,7 @@ using Values = OnStepXModelProtocol::Values;
 struct ExpectedCommand
 {
     std::string command;
+    std::string reply;
 };
 
 /*
@@ -370,6 +371,20 @@ class StatefulFirmware
         {
             if (!validateExpectedCommand(command))
                 return false;
+
+            /*
+             * Some lifecycle tests use fixed replies for non-model commands
+             * such as :GtH#, :GRH#, :GDH#, and :GSH#.
+             */
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                const auto &expected = m_expectedCommands[m_nextExpected - 1];
+                if (!expected.reply.empty())
+                {
+                    reply = expected.reply;
+                    return true;
+                }
+            }
 
             /*
              * Activation.
@@ -1031,6 +1046,253 @@ TEST(OnStepXModelBuilderStage7,
 
     for (const auto &command : commands)
         EXPECT_EQ(command.compare(0, 4, ":GX0"), 0);
+}
+
+
+TEST(OnStepXModelBuilderLifecycle,
+     StartBuildRequiresTracking)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_tracking = false;
+    builder.m_mountType = MountStatus::MountType::GEM;
+
+    EXPECT_FALSE(builder.startBuild());
+    EXPECT_FALSE(builder.isBuilding());
+
+    close(fds[0]);
+    close(fds[1]);
+}
+
+
+TEST(OnStepXModelBuilderLifecycle,
+     StartBuildRequiresKnownMountType)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_tracking = true;
+    builder.m_mountType = MountStatus::MountType::UNKNOWN;
+
+    EXPECT_FALSE(builder.startBuild());
+    EXPECT_FALSE(builder.isBuilding());
+
+    close(fds[0]);
+    close(fds[1]);
+}
+
+
+TEST(OnStepXModelBuilderLifecycle,
+     StartBuildReadsLatitudeAndEntersBuildMode)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    std::vector<ExpectedCommand> expected = {
+        {":GtH#", "51:30:00"}
+    };
+
+    StatefulFirmware peer(fds[1], Values {}, std::move(expected));
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_tracking = true;
+    builder.m_mountType = MountStatus::MountType::GEM;
+    builder.m_building = false;
+
+    peer.start();
+
+    EXPECT_TRUE(builder.startBuild());
+    EXPECT_TRUE(builder.isBuilding());
+    EXPECT_NEAR(builder.m_latitudeRad,
+                51.5 * 3.14159265358979323846 / 180.0,
+                1e-12);
+
+    peer.stop();
+    close(fds[0]);
+
+    EXPECT_TRUE(peer.complete());
+    EXPECT_FALSE(peer.protocolError());
+}
+
+
+TEST(OnStepXModelBuilderLifecycle,
+     StartBuildRejectsLatitudeReadFailure)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    std::vector<ExpectedCommand> expected = {
+        {":GtH#", "not-a-coordinate"}
+    };
+
+    StatefulFirmware peer(fds[1], Values {}, std::move(expected));
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_tracking = true;
+    builder.m_mountType = MountStatus::MountType::GEM;
+
+    peer.start();
+
+    EXPECT_FALSE(builder.startBuild());
+    EXPECT_FALSE(builder.isBuilding());
+
+    peer.stop();
+    close(fds[0]);
+
+    EXPECT_TRUE(peer.complete());
+    EXPECT_FALSE(peer.protocolError());
+}
+
+
+TEST(OnStepXModelBuilderLifecycle,
+     CaptureSyncStoresObservation)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    std::vector<ExpectedCommand> expected = {
+        {":GRH#", "05:00:00"},
+        {":GDH#", "+20:00:00"},
+        {":GSH#", "08:00:00"}
+    };
+
+    StatefulFirmware peer(fds[1], Values {}, std::move(expected));
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_building = true;
+    builder.m_mountType = MountStatus::MountType::GEM;
+    builder.m_latitudeRad = 51.5 * 3.14159265358979323846 / 180.0;
+
+    peer.start();
+
+    EXPECT_TRUE(builder.captureSync(6.0, 30.0,
+                                    MountStatus::PierSide::WEST,
+                                    MountStatus::MountType::GEM));
+    ASSERT_EQ(builder.observationCount(), 1u);
+
+    const auto &observation = builder.m_observations.front();
+    EXPECT_DOUBLE_EQ(observation.actualRAHours, 6.0);
+    EXPECT_DOUBLE_EQ(observation.actualDecDeg, 30.0);
+    EXPECT_DOUBLE_EQ(observation.mountRAHours, 5.0);
+    EXPECT_DOUBLE_EQ(observation.mountDecDeg, 20.0);
+    EXPECT_DOUBLE_EQ(observation.lstHours, 8.0);
+
+    peer.stop();
+    close(fds[0]);
+
+    EXPECT_TRUE(peer.complete());
+    EXPECT_FALSE(peer.protocolError());
+}
+
+
+TEST(OnStepXModelBuilderLifecycle,
+     CaptureSyncConsumesObservationWhenMountReadFails)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    std::vector<ExpectedCommand> expected = {
+        {":GRH#", "not-an-angle"}
+    };
+
+    StatefulFirmware peer(fds[1], Values {}, std::move(expected));
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_building = true;
+    builder.m_mountType = MountStatus::MountType::GEM;
+
+    peer.start();
+
+    EXPECT_TRUE(builder.captureSync(6.0, 30.0,
+                                    MountStatus::PierSide::EAST,
+                                    MountStatus::MountType::GEM));
+    EXPECT_EQ(builder.observationCount(), 0u);
+
+    peer.stop();
+    close(fds[0]);
+
+    EXPECT_TRUE(peer.complete());
+    EXPECT_FALSE(peer.protocolError());
+}
+
+
+TEST(OnStepXModelBuilderLifecycle,
+     CaptureSyncConsumesObservationWhenMountTypeChanges)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    std::vector<ExpectedCommand> expected = {
+        {":GRH#", "05:00:00"},
+        {":GDH#", "+20:00:00"},
+        {":GSH#", "08:00:00"}
+    };
+
+    StatefulFirmware peer(fds[1], Values {}, std::move(expected));
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_building = true;
+    builder.m_mountType = MountStatus::MountType::GEM;
+
+    peer.start();
+
+    EXPECT_TRUE(builder.captureSync(6.0, 30.0,
+                                    MountStatus::PierSide::EAST,
+                                    MountStatus::MountType::FORK));
+    EXPECT_EQ(builder.observationCount(), 0u);
+
+    peer.stop();
+    close(fds[0]);
+
+    EXPECT_TRUE(peer.complete());
+    EXPECT_FALSE(peer.protocolError());
+}
+
+
+TEST(OnStepXModelBuilderLifecycle,
+     TrackingOffAbortsActiveBuild)
+{
+    OnStepXModelBuilder builder;
+    builder.m_tracking = true;
+    builder.m_building = true;
+    builder.m_observations.emplace_back();
+
+    builder.updateTrackingState(false);
+
+    EXPECT_FALSE(builder.m_tracking);
+    EXPECT_FALSE(builder.isBuilding());
+    EXPECT_EQ(builder.observationCount(), 0u);
 }
 
 
