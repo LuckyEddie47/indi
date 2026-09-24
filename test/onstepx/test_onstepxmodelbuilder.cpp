@@ -663,13 +663,6 @@ TEST(OnStepXModelBuilderStage7,
         readCommands(original, '7');
 
     appendWriteCommands(expected, pending, '7');
-    appendWriteCommands(expected, pending, '7'); // no: replaced below
-
-    /*
-     * The second set above is the readback and therefore consists of GX,
-     * not SX.  Build it explicitly.
-     */
-    expected.resize(12 + 12);
 
     for (const auto &[index, value] : valueEntries(pending, '7'))
     {
@@ -852,36 +845,81 @@ TEST(OnStepXModelBuilderStage7,
     expected.push_back({":SX09,2#"});
 
     StatefulFirmware peer(fds[1], original, std::move(expected));
+    peer.failedActivation();
 
-    /*
-     * Activation is a command-level failure.  The current fake needs to
-     * return 0 for that command, so use the command responder state but
-     * terminate after the activation command.
-     *
-     * This is handled below by checking the command sequence; the actual
-     * production implementation receives the failure through the command
-     * reply.  For this test we need a small reply override.
-     */
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_mountType = MountStatus::MountType::GEM;
+    builder.m_pendingProtocol = pending;
+    builder.m_hasPendingModel = true;
+
+    peer.start();
+
+    EXPECT_FALSE(builder.replaceFirmwareModel());
 
     peer.stop();
     close(fds[0]);
 
-    /*
-     * This test requires reply injection and is intentionally not silently
-     * approximated by a successful activation.  It is implemented separately
-     * below.
-     */
+    EXPECT_TRUE(peer.complete());
+    EXPECT_FALSE(peer.protocolError());
+    EXPECT_FALSE(peer.activated());
+    expectProtocolValuesEqual(peer.model(), pending);
+    expectProtocolValuesEqual(peer.persistentModel(), original);
 }
 
 
 TEST(OnStepXModelBuilderStage7,
      PersistenceFailureDoesNotAttemptRollback)
 {
-    /*
-     * This test is retained in the next revision with explicit AW failure
-     * injection, rather than pretending a stateful firmware model can fail
-     * AW without modelling that protocol response.
-     */
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    const Values original = makeValues(100);
+    const Values pending = makeValues(200);
+
+    std::vector<ExpectedCommand> expected =
+        readCommands(original, '7');
+
+    appendWriteCommands(expected, pending, '7');
+
+    for (const auto &[index, value] : valueEntries(pending, '7'))
+    {
+        (void)value;
+
+        expected.push_back({
+            std::string(":GX0") + index + "#"
+        });
+    }
+
+    appendActivationAndPersistence(expected);
+
+    StatefulFirmware peer(fds[1], original, std::move(expected));
+    peer.failedPersistence();
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_mountType = MountStatus::MountType::GEM;
+    builder.m_pendingProtocol = pending;
+    builder.m_hasPendingModel = true;
+
+    peer.start();
+
+    EXPECT_FALSE(builder.replaceFirmwareModel());
+
+    peer.stop();
+    close(fds[0]);
+
+    EXPECT_TRUE(peer.complete());
+    EXPECT_FALSE(peer.protocolError());
+    EXPECT_TRUE(peer.activated());
+    expectProtocolValuesEqual(peer.model(), pending);
+    expectProtocolValuesEqual(peer.persistentModel(), original);
 }
 
 
