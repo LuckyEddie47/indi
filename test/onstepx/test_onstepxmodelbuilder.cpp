@@ -619,7 +619,8 @@ readCommands(const Values &values, char dfIndex)
         (void)value;
 
         commands.push_back({
-            std::string(":GX0") + index + "#"
+            std::string(":GX0") + index + "#",
+            ""
         });
     }
 
@@ -633,7 +634,8 @@ void appendWriteCommands(std::vector<ExpectedCommand> &commands,
     for (const auto &[index, value] : valueEntries(values, dfIndex))
     {
         commands.push_back({
-            std::string(":SX0") + index + "," + std::to_string(value) + "#"
+            std::string(":SX0") + index + "," + std::to_string(value) + "#",
+            ""
         });
     }
 }
@@ -641,8 +643,8 @@ void appendWriteCommands(std::vector<ExpectedCommand> &commands,
 void appendActivationAndPersistence(
     std::vector<ExpectedCommand> &commands)
 {
-    commands.push_back({":SX09,2#"});
-    commands.push_back({":AW#"});
+    commands.push_back({":SX09,2#", ""});
+    commands.push_back({":AW#", ""});
 }
 
 static void expectProtocolValuesEqual(
@@ -685,7 +687,8 @@ TEST(OnStepXModelBuilderStage7,
         (void)value;
 
         expected.push_back({
-            std::string(":GX0") + index + "#"
+            std::string(":GX0") + index + "#",
+            ""
         });
     }
 
@@ -738,7 +741,8 @@ TEST(OnStepXModelBuilderStage7,
     for (const auto &[index, value] : pendingEntries)
     {
         expected.push_back({
-            std::string(":SX0") + index + "," + std::to_string(value) + "#"
+            std::string(":SX0") + index + "," + std::to_string(value) + "#",
+            ""
         });
 
         if (index == '4')
@@ -802,7 +806,8 @@ TEST(OnStepXModelBuilderStage7,
         (void)value;
 
         expected.push_back({
-            std::string(":GX0") + index + "#"
+            std::string(":GX0") + index + "#",
+            ""
         });
     }
 
@@ -854,11 +859,12 @@ TEST(OnStepXModelBuilderStage7,
         (void)value;
 
         expected.push_back({
-            std::string(":GX0") + index + "#"
+            std::string(":GX0") + index + "#",
+            ""
         });
     }
 
-    expected.push_back({":SX09,2#"});
+    expected.push_back({":SX09,2#", ""});
 
     StatefulFirmware peer(fds[1], original, std::move(expected));
     peer.failedActivation();
@@ -906,7 +912,8 @@ TEST(OnStepXModelBuilderStage7,
         (void)value;
 
         expected.push_back({
-            std::string(":GX0") + index + "#"
+            std::string(":GX0") + index + "#",
+            ""
         });
     }
 
@@ -958,7 +965,8 @@ TEST(OnStepXModelBuilderStage7,
         (void)value;
 
         expected.push_back({
-            std::string(":GX0") + index + "#"
+            std::string(":GX0") + index + "#",
+            ""
         });
     }
 
@@ -1010,7 +1018,7 @@ TEST(OnStepXModelBuilderStage7,
     for (std::size_t i = 0; i < 6; ++i)
     {
         expected.push_back({
-            std::string(":GX0") + entries[i].first + "#"
+            std::string(":GX0") + entries[i].first + "#",""
         });
     }
 
@@ -1427,7 +1435,8 @@ TEST(OnStepXModelBuilderCalculate,
     {
         (void)value;
         expected.push_back({
-            std::string(":GX0") + index + "#"
+            std::string(":GX0") + index + "#",
+            ""
         });
     }
 
