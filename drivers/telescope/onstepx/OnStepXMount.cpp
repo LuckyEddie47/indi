@@ -486,6 +486,11 @@ bool OnStepXMount::updateCoordinates()
 // ---------------------------------------------------------------------------
 void OnStepXMount::updateTrackingState(const MountStatus &s)
 {
+    // Keep the model-builder lifecycle state current even when the INDI
+    // TrackState handling below takes an early return.
+    m_modelBuilder.updateTrackingState(s.tracking);
+    m_modelBuilder.updateMountType(s.mountType);
+
     if (s.parkState == MountStatus::ParkState::PARKED)
     {
         if (TrackState == SCOPE_PARKING)
@@ -514,8 +519,6 @@ void OnStepXMount::updateTrackingState(const MountStatus &s)
 
     // Sync advanced tracking properties from status
     m_tracking.syncStatus(s);
-    m_modelBuilder.updateTrackingState(s.tracking);
-    m_modelBuilder.updateMountType(s.mountType);
 }
 
 // ---------------------------------------------------------------------------

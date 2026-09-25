@@ -136,11 +136,16 @@ void OnStepXModelBuilder::updateProperties(bool connected)
     }
     else
     {
-        // A disconnect cannot leave a live build session.  The active
-        // firmware model is not modified by this stage, so discarding the
-        // PC-side observations is sufficient.
+        // A disconnect cannot leave a live build session.  Reset all
+        // connection-derived and session state so stale tracking, mount-type
+        // or pending-model state cannot survive into a later connection.
         m_building = false;
+        m_tracking = false;
+        m_mountType = MountStatus::MountType::UNKNOWN;
         m_observations.clear();
+        m_pendingModel = ModelCoefficients {};
+        m_pendingProtocol = OnStepXModelProtocol::Values {};
+        m_hasPendingModel = false;
         m_buildSP[BUILD_ON].setState(ISS_OFF);
         m_dev->deleteProperty(m_buildSP);
         m_dev->deleteProperty(m_controlSP);
