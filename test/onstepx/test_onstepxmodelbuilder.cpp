@@ -184,6 +184,17 @@ class StatefulFirmware
         }
 
         /*
+         * Make every write of one coefficient fail.  This is used to
+         * exercise rollback failure after an earlier upload failure.
+         */
+        void failedWriteAlways(char index)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+
+            m_failedWriteAlwaysIndex = index;
+        }
+
+        /*
          * Make :SX09,2# return failure instead of activating the model.
          */
         void failedActivation()
@@ -472,14 +483,20 @@ class StatefulFirmware
             {
                 std::lock_guard<std::mutex> lock(m_mutex);
 
-                if (m_failedWriteIndex.has_value() &&
-                    index == *m_failedWriteIndex)
+                if ((m_failedWriteAlwaysIndex.has_value() &&
+                     index == *m_failedWriteAlwaysIndex) ||
+                    (m_failedWriteIndex.has_value() &&
+                     index == *m_failedWriteIndex))
                 {
                     /*
-                     * Fail exactly one write.  Rollback must subsequently be
-                     * allowed to write the original value successfully.
+                     * failedWrite() fails once so the normal rollback path
+                     * can succeed.  failedWriteAlways() is used to exercise
+                     * rollback failure itself.
                      */
-                    m_failedWriteIndex.reset();
+                    if (m_failedWriteIndex.has_value() &&
+                        index == *m_failedWriteIndex)
+                        m_failedWriteIndex.reset();
+
                     reply = "0";
                     return true;
                 }
@@ -561,6 +578,7 @@ class StatefulFirmware
          * SX/SX09/AW failure injection.
          */
         std::optional<char> m_failedWriteIndex;
+        std::optional<char> m_failedWriteAlwaysIndex;
         bool m_failActivation { false };
         bool m_failPersistence { false };
 
@@ -750,9 +768,12 @@ TEST(OnStepXModelBuilderStage7,
     }
 
     /*
-     * Rollback writes all original coefficients.
+     * Rollback writes all original coefficients, then verifies the restored
+     * model with a complete GX readback.
      */
     appendWriteCommands(expected, original, '7');
+    const auto rollbackReads = readCommands(original, '7');
+    expected.insert(expected.end(), rollbackReads.begin(), rollbackReads.end());
 
     StatefulFirmware peer(fds[1], original, std::move(expected));
     peer.failedWrite('4');
@@ -777,6 +798,88 @@ TEST(OnStepXModelBuilderStage7,
     EXPECT_FALSE(peer.protocolError());
     EXPECT_FALSE(peer.activated());
     expectProtocolValuesEqual(peer.model(), original);
+    expectProtocolValuesEqual(peer.persistentModel(), original);
+}
+
+
+TEST(OnStepXModelBuilderStage7,
+     RollbackWriteFailureReportsFailureWithoutVerification)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    const Values original = makeValues(100);
+    const Values pending = makeValues(200);
+
+    std::vector<ExpectedCommand> expected =
+        readCommands(original, '7');
+
+    const auto pendingEntries = valueEntries(pending, '7');
+
+    for (const auto &[index, value] : pendingEntries)
+    {
+        expected.push_back({
+            std::string(":SX0") + index + "," + std::to_string(value) + "#",
+            ""
+        });
+
+        if (index == '4')
+            break;
+    }
+
+    /*
+     * Rollback fails persistently at coefficient 4 after restoring
+     * coefficients 0 through 3.  No rollback readback is attempted because
+     * the rollback write sequence did not complete.
+     */
+    const auto originalEntries = valueEntries(original, '7');
+    for (const auto &[index, value] : originalEntries)
+    {
+        expected.push_back({
+            std::string(":SX0") + index + "," + std::to_string(value) + "#",
+            ""
+        });
+
+        if (index == '4')
+            break;
+    }
+
+    StatefulFirmware peer(fds[1], original, std::move(expected));
+    peer.failedWriteAlways('4');
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_mountType = MountStatus::MountType::GEM;
+    builder.m_pendingProtocol = pending;
+    builder.m_hasPendingModel = true;
+
+    peer.start();
+
+    EXPECT_FALSE(builder.replaceFirmwareModel());
+
+    peer.stop();
+    close(fds[0]);
+
+    EXPECT_TRUE(peer.complete());
+    EXPECT_FALSE(peer.protocolError());
+    EXPECT_FALSE(peer.activated());
+
+    const Values actual = peer.model();
+    EXPECT_EQ(actual.ax1Cor, original.ax1Cor);
+    EXPECT_EQ(actual.ax2Cor, original.ax2Cor);
+    EXPECT_EQ(actual.altCor, original.altCor);
+    EXPECT_EQ(actual.azmCor, original.azmCor);
+    EXPECT_EQ(actual.doCor,  original.doCor);
+    EXPECT_EQ(actual.pdCor,  original.pdCor);
+    EXPECT_EQ(actual.dfCor,  original.dfCor);
+    EXPECT_EQ(actual.tfCor,  original.tfCor);
+    EXPECT_EQ(actual.hcp,    original.hcp);
+    EXPECT_EQ(actual.hca,    original.hca);
+    EXPECT_EQ(actual.dcp,    original.dcp);
+    EXPECT_EQ(actual.dca,    original.dca);
     expectProtocolValuesEqual(peer.persistentModel(), original);
 }
 
@@ -812,6 +915,73 @@ TEST(OnStepXModelBuilderStage7,
     }
 
     appendWriteCommands(expected, original, '7');
+    const auto rollbackReads = readCommands(original, '7');
+    expected.insert(expected.end(), rollbackReads.begin(), rollbackReads.end());
+
+    StatefulFirmware peer(fds[1], original, std::move(expected));
+    peer.mismatchedRead(15, '3', 1);
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_mountType = MountStatus::MountType::GEM;
+    builder.m_pendingProtocol = pending;
+    builder.m_hasPendingModel = true;
+
+    peer.start();
+
+    EXPECT_FALSE(builder.replaceFirmwareModel());
+
+    peer.stop();
+    close(fds[0]);
+
+    EXPECT_TRUE(peer.complete());
+    EXPECT_FALSE(peer.protocolError());
+    EXPECT_FALSE(peer.activated());
+    expectProtocolValuesEqual(peer.model(), original);
+    expectProtocolValuesEqual(peer.persistentModel(), original);
+}
+
+
+TEST(OnStepXModelBuilderStage7,
+     RollbackReadbackMismatchReportsFailure)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    const Values original = makeValues(100);
+    const Values pending = makeValues(200);
+
+    std::vector<ExpectedCommand> expected =
+        readCommands(original, '7');
+
+    appendWriteCommands(expected, pending, '7');
+
+    for (const auto &[index, value] : valueEntries(pending, '7'))
+    {
+        (void)value;
+        expected.push_back({
+            std::string(":GX0") + index + "#",
+            ""
+        });
+    }
+
+    appendWriteCommands(expected, original, '7');
+
+    /*
+     * Read number 15 is coefficient 3 of the pending-model readback:
+     * 12 initial reads + 3.  This forces the transaction into rollback.
+     */
+    auto rollbackReads = readCommands(original, '7');
+
+    /*
+     * The rollback then completes all writes, but coefficient 3 of the
+     * rollback readback is deliberately wrong.
+     */
+    rollbackReads[3].reply = "999";
+    expected.insert(expected.end(), rollbackReads.begin(), rollbackReads.end());
 
     StatefulFirmware peer(fds[1], original, std::move(expected));
     peer.mismatchedRead(15, '3', 1);

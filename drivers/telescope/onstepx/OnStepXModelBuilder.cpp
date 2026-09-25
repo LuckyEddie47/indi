@@ -515,6 +515,24 @@ bool OnStepXModelBuilder::replaceFirmwareModel()
         return false;
     }
 
+    const auto valuesEqual =
+        [](const OnStepXModelProtocol::Values &a,
+           const OnStepXModelProtocol::Values &b)
+    {
+        return a.ax1Cor == b.ax1Cor &&
+               a.ax2Cor == b.ax2Cor &&
+               a.altCor == b.altCor &&
+               a.azmCor == b.azmCor &&
+               a.doCor  == b.doCor &&
+               a.pdCor  == b.pdCor &&
+               a.dfCor  == b.dfCor &&
+               a.tfCor  == b.tfCor &&
+               a.hcp    == b.hcp &&
+               a.hca    == b.hca &&
+               a.dcp    == b.dcp &&
+               a.dca    == b.dca;
+    };
+
     OnStepXModelProtocol::Values original;
     if (!readFirmwareModel(original))
     {
@@ -524,34 +542,39 @@ bool OnStepXModelBuilder::replaceFirmwareModel()
         return false;
     }
 
+    const auto rollbackAndVerify =
+        [&](const char *reason)
+    {
+        const bool writeOk = writeFirmwareModel(original);
+        bool verifyOk = false;
+
+        if (writeOk)
+        {
+            OnStepXModelProtocol::Values restored;
+            verifyOk = readFirmwareModel(restored) &&
+                       valuesEqual(restored, original);
+        }
+
+        LOGF_ERROR(
+            "Build Model: %s; rollback write %s, readback %s",
+            reason,
+            writeOk ? "succeeded" : "FAILED",
+            verifyOk ? "matched" : "FAILED");
+
+        return writeOk && verifyOk;
+    };
+
     if (!writeFirmwareModel(m_pendingProtocol))
     {
-        const bool rollbackOk = writeFirmwareModel(original);
-        LOGF_ERROR(
-            "Build Model: coefficient upload failed; rollback %s",
-            rollbackOk ? "succeeded" : "FAILED");
+        (void)rollbackAndVerify("coefficient upload failed");
         return false;
     }
 
     OnStepXModelProtocol::Values readback;
     if (!readFirmwareModel(readback) ||
-        readback.ax1Cor != m_pendingProtocol.ax1Cor ||
-        readback.ax2Cor != m_pendingProtocol.ax2Cor ||
-        readback.altCor != m_pendingProtocol.altCor ||
-        readback.azmCor != m_pendingProtocol.azmCor ||
-        readback.doCor  != m_pendingProtocol.doCor  ||
-        readback.pdCor  != m_pendingProtocol.pdCor  ||
-        readback.dfCor  != m_pendingProtocol.dfCor  ||
-        readback.tfCor  != m_pendingProtocol.tfCor  ||
-        readback.hcp    != m_pendingProtocol.hcp    ||
-        readback.hca    != m_pendingProtocol.hca    ||
-        readback.dcp    != m_pendingProtocol.dcp    ||
-        readback.dca    != m_pendingProtocol.dca)
+        !valuesEqual(readback, m_pendingProtocol))
     {
-        const bool rollbackOk = writeFirmwareModel(original);
-        LOGF_ERROR(
-            "Build Model: firmware coefficient readback mismatch; rollback %s",
-            rollbackOk ? "succeeded" : "FAILED");
+        (void)rollbackAndVerify("firmware coefficient readback mismatch");
         return false;
     }
 
