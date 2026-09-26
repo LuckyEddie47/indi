@@ -1,6 +1,9 @@
 #include "OnStepXModelProtocol.h"
 
 #include <cmath>
+#include <limits>
+#include <string>
+
 
 namespace
 {
@@ -15,6 +18,76 @@ constexpr double RAD_PER_ARCSEC =
 
 constexpr double RAD_PER_DEG =
     3.1415926535897932384626433832795 / 180.0;
+
+
+// Matches the firmware's `Deg360` constant.
+constexpr long double DEG360 =
+    6.283185307179586L;
+
+bool validFirmwareLong(std::int64_t value)
+{
+    // On the ESP32 target, firmware `long` is 32-bit.
+    constexpr auto longMin =
+        static_cast<std::int64_t>(std::numeric_limits<std::int32_t>::min());
+    constexpr auto longMax =
+        static_cast<std::int64_t>(std::numeric_limits<std::int32_t>::max());
+
+    return value >= longMin && value <= longMax;
+}
+
+bool validArcsecField(
+    std::int64_t value,
+    long double lower,
+    long double upper)
+{
+    if (!validFirmwareLong(value))
+        return false;
+
+    // :SX0 converts the atol() result to double radians and then stores
+    // it in the firmware's float AlignModel field. Reproduce that
+    // conversion before applying modelRead()'s bounds.
+    const float converted = static_cast<float>(
+        static_cast<double>(value) / ARCSEC_PER_RAD);
+
+    return static_cast<long double>(converted) >= lower &&
+           static_cast<long double>(converted) <= upper;
+}
+
+bool validDegreeField(
+    std::int64_t value,
+    long double lower,
+    long double upper)
+{
+    if (!validFirmwareLong(value))
+        return false;
+
+    const float converted = static_cast<float>(
+        static_cast<double>(value) / DEG_PER_RAD);
+
+    return static_cast<long double>(converted) >= lower &&
+           static_cast<long double>(converted) <= upper;
+}
+
+bool validateField(
+    const char *name,
+    std::int64_t value,
+    bool arcseconds,
+    long double lower,
+    long double upper,
+    std::string &reason)
+{
+    const bool valid = arcseconds
+        ? validArcsecField(value, lower, upper)
+        : validDegreeField(value, lower, upper);
+
+    if (!valid)
+    {
+        reason = name;
+        return false;
+    }
+
+    return true;
+}
 
 std::int64_t roundArcsec(double radians)
 {
@@ -122,4 +195,37 @@ char OnStepXModelProtocol::dfCoefficientIndex(
     }
 
     return '7';
+}
+
+bool OnStepXModelProtocol::validateForFirmware(
+    const Values &values,
+    std::string &reason)
+{
+    if (!validateField("ax1Cor", values.ax1Cor, true,
+                      -DEG360, DEG360, reason)) return false;
+    if (!validateField("ax2Cor", values.ax2Cor, true,
+                      -DEG360, DEG360, reason)) return false;
+    if (!validateField("altCor", values.altCor, true,
+                      -16384.0L, 16384.0L, reason)) return false;
+    if (!validateField("azmCor", values.azmCor, true,
+                      -16384.0L, 16384.0L, reason)) return false;
+    if (!validateField("doCor", values.doCor, true,
+                      -8192.0L, 8192.0L, reason)) return false;
+    if (!validateField("pdCor", values.pdCor, true,
+                      -256.0L, 256.0L, reason)) return false;
+    if (!validateField("dfCor", values.dfCor, true,
+                      -256.0L, 256.0L, reason)) return false;
+    if (!validateField("tfCor", values.tfCor, true,
+                      -128.0L, 128.0L, reason)) return false;
+    if (!validateField("hcp", values.hcp, false,
+                      -DEG360, DEG360, reason)) return false;
+    if (!validateField("hca", values.hca, true,
+                      -16384.0L, 16384.0L, reason)) return false;
+    if (!validateField("dcp", values.dcp, false,
+                      -DEG360, DEG360, reason)) return false;
+    if (!validateField("dca", values.dca, true,
+                      -16384.0L, 16384.0L, reason)) return false;
+
+    reason.clear();
+    return true;
 }

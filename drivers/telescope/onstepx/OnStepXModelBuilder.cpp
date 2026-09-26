@@ -323,6 +323,19 @@ bool OnStepXModelBuilder::calculateModel()
         OnStepXModelProtocol::quantize(
             fit.model);
 
+
+    std::string firmwareValidationReason;
+    if (!OnStepXModelProtocol::validateForFirmware(
+            protocol, firmwareValidationReason))
+    {
+        LOGF_ERROR(
+            "Calculate Model: quantised model is outside firmware limits "
+            "(%s); %zu observations retained",
+            firmwareValidationReason.c_str(),
+            observationCount);
+        return false;
+    }
+
     /*
      * Reconstruct the model exactly as it will exist in firmware after
      * those integer values have been written.

@@ -4,6 +4,8 @@
 
 #include <cmath>
 #include <cstdint>
+#include <limits>
+#include <string>
 
 namespace
 {
@@ -291,4 +293,73 @@ TEST(OnStepXModelProtocol, CoefficientIndicesMatchFirmware)
     EXPECT_EQ(indices[9], 'b');
     EXPECT_EQ(indices[10], 'c');
     EXPECT_EQ(indices[11], 'd');
+}
+
+TEST(OnStepXModelProtocol, AcceptsFirmwareBoundaryValues)
+{
+    Protocol::Values values;
+    std::string reason;
+
+    EXPECT_TRUE(Protocol::validateForFirmware(values, reason));
+    EXPECT_TRUE(reason.empty());
+
+    values.ax1Cor = 1295999;
+    EXPECT_TRUE(Protocol::validateForFirmware(values, reason));
+
+    values.ax1Cor = 1296000;
+    EXPECT_FALSE(Protocol::validateForFirmware(values, reason));
+    EXPECT_EQ(reason, "ax1Cor");
+
+    values = Protocol::Values {};
+    values.hcp = 359;
+    EXPECT_TRUE(Protocol::validateForFirmware(values, reason));
+
+    values.hcp = 360;
+    EXPECT_FALSE(Protocol::validateForFirmware(values, reason));
+    EXPECT_EQ(reason, "hcp");
+}
+
+TEST(OnStepXModelProtocol, RejectsFirmwareModelLimits)
+{
+    Protocol::Values values;
+    std::string reason;
+
+    values.doCor = 1689721393;
+    EXPECT_TRUE(Protocol::validateForFirmware(values, reason));
+    values.doCor = 1689721394;
+    EXPECT_FALSE(Protocol::validateForFirmware(values, reason));
+    EXPECT_EQ(reason, "doCor");
+
+    values = Protocol::Values {};
+    values.pdCor = 52803793;
+    EXPECT_TRUE(Protocol::validateForFirmware(values, reason));
+    values.pdCor = 52803794;
+    EXPECT_FALSE(Protocol::validateForFirmware(values, reason));
+    EXPECT_EQ(reason, "pdCor");
+
+    values = Protocol::Values {};
+    values.dfCor = 52803793;
+    EXPECT_TRUE(Protocol::validateForFirmware(values, reason));
+    values.dfCor = 52803794;
+    EXPECT_FALSE(Protocol::validateForFirmware(values, reason));
+    EXPECT_EQ(reason, "dfCor");
+
+    values = Protocol::Values {};
+    values.tfCor = 26401896;
+    EXPECT_TRUE(Protocol::validateForFirmware(values, reason));
+    values.tfCor = 26401897;
+    EXPECT_FALSE(Protocol::validateForFirmware(values, reason));
+    EXPECT_EQ(reason, "tfCor");
+}
+
+TEST(OnStepXModelProtocol, RejectsValuesOutsideFirmwareLongRange)
+{
+    Protocol::Values values;
+    std::string reason;
+
+    values.altCor =
+        static_cast<std::int64_t>(std::numeric_limits<std::int32_t>::max()) + 1;
+
+    EXPECT_FALSE(Protocol::validateForFirmware(values, reason));
+    EXPECT_EQ(reason, "altCor");
 }

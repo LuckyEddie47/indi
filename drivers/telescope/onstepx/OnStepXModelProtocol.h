@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstdint>
+#include <string>
 
 class OnStepXModelProtocol
 {
@@ -74,4 +75,15 @@ class OnStepXModelProtocol
                 'a', 'b', 'c', 'd'
             };
         };
+
+        /*
+         * Validate the quantised values against the numeric limits
+         * enforced when OnStepX reads its persisted AlignModel.
+         *
+         * This also enforces the 32-bit firmware `long` range used by
+         * atol() in the :SX0 handler on the ESP32 target.
+         */
+        static bool validateForFirmware(
+            const Values &values,
+            std::string &reason);
 };
