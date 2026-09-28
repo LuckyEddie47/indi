@@ -1456,6 +1456,45 @@ TEST(OnStepXModelBuilderLifecycle,
 
 
 TEST(OnStepXModelBuilderLifecycle,
+     CaptureSyncRejectsUnavailablePierSide)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    StatefulFirmware peer(
+        fds[1],
+        Values {},
+        {});
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_building = true;
+    builder.m_mountType = MountStatus::MountType::GEM;
+    builder.m_latitudeRad =
+        51.5 * 3.14159265358979323846 / 180.0;
+
+    peer.start();
+
+    EXPECT_FALSE(
+        builder.captureSync(
+            6.0,
+            30.0,
+            MountStatus::PierSide::NONE,
+            MountStatus::MountType::GEM));
+
+    EXPECT_EQ(builder.observationCount(), 0u);
+
+    peer.stop();
+    close(fds[0]);
+
+    EXPECT_FALSE(peer.protocolError());
+}
+
+
+TEST(OnStepXModelBuilderLifecycle,
      CaptureSyncConsumesObservationWhenMountReadFails)
 {
     int fds[2] = {-1, -1};
