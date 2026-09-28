@@ -1011,7 +1011,7 @@ TEST(OnStepXModelBuilderStage7,
 
 
 TEST(OnStepXModelBuilderStage7,
-     ActivationFailureDoesNotAttemptRollback)
+     ActivationFailureRollsBackAllOriginalCoefficients)
 {
     int fds[2] = {-1, -1};
     ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
@@ -1035,6 +1035,9 @@ TEST(OnStepXModelBuilderStage7,
     }
 
     expected.push_back({":SX09,2#", ""});
+    appendWriteCommands(expected, original, '7');
+    const auto rollbackReads = readCommands(original, '7');
+    expected.insert(expected.end(), rollbackReads.begin(), rollbackReads.end());
 
     StatefulFirmware peer(fds[1], original, std::move(expected));
     peer.failedActivation();
@@ -1058,13 +1061,13 @@ TEST(OnStepXModelBuilderStage7,
     EXPECT_TRUE(peer.complete());
     EXPECT_FALSE(peer.protocolError());
     EXPECT_FALSE(peer.activated());
-    expectProtocolValuesEqual(peer.model(), pending);
+    expectProtocolValuesEqual(peer.model(), original);
     expectProtocolValuesEqual(peer.persistentModel(), original);
 }
 
 
 TEST(OnStepXModelBuilderStage7,
-     PersistenceFailureDoesNotAttemptRollback)
+     PersistenceFailureRollsBackAllOriginalCoefficients)
 {
     int fds[2] = {-1, -1};
     ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
@@ -1088,6 +1091,9 @@ TEST(OnStepXModelBuilderStage7,
     }
 
     appendActivationAndPersistence(expected);
+    appendWriteCommands(expected, original, '7');
+    const auto rollbackReads = readCommands(original, '7');
+    expected.insert(expected.end(), rollbackReads.begin(), rollbackReads.end());
 
     StatefulFirmware peer(fds[1], original, std::move(expected));
     peer.failedPersistence();
@@ -1111,7 +1117,7 @@ TEST(OnStepXModelBuilderStage7,
     EXPECT_TRUE(peer.complete());
     EXPECT_FALSE(peer.protocolError());
     EXPECT_TRUE(peer.activated());
-    expectProtocolValuesEqual(peer.model(), pending);
+    expectProtocolValuesEqual(peer.model(), original);
     expectProtocolValuesEqual(peer.persistentModel(), original);
 }
 

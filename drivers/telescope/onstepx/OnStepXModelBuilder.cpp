@@ -605,13 +605,13 @@ bool OnStepXModelBuilder::replaceFirmwareModel()
     char reply[OnStepXComm::REPLY_BUF_SIZE] {};
     if (!m_comm->sendCommand(":SX09,2#", reply) || reply[0] != '1')
     {
-        LOG_ERROR("Build Model: firmware model activation failed");
+        (void)rollbackAndVerify("firmware model activation failed");
         return false;
     }
 
     if (!m_comm->sendCommand(":AW#", reply) || reply[0] != '1')
     {
-        LOG_ERROR("Build Model: firmware model persistence failed");
+        (void)rollbackAndVerify("firmware model persistence failed");
         return false;
     }
 
@@ -684,7 +684,7 @@ bool OnStepXModelBuilder::captureSync(double ra, double dec,
         LOG_ERROR("Build Model: Sync observation rejected because pier side is unavailable");
         return false;
     }
-    
+
     double mountRA = 0.0;
     double mountDec = 0.0;
     double lst = 0.0;
