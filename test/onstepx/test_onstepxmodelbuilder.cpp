@@ -1310,6 +1310,74 @@ TEST(OnStepXModelBuilderLifecycle,
 
 
 TEST(OnStepXModelBuilderLifecycle,
+     RepeatedBuildOnDoesNotRestartActiveSession)
+{
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+
+    std::vector<ExpectedCommand> expected = {
+        {":GtH#", "51:30:00"}
+    };
+
+    StatefulFirmware peer(fds[1], Values {}, std::move(expected));
+
+    OnStepXComm comm;
+    comm.setFd(fds[0]);
+
+    OnStepXModelBuilder builder;
+    builder.setComm(&comm);
+    builder.m_tracking = true;
+    builder.m_mountType = MountStatus::MountType::GEM;
+
+    builder.initProperties();
+
+    peer.start();
+
+    ISState states[] = {ISS_ON};
+    char buildName[] = "BUILD";
+    char *names[] = {buildName};
+
+    ASSERT_TRUE(
+        builder.handleSwitch(
+            "OSX_MODEL_BUILD",
+            states,
+            names,
+            1));
+
+    ASSERT_TRUE(builder.isBuilding());
+
+    /*
+     * Simulate state accumulated during the active build.
+     * A second ON must not destroy either of these.
+     */
+    builder.m_observations.emplace_back();
+
+    OnStepXModelMath::ModelCoefficients pendingModel;
+    pendingModel.doCor = 0.001;
+    builder.m_pendingModel = pendingModel;
+    builder.m_hasPendingModel = true;
+
+    ASSERT_TRUE(
+        builder.handleSwitch(
+            "OSX_MODEL_BUILD",
+            states,
+            names,
+            1));
+
+    EXPECT_TRUE(builder.isBuilding());
+    EXPECT_EQ(builder.observationCount(), 1u);
+    EXPECT_TRUE(builder.m_hasPendingModel);
+    EXPECT_DOUBLE_EQ(builder.m_pendingModel.doCor, 0.001);
+
+    peer.stop();
+    close(fds[0]);
+
+    EXPECT_TRUE(peer.complete());
+    EXPECT_FALSE(peer.protocolError());
+}
+
+
+TEST(OnStepXModelBuilderLifecycle,
      StartBuildRejectsLatitudeReadFailure)
 {
     int fds[2] = {-1, -1};

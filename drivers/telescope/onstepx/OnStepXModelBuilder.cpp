@@ -137,18 +137,24 @@ void OnStepXModelBuilder::updateProperties(bool connected)
     else
     {
         // A disconnect cannot leave a live build session.  Reset all
-        // connection-derived and session state so stale tracking, mount-type
-        // or pending-model state cannot survive into a later connection.
-        m_building = false;
-        m_tracking = false;
-        m_mountType = MountStatus::MountType::UNKNOWN;
-        m_observations.clear();
-        m_pendingModel = ModelCoefficients {};
-        m_pendingProtocol = OnStepXModelProtocol::Values {};
-        m_hasPendingModel = false;
-        m_buildSP[BUILD_ON].setState(ISS_OFF);
-        m_dev->deleteProperty(m_buildSP);
-        m_dev->deleteProperty(m_controlSP);
+    // connection-derived and session state so stale tracking, mount-type
+    // or pending-model state cannot survive into a later connection.
+    m_building = false;
+    m_tracking = false;
+    m_mountType = MountStatus::MountType::UNKNOWN;
+    m_observations.clear();
+    m_pendingModel = ModelCoefficients {};
+    m_pendingProtocol = OnStepXModelProtocol::Values {};
+    m_hasPendingModel = false;
+
+    m_buildSP[BUILD_ON].setState(ISS_OFF);
+    m_buildSP.setState(IPS_IDLE);
+
+    m_controlSP.reset();
+    m_controlSP.setState(IPS_IDLE);
+
+    m_dev->deleteProperty(m_buildSP);
+    m_dev->deleteProperty(m_controlSP);
     }
 }
 
@@ -162,9 +168,14 @@ bool OnStepXModelBuilder::handleSwitch(const char *name, ISState *states,
 
         bool ok = true;
         if (requested)
-            ok = startBuild();
+        {
+            if (!m_building)
+                ok = startBuild();
+        }
         else if (m_building)
+        {
             ok = abortBuild("Build Model disabled");
+        }
 
         m_buildSP[BUILD_ON].setState(ok && m_building ? ISS_ON : ISS_OFF);
         m_buildSP.setState(ok ? IPS_OK : IPS_ALERT);
