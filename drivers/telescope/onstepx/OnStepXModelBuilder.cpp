@@ -677,13 +677,7 @@ bool OnStepXModelBuilder::captureSync(double ra, double dec,
                                       MountStatus::MountType mountType)
 {
     if (!m_building)
-    return false;
-
-    if (pierSide == MountStatus::PierSide::NONE)
-    {
-        LOG_ERROR("Build Model: Sync observation rejected because pier side is unavailable");
         return false;
-    }
 
     double mountRA = 0.0;
     double mountDec = 0.0;

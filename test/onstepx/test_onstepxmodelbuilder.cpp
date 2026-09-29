@@ -1462,15 +1462,21 @@ TEST(OnStepXModelBuilderLifecycle,
 
 
 TEST(OnStepXModelBuilderLifecycle,
-     CaptureSyncRejectsUnavailablePierSide)
+     CaptureSyncMapsUnavailablePierSideToPositiveSide)
 {
     int fds[2] = {-1, -1};
     ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
 
+    std::vector<ExpectedCommand> expected = {
+        {":GRH#", "05:00:00"},
+        {":GDH#", "+20:00:00"},
+        {":GSH#", "08:00:00"}
+    };
+
     StatefulFirmware peer(
         fds[1],
         Values {},
-        {});
+        std::move(expected));
 
     OnStepXComm comm;
     comm.setFd(fds[0]);
@@ -1484,18 +1490,22 @@ TEST(OnStepXModelBuilderLifecycle,
 
     peer.start();
 
-    EXPECT_FALSE(
+    EXPECT_TRUE(
         builder.captureSync(
             6.0,
             30.0,
             MountStatus::PierSide::NONE,
             MountStatus::MountType::GEM));
 
-    EXPECT_EQ(builder.observationCount(), 0u);
+    ASSERT_EQ(builder.observationCount(), 1u);
+    EXPECT_EQ(
+        builder.m_observations.front().pierSide,
+        OnStepXModelMath::PierSide::EAST);
 
     peer.stop();
     close(fds[0]);
 
+    EXPECT_TRUE(peer.complete());
     EXPECT_FALSE(peer.protocolError());
 }
 
